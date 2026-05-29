@@ -17,6 +17,7 @@ export default function MapScreen() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
   const [quickReportSent, setQuickReportSent] = useState(false);
+ 
   const [showReportModal, setShowReportModal] = useState(false);
 const [quickDescription, setQuickDescription] = useState("");
 const [selectedSeverity, setSelectedSeverity] = useState<
@@ -623,7 +624,15 @@ const aiSummary =
 <p className="text-[9px] text-[#E8A838]">
   Source: CitySense user
 </p>
+<div className="flex flex-col gap-1 mr-2">
+  <p className="text-[10px] text-[#4ADE80] font-semibold">
+    👍 0
+  </p>
 
+  <p className="text-[10px] text-[#EF4444] font-semibold">
+    👎 0
+  </p>
+</div>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   report.type === "safe"
