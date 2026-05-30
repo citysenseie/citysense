@@ -15,6 +15,7 @@ export interface SafetyReport {
   address: string;
   timestamp: Date;
   userId: string;
+  photoUrl?: string;
 }
 
 export interface Restaurant {

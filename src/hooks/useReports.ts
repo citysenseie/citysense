@@ -16,58 +16,65 @@ export function useReports() {
   const [loading, setLoading] = useState(false);
 
   const fetchReports = useCallback(() => {
-  setLoading(true);
+    setLoading(true);
 
-  const q = query(
-    collection(db, "reports"),
-    orderBy("timestamp", "desc")
-  );
+    const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
 
-  const unsubscribe = onSnapshot(
-    q,
-    (snap: QuerySnapshot<DocumentData>) => {
-      const data = snap.docs.map((d) => {
-        const r = d.data();
+    const unsubscribe = onSnapshot(
+      q,
+      (snap: QuerySnapshot<DocumentData>) => {
+        const data: SafetyReport[] = snap.docs.map((d) => {
+          const r = d.data();
 
-        return {
-  id: d.id,
-  type: r.type,
-  category: r.category,
-  description: r.description,
-  severity: r.severity || "medium",
-  latitude: r.latitude,
-  longitude: r.longitude,
-  address: r.address,
-  timestamp: r.timestamp?.toDate() || new Date(),
-  userId: r.userId,
-};
-      });
+          return {
+            id: d.id,
+            type: r.type,
+            category: r.category,
+            description: r.description,
+            severity: r.severity || "medium",
+            latitude: r.latitude,
+            longitude: r.longitude,
+            address: r.address,
+            timestamp: r.timestamp?.toDate() || new Date(),
+            userId: r.userId,
+            photoUrl: r.photoUrl || "",
+          };
+        });
 
-      setReports(data);
-      setLoading(false);
+        setReports(data);
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  const submitReport = useCallback(
+    async (report: Omit<SafetyReport, "id" | "timestamp">) => {
+      try {
+        await addDoc(collection(db, "reports"), {
+          ...report,
+          timestamp: serverTimestamp(),
+        });
+
+        fetchReports();
+        return true;
+      } catch {
+        const newReport: SafetyReport = {
+          ...report,
+          id: Date.now().toString(),
+          timestamp: new Date(),
+        };
+
+        setReports((prev) => [newReport, ...prev]);
+        return true;
+      }
     },
-    () => {
-      setLoading(false);
-    }
+    [fetchReports]
   );
-
-  return unsubscribe;
-}, []);
-  const submitReport = useCallback(async (report: Omit<SafetyReport, "id" | "timestamp">) => {
-    try {
-      await addDoc(collection(db, "reports"), {
-        ...report,
-        timestamp: serverTimestamp(),
-      });
-      await fetchReports();
-      return true;
-    } catch {
-      // Fallback: add locally
-      const newReport: SafetyReport = { ...report, id: Date.now().toString(), timestamp: new Date() };
-      setReports((prev) => [newReport, ...prev]);
-      return true;
-    }
-  }, [fetchReports]);
 
   return { reports, loading, fetchReports, submitReport };
 }

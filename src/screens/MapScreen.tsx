@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { useAuth } from "@/hooks/useAuth";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   MapPin,
   Navigation,
@@ -216,7 +218,17 @@ const threatLevel =
   });
  const handleQuickUnsafeReport = async () => {
   if (!location) return;
+let photoUrl = "";
 
+if (reportPhoto) {
+  const photoRef = ref(
+    storage,
+    `reports/${Date.now()}-${reportPhoto.name}`
+  );
+
+  await uploadBytes(photoRef, reportPhoto);
+  photoUrl = await getDownloadURL(photoRef);
+}
   await submitReport({
    type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
    category: selectedQuickType,
@@ -226,6 +238,7 @@ const threatLevel =
     longitude: lng,
     address: location.address || "Unknown location",
     userId: "quick-report",
+    photoUrl,
   });
 
   fetchReports();
