@@ -61,24 +61,61 @@ const [selectedSeverity, setSelectedSeverity] = useState<
     return category.replace(/_/g, " ");
   };
 
+  const getTimeAgo = (timestamp: any) => {
+    const reportTime =
+      timestamp instanceof Date
+        ? timestamp.getTime()
+        : new Date(timestamp).getTime();
+
+    const diffMinutes = Math.floor((Date.now() - reportTime) / (1000 * 60));
+
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
   const getReportExpiryHours = (report: any) => {
-  if (report.category === "sos") return 1;
-  if (report.category === "police_presence") return 2;
-  if (report.type === "safe") return 12;
-  if (report.severity === "high") return 6;
-  if (report.severity === "medium") return 4;
-  return 2;
-};
+    if (report.category === "sos") return 1;
+    if (report.category === "police_presence") return 2;
+    if (report.type === "safe") return 12;
+    if (report.severity === "high") return 6;
+    if (report.severity === "medium") return 4;
+    return 2;
+  };
 
-const activeReports = reports.filter((report) => {
-  const reportTime =
-    report.timestamp instanceof Date
-      ? report.timestamp.getTime()
-      : new Date(report.timestamp).getTime();
+  const getTimeRemaining = (report: any) => {
+    const reportTime =
+      report.timestamp instanceof Date
+        ? report.timestamp.getTime()
+        : new Date(report.timestamp).getTime();
 
-  const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
-  return ageHours <= getReportExpiryHours(report);
-});
+    const expiryHours = getReportExpiryHours(report);
+    const expiresAt = reportTime + expiryHours * 60 * 60 * 1000;
+
+    const remainingMinutes = Math.max(
+      0,
+      Math.ceil((expiresAt - Date.now()) / (1000 * 60))
+    );
+
+    if (remainingMinutes < 60) return `${remainingMinutes} min`;
+
+    return `${Math.ceil(remainingMinutes / 60)}h`;
+  };
+
+  const activeReports = reports.filter((report) => {
+    const reportTime =
+      report.timestamp instanceof Date
+        ? report.timestamp.getTime()
+        : new Date(report.timestamp).getTime();
+
+    const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
+    return ageHours <= getReportExpiryHours(report);
+  });
 
 const nearbyReports = activeReports.filter(
   (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
@@ -643,16 +680,13 @@ const aiSummary =
                   ).toFixed(1)}{" "}
                   km away
                 </p>
+<p className="text-[10px] text-[#7BA3A1]">
+  Fresh • {getTimeAgo(report.timestamp)}
+</p>
+<p className="text-[9px] text-[#E8A838]">
+  Expires in {getTimeRemaining(report)}
+</p>
 
-                <p className="text-[10px] text-[#7BA3A1]">
-                  {report.timestamp instanceof Date
-                    ? report.timestamp.toLocaleString()
-                    : "Just now"}
-                </p>
-
-                <p className="text-[10px] text-[#F5F3EF] truncate">
-                  {report.description || "No extra details added"}
-                </p>
 <p
   className={`text-[10px] font-bold ${
     report.severity === "high"
@@ -670,9 +704,6 @@ const aiSummary =
 </p>
 <p className="text-[9px] text-[#E8A838]">
   Source: CitySense user
-  <p className="text-[9px] text-[#E8A838] mt-1">
-  📷 Photo available
-</p>
 </p>
 <div className="flex flex-col gap-1 mr-2">
   <p className="text-[10px] text-[#4ADE80] font-semibold">
