@@ -24,7 +24,11 @@ const trustLevel =
     { icon: <Shield className="w-5 h-5" />, label: "Safety Preferences", sub: "Customize alerts" },
     { icon: <Bell className="w-5 h-5" />, label: "Notifications", sub: "Push & SMS settings" },
     { icon: <Moon className="w-5 h-5" />, label: "Appearance", sub: "Dark mode always on" },
-    { icon: <HelpCircle className="w-5 h-5" />, label: "Help & Support", sub: "FAQ, contact us" },
+    {
+  icon: <HelpCircle className="w-5 h-5" />,
+  label: "Help & Support",
+  sub: "FAQ, contact us",
+},
   ];
 
   if (!user) {
@@ -71,7 +75,7 @@ const trustLevel =
           </div>
           <div className="flex gap-4 mt-4">
             <div className="bg-[#0F1E1E40] rounded-lg px-3 py-2">
-              <p className="text-lg font-bold text-[#E8A838]">12</p>
+              <p className="text-lg font-bold text-[#E8A838]">{userReports.length}</p>
               <p className="text-[10px] text-[#7BA3A1]">Reports</p>
             </div>
             <div className="bg-[#0F1E1E40] rounded-lg px-3 py-2">
@@ -90,7 +94,15 @@ const trustLevel =
           {menuItems.map((item, i) => (
             <button
   key={i}
-  onClick={() => alert(`${item.label} coming soon`)}
+  onClick={() => {
+  if (item.label === "Help & Support") {
+    window.location.href =
+      "mailto:citysenseie@proton.me?subject=CitySense Support Request";
+    return;
+  }
+
+  alert(`${item.label} coming soon`);
+}}
   className="w-full flex items-center gap-3 bg-[#1A2E2D] rounded-xl px-4 py-3.5 border border-[#2D5A5820] text-left active:scale-[0.98] transition-transform"
 >
               <div className="text-[#E8A838]">{item.icon}</div>
