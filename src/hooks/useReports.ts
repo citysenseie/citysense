@@ -30,16 +30,17 @@ export function useReports() {
         const r = d.data();
 
         return {
-          id: d.id,
-          type: r.type,
-          category: r.category,
-          description: r.description,
-          latitude: r.latitude,
-          longitude: r.longitude,
-          address: r.address,
-          timestamp: r.timestamp?.toDate() || new Date(),
-          userId: r.userId,
-        };
+  id: d.id,
+  type: r.type,
+  category: r.category,
+  description: r.description,
+  severity: r.severity || "medium",
+  latitude: r.latitude,
+  longitude: r.longitude,
+  address: r.address,
+  timestamp: r.timestamp?.toDate() || new Date(),
+  userId: r.userId,
+};
       });
 
       setReports(data);

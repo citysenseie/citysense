@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
-
+import { useReports } from "@/hooks/useReports";
 interface EmergencyContact {
   id: string;
   name: string;
@@ -15,6 +15,7 @@ const DEFAULT_CONTACTS: EmergencyContact[] = [
 
 export default function SOSScreen() {
   const { location } = useLocation();
+  const { submitReport } = useReports();
   const [activated, setActivated] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [timerActive, setTimerActive] = useState(false);
@@ -45,7 +46,22 @@ export default function SOSScreen() {
     const sec = s % 60;
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
+const handleSOSActivate = async () => {
+  setActivated(true);
 
+  if (!location) return;
+
+  await submitReport({
+    type: "unsafe",
+    category: "sos",
+    description: "Emergency SOS activated",
+    severity: "high",
+    latitude: location.latitude,
+    longitude: location.longitude,
+    address: location.address || "Unknown location",
+    userId: "sos-user",
+  });
+};
   // Active SOS countdown screen
   if (activated && countdown > 0) {
     return (
@@ -102,7 +118,7 @@ export default function SOSScreen() {
         {/* Big SOS Button */}
         <div className="flex justify-center mt-4">
           <button
-            onClick={() => setActivated(true)}
+            onClick={handleSOSActivate}
             className="w-40 h-40 rounded-full bg-gradient-to-br from-[#EF4444] to-[#DC2626] flex flex-col items-center justify-center shadow-2xl shadow-[#EF444440] active:scale-95 transition-transform"
           >
             <Siren className="w-10 h-10 text-white mb-1" />

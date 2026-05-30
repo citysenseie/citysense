@@ -51,6 +51,7 @@ const [selectedSeverity, setSelectedSeverity] = useState<
   };
 
   const getReportLabel = (category: string) => {
+    if (category === "sos") return "🚨 Emergency SOS";
     if (category === "construction") return "🚧 Construction";
     if (category === "poor_lighting") return "💡 Poor Lighting";
     if (category === "suspicious_activity") return "🚨 Suspicious Activity";
@@ -60,8 +61,28 @@ const [selectedSeverity, setSelectedSeverity] = useState<
     return category.replace(/_/g, " ");
   };
 
-  const nearbyReports = reports.filter((r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2);
+  const getReportExpiryHours = (report: any) => {
+  if (report.category === "sos") return 1;
+  if (report.category === "police_presence") return 2;
+  if (report.type === "safe") return 12;
+  if (report.severity === "high") return 6;
+  if (report.severity === "medium") return 4;
+  return 2;
+};
 
+const activeReports = reports.filter((report) => {
+  const reportTime =
+    report.timestamp instanceof Date
+      ? report.timestamp.getTime()
+      : new Date(report.timestamp).getTime();
+
+  const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
+  return ageHours <= getReportExpiryHours(report);
+});
+
+const nearbyReports = activeReports.filter(
+  (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
+);
   const filteredReports = (
     selectedFilter === "all"
       ? nearbyReports
@@ -235,13 +256,17 @@ const aiSummary =
 </div>
               <div
                 className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
-                  report.type === "safe"
-                    ? "bg-[#4ADE80]"
-                    : report.severity === "high"
-                    ? "bg-[#EF4444]"
-                    : report.severity === "medium"
-                    ? "bg-[#F97316]"
-                    : "bg-[#E8A838]"
+                  report.category === "sos"
+  ? "bg-[#EF4444]"
+  : report.category === "police_presence"
+  ? "bg-[#3B82F6]"
+  : report.type === "safe"
+  ? "bg-[#4ADE80]"
+  : report.severity === "high"
+  ? "bg-[#EF4444]"
+  : report.severity === "medium"
+  ? "bg-[#F97316]"
+  : "bg-[#E8A838]"
                 }`}
               />
 
@@ -645,6 +670,9 @@ const aiSummary =
 </p>
 <p className="text-[9px] text-[#E8A838]">
   Source: CitySense user
+  <p className="text-[9px] text-[#E8A838] mt-1">
+  📷 Photo available
+</p>
 </p>
 <div className="flex flex-col gap-1 mr-2">
   <p className="text-[10px] text-[#4ADE80] font-semibold">
