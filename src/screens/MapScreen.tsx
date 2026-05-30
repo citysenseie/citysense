@@ -62,68 +62,73 @@ const [selectedSeverity, setSelectedSeverity] = useState<
   };
 
   const getTimeAgo = (timestamp: any) => {
-    const reportTime =
-      timestamp instanceof Date
-        ? timestamp.getTime()
-        : new Date(timestamp).getTime();
+  const reportTime =
+    timestamp instanceof Date
+      ? timestamp.getTime()
+      : new Date(timestamp).getTime();
 
-    const diffMinutes = Math.floor((Date.now() - reportTime) / (1000 * 60));
+  const diffMinutes = Math.floor((Date.now() - reportTime) / (1000 * 60));
 
-    if (diffMinutes < 1) return "Just now";
-    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
 
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
 
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
-  };
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+};
 
-  const getReportExpiryHours = (report: any) => {
-    if (report.category === "sos") return 1;
-    if (report.category === "police_presence") return 2;
-    if (report.type === "safe") return 12;
-    if (report.severity === "high") return 6;
-    if (report.severity === "medium") return 4;
-    return 2;
-  };
+const getReportExpiryHours = (report: any) => {
+  if (report.category === "sos") return 1;
+  if (report.category === "police_presence") return 2;
+  if (report.type === "safe") return 12;
+  if (report.severity === "high") return 6;
+  if (report.severity === "medium") return 4;
+  return 2;
+};
 
-  const getTimeRemaining = (report: any) => {
-    const reportTime =
-      report.timestamp instanceof Date
-        ? report.timestamp.getTime()
-        : new Date(report.timestamp).getTime();
+const getTimeRemaining = (report: any) => {
+  const reportTime =
+    report.timestamp instanceof Date
+      ? report.timestamp.getTime()
+      : new Date(report.timestamp).getTime();
 
-    const expiryHours = getReportExpiryHours(report);
-    const expiresAt = reportTime + expiryHours * 60 * 60 * 1000;
+  const expiryHours = getReportExpiryHours(report);
+  const expiresAt = reportTime + expiryHours * 60 * 60 * 1000;
 
-    const remainingMinutes = Math.max(
-      0,
-      Math.ceil((expiresAt - Date.now()) / (1000 * 60))
-    );
+  const remainingMinutes = Math.max(
+    0,
+    Math.ceil((expiresAt - Date.now()) / (1000 * 60))
+  );
 
-    if (remainingMinutes < 60) return `${remainingMinutes} min`;
+  if (remainingMinutes < 60) {
+  return `${remainingMinutes} min`;
+}
 
-    return `${Math.ceil(remainingMinutes / 60)}h`;
-  };
+return `${Math.ceil(remainingMinutes / 60)}h`;
+};
 
-  const activeReports = reports.filter((report) => {
-    const reportTime =
-      report.timestamp instanceof Date
-        ? report.timestamp.getTime()
-        : new Date(report.timestamp).getTime();
+const activeReports = reports.filter((report) => {
+  const reportTime =
+    report.timestamp instanceof Date
+      ? report.timestamp.getTime()
+      : new Date(report.timestamp).getTime();
 
-    const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
-    return ageHours <= getReportExpiryHours(report);
-  });
+  const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
+
+  return ageHours <= getReportExpiryHours(report);
+});
 
 const nearbyReports = activeReports.filter(
   (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
 );
+  (r: { latitude: number; longitude: number; }) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
+;
   const filteredReports = (
     selectedFilter === "all"
       ? nearbyReports
-      : nearbyReports.filter((r) => r.type === selectedFilter)
+      : nearbyReports.filter((r: { type: string; }) => r.type === selectedFilter)
   ).sort((a, b) => {
     const distA = getDistanceKm(lat, lng, a.latitude, a.longitude);
     const distB = getDistanceKm(lat, lng, b.latitude, b.longitude);
@@ -135,6 +140,7 @@ const nearbyReports = activeReports.filter(
 const highReports = nearbyReports.filter((r) => r.severity === "high").length;
 const mediumReports = nearbyReports.filter((r) => r.severity === "medium").length;
 const lowReports = nearbyReports.filter((r) => r.severity === "low").length;
+const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
   const unsafeImpact = nearbyReports.reduce((total, r) => {
     if (r.type !== "unsafe") return total;
     if (r.severity === "high") return total + 15;
@@ -142,7 +148,10 @@ const lowReports = nearbyReports.filter((r) => r.severity === "low").length;
     return total + 4;
   }, 0);
 
-  const safetyScore = Math.max(0, Math.min(100, 70 + safeCount * 5 - unsafeImpact));
+  const safetyScore = Math.max(
+  0,
+  Math.min(100, 70 + safeCount * 5 - unsafeImpact - sosReports * 25)
+);
 
   const scoreColor =
     safetyScore >= 80 ? "#4ADE80" : safetyScore >= 60 ? "#E8A838" : "#EF4444";
@@ -178,7 +187,7 @@ const lowReports = nearbyReports.filter((r) => r.severity === "low").length;
       ? "Elevated Risk"
       : "Normal Activity";
 const threatLevel =
-  safetyScore < 50 || highReports >= 3
+  safetyScore < 50 || highReports >= 3 || sosReports > 0
     ? "HIGH"
     : safetyScore < 65 || unsafeCount >= 5
     ? "ELEVATED"
@@ -702,9 +711,15 @@ const aiSummary =
               <p className="text-[9px] text-[#7BA3A1]">
   {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
 </p>
-<p className="text-[9px] text-[#E8A838]">
-  Source: CitySense user
-</p>
+<div>
+  <p className="text-[9px] text-[#E8A838]">
+    Source: CitySense user
+  </p>
+
+  <p className="text-[9px] text-[#E8A838] mt-1">
+    📷 Photo available
+  </p>
+</div>
 <div className="flex flex-col gap-1 mr-2">
   <p className="text-[10px] text-[#4ADE80] font-semibold">
     👍 0
