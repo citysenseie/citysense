@@ -20,6 +20,7 @@ export default function MapScreen() {
  
   const [showReportModal, setShowReportModal] = useState(false);
 const [quickDescription, setQuickDescription] = useState("");
+const [reportPhoto, setReportPhoto] = useState<File | null>(null);
 const [selectedSeverity, setSelectedSeverity] = useState<
   "low" | "medium" | "high"
 >("medium");
@@ -522,10 +523,30 @@ const aiSummary =
         placeholder="Describe what is happening..."
         className="w-full h-24 rounded-xl bg-[#0F1E1E] border border-[#2D5A5840] text-[#F5F3EF] text-sm p-3 resize-none outline-none"
       />
+<div className="mt-3">
+  <label className="block text-xs text-[#7BA3A1] mb-2">
+    Add photo
+  </label>
 
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => setReportPhoto(e.target.files?.[0] || null)}
+    className="w-full text-xs text-[#7BA3A1]"
+  />
+
+  {reportPhoto && (
+    <p className="text-[10px] text-[#E8A838] mt-1">
+      Photo selected: {reportPhoto.name}
+    </p>
+  )}
+</div>
       <div className="flex gap-3 mt-4">
         <button
-          onClick={() => setShowReportModal(false)}
+          onClick={() => {
+  setShowReportModal(false);
+  setReportPhoto(null);
+}}
           className="flex-1 py-2 rounded-xl bg-[#0F1E1E] text-[#7BA3A1]"
         >
           Cancel
@@ -536,6 +557,7 @@ const aiSummary =
             await handleQuickUnsafeReport();
             setShowReportModal(false);
             setQuickDescription("");
+            setReportPhoto(null);
           }}
           className="flex-1 py-2 rounded-xl bg-[#E8A838] text-[#0F1E1E] font-bold"
         >
