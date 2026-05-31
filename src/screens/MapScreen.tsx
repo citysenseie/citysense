@@ -111,30 +111,19 @@ const getTimeRemaining = (report: any) => {
 return `${Math.ceil(remainingMinutes / 60)}h`;
 };
 
-const activeReports = reports.filter((report) => {
-  const reportTime =
-    report.timestamp instanceof Date
-      ? report.timestamp.getTime()
-      : new Date(report.timestamp).getTime();
-
-  const ageHours = (Date.now() - reportTime) / (1000 * 60 * 60);
-
-  return ageHours <= getReportExpiryHours(report);
-});
-
 const nearbyReports = reports.filter(
   (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
 );
-   
-  const filteredReports = (
-    selectedFilter === "all"
-      ? nearbyReports
-      : nearbyReports.filter((r: { type: string; }) => r.type === selectedFilter)
-  ).sort((a, b) => {
-    const distA = getDistanceKm(lat, lng, a.latitude, a.longitude);
-    const distB = getDistanceKm(lat, lng, b.latitude, b.longitude);
-    return distA - distB;
-  });
+
+const filteredReports = (
+  selectedFilter === "all"
+    ? nearbyReports
+    : nearbyReports.filter((r) => r.type === selectedFilter)
+).sort((a, b) => {
+  const distA = getDistanceKm(lat, lng, a.latitude, a.longitude);
+  const distB = getDistanceKm(lat, lng, b.latitude, b.longitude);
+  return distA - distB;
+});
 
   const safeCount = nearbyReports.filter((r) => r.type === "safe").length;
   const unsafeCount = nearbyReports.filter((r) => r.type === "unsafe").length;
