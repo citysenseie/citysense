@@ -14,7 +14,7 @@ import {
 export default function MapScreen() {
   const { location } = useLocation();
  const { reports, fetchReports, submitReport } = useReports();
-  useAuth();
+  const { user } = useAuth();
 
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
@@ -122,11 +122,10 @@ const activeReports = reports.filter((report) => {
   return ageHours <= getReportExpiryHours(report);
 });
 
-const nearbyReports = activeReports.filter(
+const nearbyReports = reports.filter(
   (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
 );
-  (r: { latitude: number; longitude: number; }) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
-;
+   
   const filteredReports = (
     selectedFilter === "all"
       ? nearbyReports
@@ -218,35 +217,42 @@ const threatLevel =
   });
  const handleQuickUnsafeReport = async () => {
   if (!location) return;
-let photoUrl = "";
 
-if (reportPhoto) {
-  const photoRef = ref(
-    storage,
-    `reports/${Date.now()}-${reportPhoto.name}`
-  );
+  let photoUrl = "";
 
-  await uploadBytes(photoRef, reportPhoto);
-  photoUrl = await getDownloadURL(photoRef);
-}
+  if (reportPhoto) {
+    const photoRef = ref(
+      storage,
+      `reports/${Date.now()}-${reportPhoto.name}`
+    );
+
+    try {
+      await uploadBytes(photoRef, reportPhoto);
+      photoUrl = await getDownloadURL(photoRef);
+    } catch (error) {
+      console.error("Photo upload failed:", error);
+      photoUrl = "";
+    }
+  }
+
   await submitReport({
-   type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
-   category: selectedQuickType,
+    type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
+    category: selectedQuickType,
     description: quickDescription || "Quick unsafe report",
     severity: selectedSeverity,
     latitude: lat,
     longitude: lng,
     address: location.address || "Unknown location",
-    userId: "quick-report",
-    photoUrl,
+   userId: user?.uid || "anonymous",
+    photoUrl: photoUrl || "",
   });
 
   fetchReports();
   setQuickReportSent(true);
 
-setTimeout(() => {
-  setQuickReportSent(false);
-}, 2000);
+  setTimeout(() => {
+    setQuickReportSent(false);
+  }, 2000);
 };
   
 const aiSummary =
@@ -257,7 +263,7 @@ const aiSummary =
     : safetyScore >= 50
     ? "Mixed activity detected nearby"
     : "Elevated risk detected in this zone";
-    const reportDensity =
+   const reportDensity =
   nearbyReports.length >= 8
     ? "High report density"
     : nearbyReports.length >= 4
@@ -620,10 +626,10 @@ const aiSummary =
   />
 
   {reportPhoto && (
-    <p className="text-[10px] text-[#E8A838] mt-1">
-      Photo selected: {reportPhoto.name}
-    </p>
-  )}
+  <div className="text-[10px] text-[#E8A838] mt-1">
+    Photo selected: {reportPhoto.name}
+  </div>
+)}
 </div>
       <div className="flex gap-3 mt-4">
         <button
@@ -734,13 +740,18 @@ const aiSummary =
   </p>
 </div>
 <div className="flex flex-col gap-1 mr-2">
-  <p className="text-[10px] text-[#4ADE80] font-semibold">
-    👍 0
-  </p>
-
-  <p className="text-[10px] text-[#EF4444] font-semibold">
-    👎 0
-  </p>
+  <button
+    onClick={() => console.log("confirm", report.id)}
+    className="text-[10px] text-[#4ADE80] font-semibold"
+  >
+    👍 {report.upvotes || 0}
+  </button>
+  <button
+    onClick={() => console.log("dispute", report.id)}
+    className="text-[10px] text-[#EF4444] font-semibold"
+  >
+    👎 {report.downvotes || 0}
+  </button>
 </div>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
