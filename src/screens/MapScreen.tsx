@@ -111,9 +111,7 @@ const getTimeRemaining = (report: any) => {
 return `${Math.ceil(remainingMinutes / 60)}h`;
 };
 
-const nearbyReports = reports.filter(
-  (r) => getDistanceKm(lat, lng, r.latitude, r.longitude) <= 2
-);
+const nearbyReports = reports;
 
 const filteredReports = (
   selectedFilter === "all"
@@ -700,9 +698,11 @@ const aiSummary =
 <p className="text-[10px] text-[#7BA3A1]">
   Fresh • {getTimeAgo(report.timestamp)}
 </p>
-<p className="text-[9px] text-[#E8A838]">
-  Expires in {getTimeRemaining(report)}
-</p>
+{getTimeRemaining(report) !== "0 min" && (
+  <p className="text-[9px] text-[#E8A838]">
+    Expires in {getTimeRemaining(report)}
+  </p>
+)}
 
 <p
   className={`text-[10px] font-bold ${

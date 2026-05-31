@@ -53,28 +53,21 @@ export function useReports() {
   }, []);
 
   const submitReport = useCallback(
-    async (report: Omit<SafetyReport, "id" | "timestamp">) => {
-      try {
-        await addDoc(collection(db, "reports"), {
-          ...report,
-          timestamp: serverTimestamp(),
-        });
+  async (report: Omit<SafetyReport, "id" | "timestamp">) => {
+    try {
+      await addDoc(collection(db, "reports"), {
+        ...report,
+        timestamp: serverTimestamp(),
+      });
 
-        fetchReports();
-        return true;
-      } catch {
-        const newReport: SafetyReport = {
-          ...report,
-          id: Date.now().toString(),
-          timestamp: new Date(),
-        };
-
-        setReports((prev) => [newReport, ...prev]);
-        return true;
-      }
-    },
-    [fetchReports]
-  );
-
+      return true;
+    } catch (error) {
+      console.error("Firestore submit failed:", error);
+      alert("Report failed to save. Check console.");
+      return false;
+    }
+  },
+  []
+);
   return { reports, loading, fetchReports, submitReport };
 }
