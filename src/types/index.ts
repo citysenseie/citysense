@@ -15,9 +15,11 @@ export interface SafetyReport {
   address: string;
   timestamp: Date;
   userId: string;
+  userName?: string;
   photoUrl?: string;
   upvotes?: number;
 downvotes?: number;
+
 }
 
 export interface Restaurant {

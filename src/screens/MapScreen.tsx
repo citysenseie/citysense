@@ -241,16 +241,17 @@ const threatLevel =
   }
 
   await submitReport({
-    type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
-    category: selectedQuickType,
-    description: quickDescription || "Quick unsafe report",
-    severity: selectedSeverity,
-    latitude: lat,
-    longitude: lng,
-    address: location.address || "Unknown location",
-   userId: user?.uid || "anonymous",
-    photoUrl: photoUrl || "",
-  });
+  type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
+  category: selectedQuickType,
+  description: quickDescription || "Quick unsafe report",
+  severity: selectedSeverity,
+  latitude: lat,
+  longitude: lng,
+  address: location.address || "Unknown location",
+  userId: user?.uid || "anonymous",
+  userName: user?.displayName || "Anonymous User",
+  photoUrl: photoUrl || "",
+});
 
   fetchReports();
   setQuickReportSent(true);
