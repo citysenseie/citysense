@@ -742,9 +742,9 @@ const aiSummary =
     Source: CitySense user
   </p>
 
-  <p className="text-[9px] text-[#E8A838] mt-1">
-    📷 Photo available
-  </p>
+ <p className="text-[9px] text-[#E8A838] mt-1">
+  📷 Photo available
+</p>
 </div>
 <div className="flex flex-col gap-1 mr-2">
   <button

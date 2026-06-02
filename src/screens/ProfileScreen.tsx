@@ -39,11 +39,20 @@ const trustScore = Math.max(
   Math.min(100, 50 + totalUpvotes * 5 - totalDownvotes * 8)
 );
   const trustLevel =
-    userReports.length >= 15
-      ? "Trusted Reporter"
-      : userReports.length >= 5
-      ? "Active Reporter"
-      : "New Contributor";
+  userReports.length >= 15
+    ? "Trusted Reporter"
+    : userReports.length >= 5
+    ? "Active Reporter"
+    : "New Contributor";
+
+const rankBadge =
+  userReports.length >= 50
+    ? "👑 Community Hero"
+    : userReports.length >= 25
+    ? "🥇 Trusted Reporter"
+    : userReports.length >= 10
+    ? "🥈 Guardian"
+    : "🥉 Contributor";
 
   const menuItems = [
     {
@@ -113,9 +122,9 @@ const trustScore = Math.max(
 
               <p className="text-xs text-[#7BA3A1]">{user.email}</p>
 
-              <p className="text-[11px] text-[#E8A838] font-semibold mt-1">
-                {trustLevel}
-              </p>
+              <p className="text-[11px] text-[#4ADE80] font-semibold">
+  {rankBadge}
+</p>
             </div>
           </div>
 
@@ -196,7 +205,7 @@ const trustScore = Math.max(
               </div>
 
               <span className="text-xs font-bold text-[#E8A838]">
-                {userReports.length}/10
+                {userReports.length >= 10 ? "Completed" : `${userReports.length}/10`}
               </span>
             </div>
 
@@ -211,7 +220,7 @@ const trustScore = Math.max(
               </div>
 
               <span className="text-xs font-bold text-[#E8A838]">
-                {userReports.length}/25
+                {userReports.length >= 25 ? "Completed" : `${userReports.length}/25`}
               </span>
             </div>
           </div>
