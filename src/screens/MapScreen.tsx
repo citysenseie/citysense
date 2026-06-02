@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+ import{ useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { useAuth } from "@/hooks/useAuth";
 import { storage } from "@/lib/firebase";
+import { db, doc, updateDoc, increment } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   MapPin,
@@ -202,6 +203,23 @@ const threatLevel =
     hour: "2-digit",
     minute: "2-digit",
   });
+  const handleVote = async (
+  reportId: string,
+  type: "upvotes" | "downvotes"
+) => {
+  console.log("Voting clicked:", reportId, type);
+  try {
+    await updateDoc(
+      doc(db, "reports", reportId),
+      {
+        [type]: increment(1),
+      }
+    );
+    console.log("Vote saved:", reportId, type);
+  } catch (error) {
+    console.error("Vote failed:", error);
+  }
+};
  const handleQuickUnsafeReport = async () => {
   if (!location) return;
 
@@ -730,13 +748,13 @@ const aiSummary =
 </div>
 <div className="flex flex-col gap-1 mr-2">
   <button
-    onClick={() => console.log("confirm", report.id)}
+    onClick={() => handleVote(report.id!, "upvotes")}
     className="text-[10px] text-[#4ADE80] font-semibold"
   >
     👍 {report.upvotes || 0}
   </button>
   <button
-    onClick={() => console.log("dispute", report.id)}
+    onClick={() => handleVote(report.id!, "downvotes")}
     className="text-[10px] text-[#EF4444] font-semibold"
   >
     👎 {report.downvotes || 0}

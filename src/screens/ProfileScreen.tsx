@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useReports } from "@/hooks/useReports";
 import {
@@ -16,12 +17,27 @@ interface ProfileScreenProps {
 
 export default function ProfileScreen({ onLogin }: ProfileScreenProps) {
   const { user, logout } = useAuth();
-  const { reports } = useReports();
-
-  const userReports = reports.filter((r) => r.userId === user?.uid);
+ const { reports, fetchReports } = useReports();
+useEffect(() => {
+  fetchReports();
+}, [fetchReports]);
+ const userReports = reports;
   const safeReports = userReports.filter((r) => r.type === "safe").length;
   const unsafeReports = userReports.filter((r) => r.type === "unsafe").length;
+const totalUpvotes = userReports.reduce(
+  (total, report) => total + (report.upvotes || 0),
+  0
+);
 
+const totalDownvotes = userReports.reduce(
+  (total, report) => total + (report.downvotes || 0),
+  0
+);
+
+const trustScore = Math.max(
+  0,
+  Math.min(100, 50 + totalUpvotes * 5 - totalDownvotes * 8)
+);
   const trustLevel =
     userReports.length >= 15
       ? "Trusted Reporter"
@@ -124,7 +140,25 @@ export default function ProfileScreen({ onLogin }: ProfileScreenProps) {
             </div>
           </div>
         </div>
+<div className="bg-[#1A2A2A] rounded-2xl p-4 mx-4 mb-4 border border-[#2A3A3A]">
+  <div className="flex justify-between items-center mb-2">
+    <h3 className="text-[#F5E3E1] font-bold">Trust Score</h3>
+    <span className="text-[#4ADE80] font-bold">
+      {trustScore}/100
+    </span>
+  </div>
 
+  <div className="w-full bg-[#0F1E1E] rounded-full h-3 overflow-hidden">
+    <div
+      className="bg-[#4ADE80] h-3 rounded-full transition-all"
+      style={{ width: `${trustScore}%` }}
+    />
+  </div>
+
+  <p className="text-[#7BA3A1] text-xs mt-2">
+    {trustLevel}
+  </p>
+</div>
         {/* Achievements */}
         <div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
           <h3 className="text-sm font-bold text-[#F5F3EF] mb-3">

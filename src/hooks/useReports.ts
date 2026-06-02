@@ -38,6 +38,8 @@ export function useReports() {
             timestamp: r.timestamp?.toDate() || new Date(),
             userId: r.userId,
             photoUrl: r.photoUrl || "",
+            upvotes: r.upvotes || 0,
+            downvotes: r.downvotes || 0,
           };
         });
 
@@ -56,9 +58,11 @@ export function useReports() {
   async (report: Omit<SafetyReport, "id" | "timestamp">) => {
     try {
       await addDoc(collection(db, "reports"), {
-        ...report,
-        timestamp: serverTimestamp(),
-      });
+  ...report,
+  upvotes: 0,
+  downvotes: 0,
+  timestamp: serverTimestamp(),
+});
 
       return true;
     } catch (error) {
