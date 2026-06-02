@@ -207,14 +207,24 @@ const threatLevel =
   reportId: string,
   type: "upvotes" | "downvotes"
 ) => {
-  console.log("Voting clicked:", reportId, type);
+  if (!user?.uid) {
+    alert("Please sign in to vote.");
+    return;
+  }
+
+  const report = reports.find((r) => r.id === reportId);
+
+  if (report?.votedBy?.includes(user.uid)) {
+    alert("You already voted on this report.");
+    return;
+  }
+
   try {
-    await updateDoc(
-      doc(db, "reports", reportId),
-      {
-        [type]: increment(1),
-      }
-    );
+    await updateDoc(doc(db, "reports", reportId), {
+      [type]: increment(1),
+      votedBy: [...(report?.votedBy || []), user.uid],
+    });
+
     console.log("Vote saved:", reportId, type);
   } catch (error) {
     console.error("Vote failed:", error);

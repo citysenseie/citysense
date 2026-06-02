@@ -19,6 +19,7 @@ export interface SafetyReport {
   photoUrl?: string;
   upvotes?: number;
 downvotes?: number;
+votedBy?: string[];
 
 }
 

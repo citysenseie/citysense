@@ -40,6 +40,7 @@ export function useReports() {
             photoUrl: r.photoUrl || "",
             upvotes: r.upvotes || 0,
             downvotes: r.downvotes || 0,
+            votedBy: r.votedBy || [],
           };
         });
 

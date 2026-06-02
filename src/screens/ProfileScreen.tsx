@@ -53,7 +53,31 @@ const rankBadge =
     : userReports.length >= 10
     ? "🥈 Guardian"
     : "🥉 Contributor";
+const leaderboard = Object.values(
+  reports.reduce((acc, report) => {
+    const key = report.userId || "anonymous";
 
+    if (!acc[key]) {
+      acc[key] = {
+        userId: key,
+        userName:
+  report.userName ||
+  (report.userId === user?.uid
+    ? user?.displayName || "You"
+    : "Anonymous User"),
+        reports: 0,
+        upvotes: 0,
+      };
+    }
+
+    acc[key].reports += 1;
+    acc[key].upvotes += report.upvotes || 0;
+
+    return acc;
+  }, {} as Record<string, { userId: string; userName: string; reports: number; upvotes: number }>)
+)
+  .sort((a, b) => b.reports - a.reports)
+  .slice(0, 3);
   const menuItems = [
     {
       icon: <Shield className="w-5 h-5" />,
@@ -167,6 +191,36 @@ const rankBadge =
   <p className="text-[#7BA3A1] text-xs mt-2">
     {trustLevel}
   </p>
+</div>
+{/* Leaderboard */}
+<div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
+  <h3 className="text-sm font-bold text-[#F5F3EF] mb-3">
+    🏆 Community Leaders
+  </h3>
+
+  <div className="space-y-3">
+    {leaderboard.map((leader, index) => (
+      <div
+        key={leader.userId}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <p className="text-sm font-semibold text-[#F5F3EF]">
+            {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}{" "}
+            {leader.userName}
+          </p>
+
+          <p className="text-[11px] text-[#7BA3A1]">
+            {leader.reports} reports • {leader.upvotes} upvotes
+          </p>
+        </div>
+
+        <span className="text-xs font-bold text-[#E8A838]">
+          #{index + 1}
+        </span>
+      </div>
+    ))}
+  </div>
 </div>
         {/* Achievements */}
         <div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
