@@ -720,7 +720,14 @@ const aiSummary =
         </div>
 
         <div className="space-y-2">
-          {filteredReports.slice(0, 4).map((report) => (
+          {[...filteredReports]
+  .sort((a, b) => {
+    if (a.category === "sos" && b.category !== "sos") return -1;
+    if (b.category === "sos" && a.category !== "sos") return 1;
+    return 0;
+  })
+  .slice(0, 4)
+  .map((report) => (
             <div
               key={report.id}
               className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
@@ -745,8 +752,8 @@ const aiSummary =
 
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-[#F5F3EF] truncate">
-                  {getReportLabel(report.category)}
-                </p>
+  {report.category === "sos" ? "🚨 EMERGENCY SOS" : getReportLabel(report.category)}
+</p>
 
                 <p className="text-[11px] text-[#7BA3A1] truncate">
                   {report.address}
@@ -821,7 +828,11 @@ const aiSummary =
                     : "bg-[#F9731620] text-[#FDBA74]"
                 }`}
               >
-                {report.severity ? `${report.type} • ${report.severity}` : report.type}
+               {report.category === "sos"
+  ? "🚨 SOS"
+  : report.severity
+  ? `${report.type} • ${report.severity}`
+  : report.type}
               </span>
             </div>
           ))}
