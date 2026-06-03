@@ -28,7 +28,7 @@ const [selectedSeverity, setSelectedSeverity] = useState<
   "low" | "medium" | "high"
 >("medium");
   const [selectedQuickType, setSelectedQuickType] = useState<
-  "suspicious_activity" | "police_presence" | "safe_area"
+  "suspicious_activity" | "police_presence" | "safe_area" | "sos"
 >("suspicious_activity");
 
   useEffect(() => {
@@ -253,8 +253,15 @@ const threatLevel =
   await submitReport({
   type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
   category: selectedQuickType,
-  description: quickDescription || "Quick unsafe report",
-  severity: selectedSeverity,
+ description:
+  quickDescription ||
+  (selectedQuickType === "sos"
+    ? "Emergency SOS reported"
+    : "Quick unsafe report"),
+  severity:
+  selectedQuickType === "sos"
+    ? "high"
+    : selectedSeverity,
   latitude: lat,
   longitude: lng,
   address: location.address || "Unknown location",
@@ -291,10 +298,10 @@ const aiSummary =
         className="relative overflow-hidden"
         style={{ height: "calc(100vh - 180px)" }}
       >
-        <div
+       <div
   className={`absolute top-0 left-0 right-0 z-40 text-center py-2 text-xs font-bold tracking-wider shadow-lg ${
-  threatLevel === "HIGH" ? "animate-pulse" : ""
-} ${
+    threatLevel === "HIGH" ? "animate-pulse" : ""
+  } ${
     threatLevel === "HIGH"
       ? "bg-[#EF4444] text-white"
       : threatLevel === "ELEVATED"
@@ -312,6 +319,13 @@ const aiSummary =
     ? "🟡 GUARDED"
     : "🟢 LOW THREAT"}
 </div>
+
+{sosReports > 0 && (
+ <div className="absolute bottom-[95px] left-1/2 -translate-x-1/2 z-50 bg-[#EF4444] text-white px-4 py-2 rounded-full text-xs font-bold animate-pulse shadow-xl">
+  🚨 {sosReports} ACTIVE SOS ALERT{sosReports > 1 ? "S" : ""} NEARBY
+</div>
+)}
+
         <iframe
           src={`https://www.openstreetmap.org/export/embed.html?bbox=${
             lng - 0.01
@@ -323,14 +337,14 @@ const aiSummary =
         />
 
         {filteredReports.slice(0, 8).map((report, index) => (
-          <div
-            key={report.id}
-           className="absolute z-10"
-            style={{
-              top: `${35 + (index % 4) * 12}%`,
-              left: `${40 + (index % 5) * 10}%`,
-            }}
-          >
+         <div
+  key={report.id}
+  className="absolute z-10 cursor-pointer"
+  style={{
+    top: `${35 + (index % 4) * 12}%`,
+    left: `${40 + (index % 5) * 10}%`,
+  }}
+>
             <div className="relative">
               <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-[#0F1E1EE8] text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
   {getReportLabel(report.category)}
@@ -351,15 +365,24 @@ const aiSummary =
                 }`}
               />
 
-              {report.type === "unsafe" && (
-                <div className="absolute inset-0 rounded-full bg-[#EF444480] animate-ping" />
-              )}
-              {report.type === "unsafe" && (
+             {report.type === "unsafe" && (
   <div
-    className={`absolute rounded-full blur-xl opacity-30 -z-10 ${
+    className={`absolute rounded-full blur-2xl -z-10 ${
+      unsafeCount >= 10
+        ? "opacity-60 animate-pulse"
+        : unsafeCount >= 5
+        ? "opacity-50"
+        : "opacity-35"
+    } ${
       report.severity === "high"
-        ? "bg-[#EF4444] w-16 h-16 -top-6 -left-6"
-        : "bg-[#F97316] w-12 h-12 -top-4 -left-4"
+        ? unsafeCount >= 10
+          ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
+          : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
+        : report.severity === "medium"
+        ? unsafeCount >= 10
+          ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
+          : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
+        : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
     }`}
   />
 )}
@@ -525,6 +548,16 @@ const aiSummary =
   >
     Safe
   </button>
+  <button
+  onClick={() => setSelectedQuickType("sos")}
+  className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
+    selectedQuickType === "sos"
+      ? "bg-[#EF4444] text-white animate-pulse"
+      : "bg-[#0F1E1EE8] text-[#7BA3A1]"
+  }`}
+>
+  🚨 SOS
+</button>
 </div>
 {location && (
   <div className="absolute bottom-4 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
@@ -575,7 +608,6 @@ const aiSummary =
 {showReportModal && (
   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-6">
     <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-5 w-full max-w-sm shadow-2xl">
-      
       <h2 className="text-lg font-bold text-[#F5F3EF] mb-3">
         New Report
       </h2>
@@ -583,76 +615,78 @@ const aiSummary =
       <p className="text-xs text-[#7BA3A1] mb-4">
         Reporting as: {getReportLabel(selectedQuickType)}
       </p>
-<div className="mb-4">
-  <p className="text-xs text-[#7BA3A1] mb-2">
-    Severity
-  </p>
 
-  <div className="flex gap-2">
-    <button
-      onClick={() => setSelectedSeverity("low")}
-      className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-        selectedSeverity === "low"
-          ? "bg-[#E8A838] text-[#0F1E1E]"
-          : "bg-[#0F1E1E] text-[#7BA3A1]"
-      }`}
-    >
-      Low
-    </button>
+      <div className="mb-4">
+        <p className="text-xs text-[#7BA3A1] mb-2">Severity</p>
 
-    <button
-      onClick={() => setSelectedSeverity("medium")}
-      className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-        selectedSeverity === "medium"
-          ? "bg-[#F97316] text-white"
-          : "bg-[#0F1E1E] text-[#7BA3A1]"
-      }`}
-    >
-      Medium
-    </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedSeverity("low")}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+              selectedSeverity === "low"
+                ? "bg-[#E8A838] text-[#0F1E1E]"
+                : "bg-[#0F1E1E] text-[#7BA3A1]"
+            }`}
+          >
+            Low
+          </button>
 
-    <button
-      onClick={() => setSelectedSeverity("high")}
-      className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-        selectedSeverity === "high"
-          ? "bg-[#EF4444] text-white"
-          : "bg-[#0F1E1E] text-[#7BA3A1]"
-      }`}
-    >
-      High
-    </button>
-  </div>
-</div>
+          <button
+            onClick={() => setSelectedSeverity("medium")}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+              selectedSeverity === "medium"
+                ? "bg-[#F97316] text-white"
+                : "bg-[#0F1E1E] text-[#7BA3A1]"
+            }`}
+          >
+            Medium
+          </button>
+
+          <button
+            onClick={() => setSelectedSeverity("high")}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+              selectedSeverity === "high"
+                ? "bg-[#EF4444] text-white"
+                : "bg-[#0F1E1E] text-[#7BA3A1]"
+            }`}
+          >
+            High
+          </button>
+        </div>
+      </div>
+
       <textarea
         value={quickDescription}
         onChange={(e) => setQuickDescription(e.target.value)}
         placeholder="Describe what is happening..."
         className="w-full h-24 rounded-xl bg-[#0F1E1E] border border-[#2D5A5840] text-[#F5F3EF] text-sm p-3 resize-none outline-none"
       />
-<div className="mt-3">
-  <label className="block text-xs text-[#7BA3A1] mb-2">
-    Add photo
-  </label>
 
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => setReportPhoto(e.target.files?.[0] || null)}
-    className="w-full text-xs text-[#7BA3A1]"
-  />
+      <div className="mt-3">
+        <label className="block text-xs text-[#7BA3A1] mb-2">
+          Add photo
+        </label>
 
-  {reportPhoto && (
-  <div className="text-[10px] text-[#E8A838] mt-1">
-    Photo selected: {reportPhoto.name}
-  </div>
-)}
-</div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setReportPhoto(e.target.files?.[0] || null)}
+          className="w-full text-xs text-[#7BA3A1]"
+        />
+
+        {reportPhoto && (
+          <div className="text-[10px] text-[#E8A838] mt-1">
+            Photo selected: {reportPhoto.name}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 mt-4">
         <button
           onClick={() => {
-  setShowReportModal(false);
-  setReportPhoto(null);
-}}
+            setShowReportModal(false);
+            setReportPhoto(null);
+          }}
           className="flex-1 py-2 rounded-xl bg-[#0F1E1E] text-[#7BA3A1]"
         >
           Cancel
@@ -673,10 +707,6 @@ const aiSummary =
     </div>
   </div>
 )}
-        
-      </div>
-
-      <div className="bg-[#1A2E2D] border-t border-[#2D5A5840] px-4 py-3 max-h-[35%] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
           <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
