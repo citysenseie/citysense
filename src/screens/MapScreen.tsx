@@ -204,9 +204,13 @@ const threatLevel =
     minute: "2-digit",
   });
   const handleVote = async (
-  reportId: string,
+  reportId: string | undefined,
   type: "upvotes" | "downvotes"
 ) => {
+  if (!reportId) {
+    return;
+  }
+
   if (!user?.uid) {
     alert("Please sign in to vote.");
     return;
@@ -714,6 +718,7 @@ const aiSummary =
     </div>
   </div>
 )}
+
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
           <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
@@ -789,34 +794,7 @@ const aiSummary =
   Severity: {report.severity?.toUpperCase()}
 </p>
               </div>
-              <p className="text-[9px] text-[#7BA3A1]">
-  {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
-</p>
-<div>
-  <p className="text-[9px] text-[#E8A838]">
-    Source: CitySense user
-  </p>
 
- {report.photoUrl && (
-  <p className="text-[9px] text-[#E8A838] mt-1">
-    📷 Photo available
-  </p>
-)}
-</div>
-<div className="flex flex-col gap-1 mr-2">
-  <button
-    onClick={() => handleVote(report.id!, "upvotes")}
-    className="text-[10px] text-[#4ADE80] font-semibold"
-  >
-    👍 {report.upvotes || 0}
-  </button>
-  <button
-    onClick={() => handleVote(report.id!, "downvotes")}
-    className="text-[10px] text-[#EF4444] font-semibold"
-  >
-    👎 {report.downvotes || 0}
-  </button>
-</div>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   report.type === "safe"
@@ -834,6 +812,20 @@ const aiSummary =
   ? `${report.type} • ${report.severity}`
   : report.type}
               </span>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => handleVote(report.id, "upvotes")}
+                  className="text-[10px] px-2 py-1 rounded-lg bg-[#4ADE80] text-[#0F1E1E] font-semibold"
+                >
+                  👍 {report.upvotes || 0}
+                </button>
+                <button
+                  onClick={() => handleVote(report.id, "downvotes")}
+                  className="text-[10px] px-2 py-1 rounded-lg bg-[#EF4444] text-white font-semibold"
+                >
+                  👎 {report.downvotes || 0}
+                </button>
+              </div>
             </div>
           ))}
 
