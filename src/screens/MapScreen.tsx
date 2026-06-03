@@ -350,42 +350,49 @@ const aiSummary =
   {getReportLabel(report.category)}
 </div>
               <div
-                className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
+  className={`rounded-full border-2 border-white shadow-lg ${
+    report.category === "sos"
+      ? "w-7 h-7 bg-[#EF4444] animate-pulse"
+      : "w-4 h-4"
+  } ${
+    report.category === "police_presence"
+      ? "bg-[#3B82F6]"
+      : report.type === "safe"
+      ? "bg-[#4ADE80]"
+      : report.severity === "high"
+      ? "bg-[#EF4444]"
+      : report.severity === "medium"
+      ? "bg-[#F97316]"
+      : "bg-[#E8A838]"
+  }`}
+/>
+            
+
+            {(report.type === "unsafe" || report.category === "sos") && (
+              <div
+                className={`absolute rounded-full blur-2xl -z-10 ${
                   report.category === "sos"
-  ? "bg-[#EF4444]"
-  : report.category === "police_presence"
-  ? "bg-[#3B82F6]"
-  : report.type === "safe"
-  ? "bg-[#4ADE80]"
-  : report.severity === "high"
-  ? "bg-[#EF4444]"
-  : report.severity === "medium"
-  ? "bg-[#F97316]"
-  : "bg-[#E8A838]"
+                    ? "bg-[#EF4444] w-40 h-40 -top-16 -left-16 opacity-70 animate-pulse"
+                    : unsafeCount >= 10
+                    ? "opacity-60 animate-pulse"
+                    : unsafeCount >= 5
+                    ? "opacity-50"
+                    : "opacity-35"
+                } ${
+                  report.category === "sos"
+                    ? ""
+                    : report.severity === "high"
+                    ? unsafeCount >= 10
+                      ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
+                      : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
+                    : report.severity === "medium"
+                    ? unsafeCount >= 10
+                      ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
+                      : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
+                    : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
                 }`}
               />
-
-             {report.type === "unsafe" && (
-  <div
-    className={`absolute rounded-full blur-2xl -z-10 ${
-      unsafeCount >= 10
-        ? "opacity-60 animate-pulse"
-        : unsafeCount >= 5
-        ? "opacity-50"
-        : "opacity-35"
-    } ${
-      report.severity === "high"
-        ? unsafeCount >= 10
-          ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
-          : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
-        : report.severity === "medium"
-        ? unsafeCount >= 10
-          ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
-          : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
-        : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
-    }`}
-  />
-)}
+            )}
             </div>
           </div>
         ))}
@@ -783,9 +790,11 @@ const aiSummary =
     Source: CitySense user
   </p>
 
- <p className="text-[9px] text-[#E8A838] mt-1">
-  📷 Photo available
-</p>
+ {report.photoUrl && (
+  <p className="text-[9px] text-[#E8A838] mt-1">
+    📷 Photo available
+  </p>
+)}
 </div>
 <div className="flex flex-col gap-1 mr-2">
   <button
