@@ -204,13 +204,9 @@ const threatLevel =
     minute: "2-digit",
   });
   const handleVote = async (
-  reportId: string | undefined,
+  reportId: string,
   type: "upvotes" | "downvotes"
 ) => {
-  if (!reportId) {
-    return;
-  }
-
   if (!user?.uid) {
     alert("Please sign in to vote.");
     return;
@@ -354,49 +350,42 @@ const aiSummary =
   {getReportLabel(report.category)}
 </div>
               <div
-  className={`rounded-full border-2 border-white shadow-lg ${
-    report.category === "sos"
-      ? "w-7 h-7 bg-[#EF4444] animate-pulse"
-      : "w-4 h-4"
-  } ${
-    report.category === "police_presence"
-      ? "bg-[#3B82F6]"
-      : report.type === "safe"
-      ? "bg-[#4ADE80]"
-      : report.severity === "high"
-      ? "bg-[#EF4444]"
-      : report.severity === "medium"
-      ? "bg-[#F97316]"
-      : "bg-[#E8A838]"
-  }`}
-/>
-            
-
-            {(report.type === "unsafe" || report.category === "sos") && (
-              <div
-                className={`absolute rounded-full blur-2xl -z-10 ${
+                className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
                   report.category === "sos"
-                    ? "bg-[#EF4444] w-40 h-40 -top-16 -left-16 opacity-70 animate-pulse"
-                    : unsafeCount >= 10
-                    ? "opacity-60 animate-pulse"
-                    : unsafeCount >= 5
-                    ? "opacity-50"
-                    : "opacity-35"
-                } ${
-                  report.category === "sos"
-                    ? ""
-                    : report.severity === "high"
-                    ? unsafeCount >= 10
-                      ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
-                      : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
-                    : report.severity === "medium"
-                    ? unsafeCount >= 10
-                      ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
-                      : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
-                    : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
+  ? "bg-[#EF4444]"
+  : report.category === "police_presence"
+  ? "bg-[#3B82F6]"
+  : report.type === "safe"
+  ? "bg-[#4ADE80]"
+  : report.severity === "high"
+  ? "bg-[#EF4444]"
+  : report.severity === "medium"
+  ? "bg-[#F97316]"
+  : "bg-[#E8A838]"
                 }`}
               />
-            )}
+
+             {report.type === "unsafe" && (
+  <div
+    className={`absolute rounded-full blur-2xl -z-10 ${
+      unsafeCount >= 10
+        ? "opacity-60 animate-pulse"
+        : unsafeCount >= 5
+        ? "opacity-50"
+        : "opacity-35"
+    } ${
+      report.severity === "high"
+        ? unsafeCount >= 10
+          ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
+          : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
+        : report.severity === "medium"
+        ? unsafeCount >= 10
+          ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
+          : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
+        : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
+    }`}
+  />
+)}
             </div>
           </div>
         ))}
@@ -718,21 +707,13 @@ const aiSummary =
     </div>
   </div>
 )}
-
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
           <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
         </div>
 
         <div className="space-y-2">
-          {[...filteredReports]
-  .sort((a, b) => {
-    if (a.category === "sos" && b.category !== "sos") return -1;
-    if (b.category === "sos" && a.category !== "sos") return 1;
-    return 0;
-  })
-  .slice(0, 4)
-  .map((report) => (
+          {filteredReports.slice(0, 4).map((report) => (
             <div
               key={report.id}
               className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
@@ -757,8 +738,8 @@ const aiSummary =
 
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-[#F5F3EF] truncate">
-  {report.category === "sos" ? "🚨 EMERGENCY SOS" : getReportLabel(report.category)}
-</p>
+                  {getReportLabel(report.category)}
+                </p>
 
                 <p className="text-[11px] text-[#7BA3A1] truncate">
                   {report.address}
@@ -794,7 +775,32 @@ const aiSummary =
   Severity: {report.severity?.toUpperCase()}
 </p>
               </div>
+              <p className="text-[9px] text-[#7BA3A1]">
+  {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
+</p>
+<div>
+  <p className="text-[9px] text-[#E8A838]">
+    Source: CitySense user
+  </p>
 
+ <p className="text-[9px] text-[#E8A838] mt-1">
+  📷 Photo available
+</p>
+</div>
+<div className="flex flex-col gap-1 mr-2">
+  <button
+    onClick={() => handleVote(report.id!, "upvotes")}
+    className="text-[10px] text-[#4ADE80] font-semibold"
+  >
+    👍 {report.upvotes || 0}
+  </button>
+  <button
+    onClick={() => handleVote(report.id!, "downvotes")}
+    className="text-[10px] text-[#EF4444] font-semibold"
+  >
+    👎 {report.downvotes || 0}
+  </button>
+</div>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   report.type === "safe"
@@ -806,26 +812,8 @@ const aiSummary =
                     : "bg-[#F9731620] text-[#FDBA74]"
                 }`}
               >
-               {report.category === "sos"
-  ? "🚨 SOS"
-  : report.severity
-  ? `${report.type} • ${report.severity}`
-  : report.type}
+                {report.severity ? `${report.type} • ${report.severity}` : report.type}
               </span>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => handleVote(report.id, "upvotes")}
-                  className="text-[10px] px-2 py-1 rounded-lg bg-[#4ADE80] text-[#0F1E1E] font-semibold"
-                >
-                  👍 {report.upvotes || 0}
-                </button>
-                <button
-                  onClick={() => handleVote(report.id, "downvotes")}
-                  className="text-[10px] px-2 py-1 rounded-lg bg-[#EF4444] text-white font-semibold"
-                >
-                  👎 {report.downvotes || 0}
-                </button>
-              </div>
             </div>
           ))}
 
