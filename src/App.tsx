@@ -9,8 +9,9 @@ import ReportScreen from "@/screens/ReportScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
+import SafeHavenScreen from "@/screens/SafeHavenScreen";
 
-type Screen = "login" | "signup" | "main";
+type Screen = "login" | "signup" | "main" | "safehaven";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -33,6 +34,8 @@ export default function App() {
         return <SignupScreen onSwitch={() => setScreen("login")} />;
       case "main":
         return renderMain();
+        case "safehaven":
+  return <SafeHavenScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -43,7 +46,7 @@ export default function App() {
       case "map":
         return <MapScreen />;
       case "nearby":
-        return <NearbyScreen />;
+  return <NearbyScreen onSafeHaven={() => setScreen("safehaven")} />;
       case "report":
         return <ReportScreen />;
       case "sos":

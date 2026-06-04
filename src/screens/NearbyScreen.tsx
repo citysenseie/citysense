@@ -1,7 +1,11 @@
 import { MapPin, Shield, Hospital, Car, Utensils, Moon } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 
-export default function NearbyScreen() {
+interface NearbyScreenProps {
+  onSafeHaven: () => void;
+}
+
+export default function NearbyScreen({ onSafeHaven }: NearbyScreenProps) {
   const { location } = useLocation();
 
   const lat = location?.latitude ?? 51.1857;
@@ -127,7 +131,7 @@ export default function NearbyScreen() {
       </p>
 
       <button
-        onClick={() => openNearby("police station OR hospital OR pharmacy OR hotel")}
+       onClick={onSafeHaven}
         className="w-full mb-5 bg-[#EF4444] text-white py-4 rounded-2xl font-bold shadow-lg"
       >
         🛡️ Find Safe Place Now
