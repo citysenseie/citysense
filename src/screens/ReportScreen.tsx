@@ -20,7 +20,7 @@ export default function ReportScreen() {
   const [reportType, setReportType] = useState<"safe" | "unsafe">("unsafe");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
+ const [severity] = useState<"low" | "medium" | "high">("medium");
 const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
