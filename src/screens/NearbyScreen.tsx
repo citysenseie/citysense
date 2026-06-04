@@ -16,36 +16,108 @@ export default function NearbyScreen() {
 
   const sections = [
     {
-      title: "Safe Haven",
-      icon: Shield,
-      items: ["Police station", "Hospital", "Pharmacy", "Hotel", "24 hour store", "Mosque"],
-    },
+  title: "🛡️ Safe Haven",
+  icon: Shield,
+  items: [
+    "🚓 Police Station",
+    "🏥 Hospital",
+    "💊 Pharmacy",
+    "🏨 Hotel",
+    "🛒 24 Hour Store",
+    "🕌 Mosque",
+  ],
+},
     {
-      title: "Emergency",
-      icon: Hospital,
-      items: ["Emergency room", "Fire station", "AED defibrillator", "Urgent care", "Women shelter"],
-    },
+    title: "🚨 Emergency",
+    icon: Hospital,
+    items: [
+      "🚑 Emergency Room",
+      "🔥 Fire Station",
+      "⚡ AED Defibrillator",
+      "🏥 Urgent Care",
+      "👩 Women's Shelter",
+    ],
+  },
+     {
+    title: "🕌 Muslim Friendly",
+    icon: MapPin,
+    items: [
+      "🕌 Mosque",
+      "🍽️ Halal Food",
+      "📖 Islamic Center",
+    ],
+  },
     {
-      title: "Muslim Friendly",
-      icon: MapPin,
-      items: ["Mosque", "Halal food", "Islamic center"],
-    },
+    title: "🚗 Driver Help",
+    icon: Car,
+    items: [
+      "⛽ Gas Station",
+      "🔌 EV Charger",
+      "🔧 Car Repair",
+      "🛞 Tire Shop",
+      "🅿️ Parking",
+    ],
+  },
+     {
+    title: "🍽️ Daily Essentials",
+    icon: Utensils,
+    items: [
+      "🛒 Grocery Store",
+      "🏧 ATM",
+      "🚻 Public Toilet",
+      "📶 Free Wi-Fi",
+      "📱 Phone Repair",
+    ],
+  },
     {
-      title: "Driver Help",
-      icon: Car,
-      items: ["Gas station", "EV charger", "Car repair", "Tire shop", "Parking"],
-    },
-    {
-      title: "Daily Essentials",
-      icon: Utensils,
-      items: ["Grocery store", "ATM", "Public toilet", "Free wifi", "Phone repair"],
-    },
-    {
-      title: "Night Mode",
-      icon: Moon,
-      items: ["Open pharmacy", "Open gas station", "Open hotel", "Open restaurant", "Police station"],
-    },
-  ];
+  title: "🌙 Night Mode",
+  icon: Moon,
+  items: [
+    "💊 Open Pharmacy",
+    "⛽ Open Gas Station",
+    "🏨 Open Hotel",
+    "🍔 Open Restaurant",
+    "🚓 Police Station",
+  ],
+},
+
+{
+  title: "👨‍👩‍👧 Family Safety",
+  icon: Shield,
+  items: [
+    "🛝 Playground",
+    "🌳 Park",
+    "🏫 School",
+    "🏊 Swimming Pool",
+    "⚽ Sports Center",
+    "🍽️ Family Restaurant",
+  ],
+},
+
+
+{
+  title: "🚨 Disaster & Emergency",
+  icon: Hospital,
+  items: [
+    "🚑 Ambulance",
+    "🔥 Fire Station",
+    "⚡ AED Defibrillator",
+    "🆘 Emergency Shelter",
+    "🌊 Flood Zone",
+  ],
+},
+
+{
+  title: "🕌 Prayer & Faith",
+  icon: MapPin,
+  items: [
+    "🕌 Mosque",
+    "📖 Islamic Center",
+    "🧭 Qibla Direction",
+    "🤲 Prayer Space",
+  ],
+},
+ ];
 
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
