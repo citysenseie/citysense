@@ -34,8 +34,8 @@ export default function App() {
         return <SignupScreen onSwitch={() => setScreen("login")} />;
       case "main":
         return renderMain();
-        case "safehaven":
-  return <SafeHavenScreen onBack={() => setScreen("main")} />;
+      case "safehaven":
+        return <SafeHavenScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -53,6 +53,7 @@ export default function App() {
         return <SOSScreen />;
       case "profile":
         return <ProfileScreen onLogin={() => setScreen("login")} />;
+      
       default:
         return <MapScreen />;
     }
