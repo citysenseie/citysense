@@ -7,11 +7,12 @@ import MapScreen from "@/screens/MapScreen";
 import NearbyScreen from "@/screens/NearbyScreen";
 import ReportScreen from "@/screens/ReportScreen";
 import SOSScreen from "@/screens/SOSScreen";
+import SafeHavenScreen from "@/screens/SafeHavenScreen";
+import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
-import SafeHavenScreen from "@/screens/SafeHavenScreen";
 
-type Screen = "login" | "signup" | "main" | "safehaven";
+type Screen = "login" | "signup" | "main" | "safehaven" | "drivermode";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -30,12 +31,19 @@ export default function App() {
     switch (screen) {
       case "login":
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
+
       case "signup":
         return <SignupScreen onSwitch={() => setScreen("login")} />;
+
       case "main":
         return renderMain();
+
       case "safehaven":
         return <SafeHavenScreen onBack={() => setScreen("main")} />;
+
+      case "drivermode":
+        return <DriverModeScreen onBack={() => setScreen("main")} />;
+
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -45,15 +53,24 @@ export default function App() {
     switch (activeTab) {
       case "map":
         return <MapScreen />;
+
       case "nearby":
-  return <NearbyScreen onSafeHaven={() => setScreen("safehaven")} />;
+        return (
+          <NearbyScreen
+            onSafeHaven={() => setScreen("safehaven")}
+            onDriverMode={() => setScreen("drivermode")}
+          />
+        );
+
       case "report":
         return <ReportScreen />;
+
       case "sos":
         return <SOSScreen />;
+
       case "profile":
         return <ProfileScreen onLogin={() => setScreen("login")} />;
-      
+
       default:
         return <MapScreen />;
     }
@@ -72,14 +89,9 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen bg-neutral-900 flex justify-center items-center p-0 md:p-4">
-      {/* Mobile Frame */}
       <div className="w-full max-w-[430px] h-[100dvh] md:h-[850px] bg-[#0F1E1E] rounded-none overflow-hidden shadow-2xl relative isolate flex flex-col">
-        {/* Content */}
-        <main className="flex-1 overflow-hidden">
-          {renderScreen()}
-        </main>
+        <main className="flex-1 overflow-hidden">{renderScreen()}</main>
 
-        {/* Bottom Navigation — only show on main screen */}
         {screen === "main" && (
           <BottomNav active={activeTab} onChange={setActiveTab} />
         )}

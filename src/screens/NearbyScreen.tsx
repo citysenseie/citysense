@@ -3,9 +3,10 @@ import { useLocation } from "@/hooks/useLocation";
 
 interface NearbyScreenProps {
   onSafeHaven: () => void;
+  onDriverMode: () => void;
 }
 
-export default function NearbyScreen({ onSafeHaven }: NearbyScreenProps) {
+export default function NearbyScreen({ onSafeHaven, onDriverMode }: NearbyScreenProps) {
   const { location } = useLocation();
 
   const lat = location?.latitude ?? 51.1857;
@@ -124,20 +125,28 @@ export default function NearbyScreen({ onSafeHaven }: NearbyScreenProps) {
  ];
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
-      <h1 className="text-2xl font-bold mb-1">Nearby Help</h1>
-      <p className="text-sm text-[#7BA3A1] mb-5">
-        Find safe places, emergency help, and daily essentials near you.
-      </p>
+  <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
+    <h1 className="text-2xl font-bold mb-1">Nearby Help</h1>
 
-      <button
-       onClick={onSafeHaven}
-        className="w-full mb-5 bg-[#EF4444] text-white py-4 rounded-2xl font-bold shadow-lg"
-      >
-        🛡️ Find Safe Place Now
-      </button>
+    <p className="text-sm text-[#7BA3A1] mb-5">
+      Find safe places, emergency help, and daily essentials near you.
+    </p>
 
-      <div className="space-y-4">
+    <button
+      onClick={onSafeHaven}
+      className="w-full mb-4 bg-[#EF4444] text-white py-4 rounded-2xl font-bold shadow-lg"
+    >
+      🛡️ Find Safe Place Now
+    </button>
+
+    <button
+      onClick={onDriverMode}
+      className="w-full mb-5 bg-[#3B82F6] text-white py-4 rounded-2xl font-bold shadow-lg"
+    >
+      🚗 Driver Mode
+    </button>
+
+    <div className="space-y-4">
         {sections.map((section) => {
           const Icon = section.icon;
 
