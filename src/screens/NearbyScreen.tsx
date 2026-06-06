@@ -12,6 +12,7 @@ export default function NearbyScreen({
   onSafeHaven,
   onDriverMode,
   onWalkMeHome,
+  onEmergencyNetwork,
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -158,6 +159,14 @@ export default function NearbyScreen({
     >
       🚶 Walk Me Home
     </button>
+    
+    <button
+  onClick={onEmergencyNetwork}
+  className="w-full mb-5 bg-[#DC2626] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  🚨 Emergency Network
+</button>
+
 
     <div className="space-y-4">
         {sections.map((section) => {
