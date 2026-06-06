@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import BottomNav, { type Tab } from "@/components/BottomNav";
@@ -8,12 +9,18 @@ import NearbyScreen from "@/screens/NearbyScreen";
 import ReportScreen from "@/screens/ReportScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import SafeHavenScreen from "@/screens/SafeHavenScreen";
+import WalkMeHomeScreen from "@/screens/WalkMeHomeScreen";
 import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
 
-type Screen = "login" | "signup" | "main" | "safehaven" | "drivermode";
-
+type Screen =
+  | "login"
+  | "signup"
+  | "main"
+  | "safehaven"
+  | "drivermode"
+  | "walkmehome";
 export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("login");
@@ -44,6 +51,9 @@ export default function App() {
       case "drivermode":
         return <DriverModeScreen onBack={() => setScreen("main")} />;
 
+      case "walkmehome":
+        return <WalkMeHomeScreen onBack={() => setScreen("main")} />;
+
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -59,6 +69,7 @@ export default function App() {
           <NearbyScreen
             onSafeHaven={() => setScreen("safehaven")}
             onDriverMode={() => setScreen("drivermode")}
+            onWalkMeHome={() => setScreen("walkmehome")}
           />
         );
 

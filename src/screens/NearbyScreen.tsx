@@ -4,9 +4,10 @@ import { useLocation } from "@/hooks/useLocation";
 interface NearbyScreenProps {
   onSafeHaven: () => void;
   onDriverMode: () => void;
+  onWalkMeHome: () => void;
 }
 
-export default function NearbyScreen({ onSafeHaven, onDriverMode }: NearbyScreenProps) {
+export default function NearbyScreen({ onSafeHaven, onDriverMode, onWalkMeHome }: NearbyScreenProps) {
   const { location } = useLocation();
 
   const lat = location?.latitude ?? 51.1857;
@@ -144,6 +145,13 @@ export default function NearbyScreen({ onSafeHaven, onDriverMode }: NearbyScreen
       className="w-full mb-5 bg-[#3B82F6] text-white py-4 rounded-2xl font-bold shadow-lg"
     >
       🚗 Driver Mode
+    </button>
+
+    <button
+      onClick={onWalkMeHome}
+      className="w-full mb-5 bg-[#10B981] text-white py-4 rounded-2xl font-bold shadow-lg"
+    >
+      🚶 Walk Me Home
     </button>
 
     <div className="space-y-4">
