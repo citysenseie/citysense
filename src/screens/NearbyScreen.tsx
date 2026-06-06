@@ -5,9 +5,14 @@ interface NearbyScreenProps {
   onSafeHaven: () => void;
   onDriverMode: () => void;
   onWalkMeHome: () => void;
+   onEmergencyNetwork: () => void;
 }
 
-export default function NearbyScreen({ onSafeHaven, onDriverMode, onWalkMeHome }: NearbyScreenProps) {
+export default function NearbyScreen({
+  onSafeHaven,
+  onDriverMode,
+  onWalkMeHome,
+}: NearbyScreenProps) {
   const { location } = useLocation();
 
   const lat = location?.latitude ?? 51.1857;
