@@ -5,13 +5,15 @@ interface NearbyScreenProps {
   onSafeHaven: () => void;
   onDriverMode: () => void;
   onWalkMeHome: () => void;
-   onEmergencyNetwork: () => void;
+  onParkProtect: () => void;
+  onEmergencyNetwork: () => void;
 }
 
 export default function NearbyScreen({
   onSafeHaven,
   onDriverMode,
   onWalkMeHome,
+  onParkProtect,
   onEmergencyNetwork,
 }: NearbyScreenProps) {
   const { location } = useLocation();
@@ -166,7 +168,12 @@ export default function NearbyScreen({
 >
   🚨 Emergency Network
 </button>
-
+<button
+  onClick={onParkProtect}
+  className="w-full mb-5 bg-[#2563EB] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  🅿️ Park & Protect
+</button>
 
     <div className="space-y-4">
         {sections.map((section) => {

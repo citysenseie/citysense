@@ -9,6 +9,7 @@ import NearbyScreen from "@/screens/NearbyScreen";
 import ReportScreen from "@/screens/ReportScreen";
 import SOSScreen from "@/screens/SOSScreen";
 import EmergencyNetworkScreen from "@/screens/EmergencyNetworkScreen";
+import ParkProtectScreen from "@/screens/ParkProtectScreen";
 import SafeHavenScreen from "@/screens/SafeHavenScreen";
 import WalkMeHomeScreen from "@/screens/WalkMeHomeScreen";
 import DriverModeScreen from "@/screens/DriverModeScreen";
@@ -22,8 +23,9 @@ type Screen =
   | "safehaven"
   | "drivermode"
   | "walkmehome"
-  | "emergencynetwork";
-  
+  | "emergencynetwork"
+  | "parkprotect";
+
 export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("login");
@@ -60,6 +62,9 @@ export default function App() {
       case "emergencynetwork":
         return <EmergencyNetworkScreen onBack={() => setScreen("main")} />;
 
+      case "parkprotect":
+        return <ParkProtectScreen onBack={() => setScreen("main")} />;
+
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -77,6 +82,7 @@ export default function App() {
             onDriverMode={() => setScreen("drivermode")}
             onWalkMeHome={() => setScreen("walkmehome")}
             onEmergencyNetwork={() => setScreen("emergencynetwork")}
+            onParkProtect={() => setScreen("parkprotect")}
           />
         );
 
