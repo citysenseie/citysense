@@ -1,3 +1,5 @@
+import { useLocation } from "@/hooks/useLocation";
+
 interface ParkProtectScreenProps {
   onBack: () => void;
 }
@@ -5,12 +7,21 @@ interface ParkProtectScreenProps {
 export default function ParkProtectScreen({
   onBack,
 }: ParkProtectScreenProps) {
+  const { location } = useLocation();
+
+  const lat = location?.latitude ?? 51.1857;
+  const lng = location?.longitude ?? 3.5701;
+
+  const openNearby = (query: string) => {
+    window.open(
+      `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${lat},${lng},15z`,
+      "_blank"
+    );
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
-      <button
-        onClick={onBack}
-        className="text-sm text-[#E8A838] mb-4"
-      >
+      <button onClick={onBack} className="text-sm text-[#E8A838] mb-4">
         ← Back
       </button>
 
@@ -18,10 +29,39 @@ export default function ParkProtectScreen({
         <h1 className="text-xl font-bold text-white mb-2">
           🅿️ Park & Protect
         </h1>
-
         <p className="text-sm text-[#BFDBFE]">
-          Check parking safety and report incidents.
+          Find safer parking and report parking-related risks.
         </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <button
+          onClick={() => openNearby("parking")}
+          className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
+        >
+          🅿️ Find Parking
+        </button>
+
+        <button
+          onClick={() => openNearby("well lit parking")}
+          className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
+        >
+          💡 Well-Lit Parking
+        </button>
+
+        <button
+          onClick={() => openNearby("secure parking")}
+          className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
+        >
+          🛡️ Secure Parking
+        </button>
+
+        <button
+          onClick={() => openNearby("covered parking")}
+          className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
+        >
+          🏢 Covered Parking
+        </button>
       </div>
 
       <div className="space-y-3">
@@ -35,20 +75,20 @@ export default function ParkProtectScreen({
         <div className="bg-[#78350F] rounded-2xl p-4">
           <h2 className="font-bold">🟡 Medium Risk</h2>
           <p className="text-sm opacity-80">
-            Limited activity or lighting.
+            Limited activity or lighting. Stay aware.
           </p>
         </div>
 
         <div className="bg-[#7F1D1D] rounded-2xl p-4">
           <h2 className="font-bold">🔴 High Risk</h2>
           <p className="text-sm opacity-80">
-            Community-reported incidents nearby.
+            Avoid parking here if incidents are reported nearby.
           </p>
         </div>
       </div>
 
       <div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4">
-        <h2 className="font-bold mb-2">Future Features</h2>
+        <h2 className="font-bold mb-2">Future Intelligence</h2>
 
         <ul className="space-y-2 text-sm text-[#7BA3A1]">
           <li>💡 Lighting score</li>
