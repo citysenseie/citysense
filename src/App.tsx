@@ -1,3 +1,4 @@
+import WomensSafetyScreen from "@/screens/WomensSafetyScreen";
 import RoadHazardScreen from "@/screens/RoadHazardScreen";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +26,8 @@ type Screen =
   | "walkmehome"
   | "emergencynetwork"
   | "parkprotect"
-  | "roadhazard";
+  | "roadhazard"
+  | "womenssafety";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -68,7 +70,8 @@ export default function App() {
 
       case "roadhazard":
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
-
+      case "womenssafety":
+        return <WomensSafetyScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -88,6 +91,7 @@ export default function App() {
             onEmergencyNetwork={() => setScreen("emergencynetwork")}
             onParkProtect={() => setScreen("parkprotect")}
             onRoadHazard={() => setScreen("roadhazard")}
+            onWomensSafety={() => setScreen("womenssafety")}
           />
         );
 
