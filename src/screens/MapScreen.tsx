@@ -560,7 +560,7 @@ const aiSummary =
 </button>
 </div>
 {location && (
-  <div className="absolute bottom-4 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
+  <div className="absolute bottom-12 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
     <div className="flex items-center gap-1.5">
       <MapPin className="w-3 h-3 text-[#E8A838]" />
       <p className="text-xs text-[#F5F3EF] truncate">{location.address}</p>
@@ -568,7 +568,7 @@ const aiSummary =
   </div>
 )}
 
-<div className="absolute bottom-4 left-[220px] z-50">
+<div className="absolute bottom-32 left-4 z-50">
   <div className="px-2 py-1 rounded-lg text-[9px] font-bold shadow-xl border bg-[#2A0F0F] text-[#EF4444] border-[#EF444460]">
     ALERT MODE
   </div>
@@ -579,7 +579,7 @@ const aiSummary =
     console.log("PLUS CLICKED");
     setShowReportModal(true);
   }}
-  className="absolute bottom-4 right-20 w-12 h-12 bg-[#EF4444] rounded-full flex items-center justify-center shadow-lg shadow-[#EF444430] text-white text-2xl font-bold active:scale-95 transition-transform z-50"
+  className="absolute bottom-12 right-20 w-12 h-12 bg-[#EF4444] rounded-full flex items-center justify-center shadow-lg shadow-[#EF444430] text-white text-2xl font-bold active:scale-95 transition-transform z-50"
 >
   +
 </button>
@@ -754,53 +754,53 @@ const aiSummary =
                   ).toFixed(1)}{" "}
                   km away
                 </p>
-<p className="text-[10px] text-[#7BA3A1]">
-  Fresh • {getTimeAgo(report.timestamp)}
-</p>
-{getTimeRemaining(report) !== "0 min" && (
-  <p className="text-[9px] text-[#E8A838]">
-    Expires in {getTimeRemaining(report)}
-  </p>
-)}
+                <p className="text-[10px] text-[#7BA3A1]">
+                  Fresh • {getTimeAgo(report.timestamp)}
+                </p>
+                {getTimeRemaining(report) !== "0 min" && (
+                  <p className="text-[9px] text-[#E8A838]">
+                    Expires in {getTimeRemaining(report)}
+                  </p>
+                )}
 
-<p
-  className={`text-[10px] font-bold ${
-    report.severity === "high"
-      ? "text-[#EF4444]"
-      : report.severity === "medium"
-      ? "text-[#F97316]"
-      : "text-[#E8A838]"
-  }`}
->
-  Severity: {report.severity?.toUpperCase()}
-</p>
+                <p
+                  className={`text-[10px] font-bold ${
+                    report.severity === "high"
+                      ? "text-[#EF4444]"
+                      : report.severity === "medium"
+                      ? "text-[#F97316]"
+                      : "text-[#E8A838]"
+                  }`}
+                >
+                  Severity: {report.severity?.toUpperCase()}
+                </p>
+                <p className="text-[9px] text-[#7BA3A1]">
+                  {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
+                </p>
+                <div>
+                  <p className="text-[9px] text-[#E8A838]">
+                    Source: CitySense user
+                  </p>
+
+                  <p className="text-[9px] text-[#E8A838] mt-1">
+                    📷 Photo available
+                  </p>
+                </div>
               </div>
-              <p className="text-[9px] text-[#7BA3A1]">
-  {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
-</p>
-<div>
-  <p className="text-[9px] text-[#E8A838]">
-    Source: CitySense user
-  </p>
-
- <p className="text-[9px] text-[#E8A838] mt-1">
-  📷 Photo available
-</p>
-</div>
-<div className="flex flex-col gap-1 mr-2">
-  <button
-    onClick={() => handleVote(report.id!, "upvotes")}
-    className="text-[10px] text-[#4ADE80] font-semibold"
-  >
-    👍 {report.upvotes || 0}
-  </button>
-  <button
-    onClick={() => handleVote(report.id!, "downvotes")}
-    className="text-[10px] text-[#EF4444] font-semibold"
-  >
-    👎 {report.downvotes || 0}
-  </button>
-</div>
+              <div className="flex flex-col gap-1 mr-2">
+                <button
+                  onClick={() => handleVote(report.id!, "upvotes")}
+                  className="text-[10px] text-[#4ADE80] font-semibold"
+                >
+                  👍 {report.upvotes || 0}
+                </button>
+                <button
+                  onClick={() => handleVote(report.id!, "downvotes")}
+                  className="text-[10px] text-[#EF4444] font-semibold"
+                >
+                  👎 {report.downvotes || 0}
+                </button>
+              </div>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   report.type === "safe"
