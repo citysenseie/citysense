@@ -1,4 +1,4 @@
-
+import RoadHazardScreen from "@/screens/RoadHazardScreen";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import BottomNav, { type Tab } from "@/components/BottomNav";
@@ -24,7 +24,8 @@ type Screen =
   | "drivermode"
   | "walkmehome"
   | "emergencynetwork"
-  | "parkprotect";
+  | "parkprotect"
+  | "roadhazard";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -65,6 +66,9 @@ export default function App() {
       case "parkprotect":
         return <ParkProtectScreen onBack={() => setScreen("main")} />;
 
+      case "roadhazard":
+        return <RoadHazardScreen onBack={() => setScreen("main")} />;
+
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -83,6 +87,7 @@ export default function App() {
             onWalkMeHome={() => setScreen("walkmehome")}
             onEmergencyNetwork={() => setScreen("emergencynetwork")}
             onParkProtect={() => setScreen("parkprotect")}
+            onRoadHazard={() => setScreen("roadhazard")}
           />
         );
 
