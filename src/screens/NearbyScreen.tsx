@@ -9,6 +9,8 @@ interface NearbyScreenProps {
   onEmergencyNetwork: () => void;
   onRoadHazard: () => void;
   onWomensSafety: () => void;
+  onChildSafety: () => void;
+  onLiveLocation: () => void;
 }
 
 
@@ -20,6 +22,8 @@ export default function NearbyScreen({
   onEmergencyNetwork,
   onRoadHazard,
   onWomensSafety,
+  onChildSafety,
+  onLiveLocation,
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -166,6 +170,13 @@ export default function NearbyScreen({
     >
       🚶 Walk Me Home
     </button>
+
+    <button
+      onClick={onLiveLocation}
+      className="w-full mb-5 bg-[#F59E0B] text-white py-4 rounded-2xl font-bold shadow-lg"
+    >
+      📍 Live Location
+    </button>
     
     <button
   onClick={onEmergencyNetwork}
@@ -190,6 +201,12 @@ export default function NearbyScreen({
   className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
 >
   👩 Women’s Safety
+</button>
+<button
+  onClick={onChildSafety}
+  className="w-full mb-5 bg-[#06B6D4] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  👶 Child Safety
 </button>
     <div className="space-y-4">
         {sections.map((section) => {

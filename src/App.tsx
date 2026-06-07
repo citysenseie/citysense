@@ -1,3 +1,5 @@
+import LiveLocationScreen from "@/screens/LiveLocationScreen";
+import ChildSafetyScreen from "@/screens/ChildSafetyScreen";
 import WomensSafetyScreen from "@/screens/WomensSafetyScreen";
 import RoadHazardScreen from "@/screens/RoadHazardScreen";
 import { useState, useEffect } from "react";
@@ -21,13 +23,15 @@ type Screen =
   | "login"
   | "signup"
   | "main"
+  | "livelocation"
   | "safehaven"
   | "drivermode"
   | "walkmehome"
   | "emergencynetwork"
   | "parkprotect"
   | "roadhazard"
-  | "womenssafety";
+  | "womenssafety"
+  | "childsafety";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -53,6 +57,9 @@ export default function App() {
       case "main":
         return renderMain();
 
+      case "livelocation":
+        return <LiveLocationScreen onBack={() => setScreen("main")} />;
+
       case "safehaven":
         return <SafeHavenScreen onBack={() => setScreen("main")} />;
 
@@ -72,6 +79,10 @@ export default function App() {
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
       case "womenssafety":
         return <WomensSafetyScreen onBack={() => setScreen("main")} />;
+      case "childsafety":
+        return <ChildSafetyScreen onBack={() => setScreen("main")} />;
+      case "livelocation":
+        return <LiveLocationScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -92,6 +103,8 @@ export default function App() {
             onParkProtect={() => setScreen("parkprotect")}
             onRoadHazard={() => setScreen("roadhazard")}
             onWomensSafety={() => setScreen("womenssafety")}
+            onChildSafety={() => setScreen("childsafety")}
+            onLiveLocation={() => setScreen("livelocation")}
           />
         );
 
