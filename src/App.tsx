@@ -1,3 +1,4 @@
+import NightModeScreen from "@/screens/NightModeScreen";
 import LiveLocationScreen from "@/screens/LiveLocationScreen";
 import ChildSafetyScreen from "@/screens/ChildSafetyScreen";
 import WomensSafetyScreen from "@/screens/WomensSafetyScreen";
@@ -31,7 +32,8 @@ type Screen =
   | "parkprotect"
   | "roadhazard"
   | "womenssafety"
-  | "childsafety";
+  | "childsafety"
+  | "nightmode";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -83,6 +85,8 @@ export default function App() {
         return <ChildSafetyScreen onBack={() => setScreen("main")} />;
       case "livelocation":
         return <LiveLocationScreen onBack={() => setScreen("main")} />;
+      case "nightmode":
+        return <NightModeScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -105,6 +109,7 @@ export default function App() {
             onWomensSafety={() => setScreen("womenssafety")}
             onChildSafety={() => setScreen("childsafety")}
             onLiveLocation={() => setScreen("livelocation")}
+            onNightMode={() => setScreen("nightmode")}
           />
         );
 

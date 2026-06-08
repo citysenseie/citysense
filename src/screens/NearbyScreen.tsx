@@ -11,6 +11,7 @@ interface NearbyScreenProps {
   onWomensSafety: () => void;
   onChildSafety: () => void;
   onLiveLocation: () => void;
+  onNightMode: () => void;
 }
 
 
@@ -24,6 +25,7 @@ export default function NearbyScreen({
   onWomensSafety,
   onChildSafety,
   onLiveLocation,
+  onNightMode,
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -207,6 +209,12 @@ export default function NearbyScreen({
   className="w-full mb-5 bg-[#06B6D4] text-white py-4 rounded-2xl font-bold shadow-lg"
 >
   👶 Child Safety
+</button>
+<button
+  onClick={onNightMode}
+  className="w-full mb-5 bg-[#1E293B] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  🌙 Night Mode
 </button>
     <div className="space-y-4">
         {sections.map((section) => {
