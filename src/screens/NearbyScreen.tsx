@@ -151,7 +151,11 @@ export default function NearbyScreen({
     <p className="text-sm text-[#7BA3A1] mb-5">
       Find safe places, emergency help, and daily essentials near you.
     </p>
-
+<div className="mb-3">
+  <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
+    Featured Safety Tools
+  </p>
+</div>
     <button
       onClick={onSafeHaven}
       className="w-full mb-4 bg-[#EF4444] text-white py-4 rounded-2xl font-bold shadow-lg"
@@ -216,6 +220,11 @@ export default function NearbyScreen({
 >
   🌙 Night Mode
 </button>
+<div className="mt-2 mb-3">
+  <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
+    Nearby Categories
+  </p>
+</div>
     <div className="space-y-4">
         {sections.map((section) => {
           const Icon = section.icon;
