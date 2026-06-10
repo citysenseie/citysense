@@ -82,7 +82,12 @@ export default function App() {
       case "roadhazard":
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
       case "womenssafety":
-        return <WomensSafetyScreen onBack={() => setScreen("main")} />;
+        return (
+          <WomensSafetyScreen
+            onBack={() => setScreen("main")}
+            onWalkMeHome={() => setScreen("walkmehome")}
+          />
+        );
       case "childsafety":
         return <ChildSafetyScreen onBack={() => setScreen("main")} />;
       case "livelocation":

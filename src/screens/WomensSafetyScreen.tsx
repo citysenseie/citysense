@@ -2,10 +2,12 @@ import { useLocation } from "@/hooks/useLocation";
 
 interface WomensSafetyScreenProps {
   onBack: () => void;
+  onWalkMeHome: () => void;
 }
 
 export default function WomensSafetyScreen({
   onBack,
+  onWalkMeHome,
 }: WomensSafetyScreenProps) {
   const { location } = useLocation();
 
@@ -58,7 +60,7 @@ export default function WomensSafetyScreen({
         </button>
 
         <button
-          onClick={() => openNearby("safe route")}
+          onClick={onWalkMeHome}
           className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
         >
           👣 Walk Me Home
