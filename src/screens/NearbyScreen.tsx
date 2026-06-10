@@ -12,6 +12,7 @@ interface NearbyScreenProps {
   onChildSafety: () => void;
   onLiveLocation: () => void;
   onNightMode: () => void;
+  onCrowdSense: () => void;
 }
 
 
@@ -26,6 +27,7 @@ export default function NearbyScreen({
   onChildSafety,
   onLiveLocation,
   onNightMode,
+  onCrowdSense
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -144,6 +146,8 @@ export default function NearbyScreen({
 },
  ];
 
+  // onCrowdSense is received via props
+
   return (
   <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
     <h1 className="text-2xl font-bold mb-1">Nearby Help</h1>
@@ -220,6 +224,13 @@ export default function NearbyScreen({
 >
   🌙 Night Mode
 </button>
+<button
+  onClick={onCrowdSense}
+  className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  🌐 Crowd Sense
+</button>
+
 <div className="mt-2 mb-3">
   <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
     Nearby Categories

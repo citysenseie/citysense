@@ -19,6 +19,7 @@ import WalkMeHomeScreen from "@/screens/WalkMeHomeScreen";
 import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
+import CrowdSenseScreen from "./screens/CrowdSenseScreen";
 
 type Screen =
   | "login"
@@ -33,7 +34,8 @@ type Screen =
   | "roadhazard"
   | "womenssafety"
   | "childsafety"
-  | "nightmode";
+  | "nightmode"
+  | "crowdsense";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -87,6 +89,8 @@ export default function App() {
         return <LiveLocationScreen onBack={() => setScreen("main")} />;
       case "nightmode":
         return <NightModeScreen onBack={() => setScreen("main")} />;
+      case "crowdsense":
+        return <CrowdSenseScreen onBack={() => setScreen("main")} />;
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -110,6 +114,7 @@ export default function App() {
             onChildSafety={() => setScreen("childsafety")}
             onLiveLocation={() => setScreen("livelocation")}
             onNightMode={() => setScreen("nightmode")}
+            onCrowdSense={() => setScreen("crowdsense")}
           />
         );
 
