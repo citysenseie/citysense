@@ -1,18 +1,32 @@
-import { useLocation } from "@/hooks/useLocation";
+import { useEffect, useState } from "react";
 
 interface WomensSafetyScreenProps {
   onBack: () => void;
   onWalkMeHome: () => void;
+  onSafeSpaces: () => void;
 }
 
 export default function WomensSafetyScreen({
   onBack,
   onWalkMeHome,
+  onSafeSpaces,
 }: WomensSafetyScreenProps) {
-  const { location } = useLocation();
+  const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null);
 
-  const lat = location?.latitude ?? 51.1857;
-  const lng = location?.longitude ?? 3.5701;
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setPosition({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      }),
+      () => undefined
+    );
+  }, []);
+
+  const lat = position?.latitude ?? 51.1857;
+  const lng = position?.longitude ?? 3.5701;
 
   const openNearby = (query: string) => {
     window.open(
@@ -39,7 +53,7 @@ export default function WomensSafetyScreen({
 
       <div className="grid grid-cols-2 gap-3 mb-5">
         <button
-          onClick={() => openNearby("safe place")}
+          onClick={onSafeSpaces}
           className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
         >
           🛡️ Safe Spaces

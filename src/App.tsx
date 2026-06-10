@@ -20,6 +20,7 @@ import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
 import CrowdSenseScreen from "./screens/CrowdSenseScreen";
+import SafeSpacesScreen from "@/screens/SafeSpacesScreen";
 
 type Screen =
   | "login"
@@ -35,7 +36,8 @@ type Screen =
   | "womenssafety"
   | "childsafety"
   | "nightmode"
-  | "crowdsense";
+  | "crowdsense"
+  | "safespaces";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -83,19 +85,25 @@ export default function App() {
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
       case "womenssafety":
         return (
-          <WomensSafetyScreen
-            onBack={() => setScreen("main")}
-            onWalkMeHome={() => setScreen("walkmehome")}
-          />
+         <WomensSafetyScreen
+  onBack={() => setScreen("main")}
+  onWalkMeHome={() => setScreen("walkmehome")}
+  onSafeSpaces={() => setScreen("safespaces")}
+/>
         );
+      case "safespaces":
+        return <SafeSpacesScreen onBack={() => setScreen("main")} />;
       case "childsafety":
         return <ChildSafetyScreen onBack={() => setScreen("main")} />;
       case "livelocation":
         return <LiveLocationScreen onBack={() => setScreen("main")} />;
       case "nightmode":
         return <NightModeScreen onBack={() => setScreen("main")} />;
+        case "safespaces":
+          return <SafeSpacesScreen onBack={() => setScreen("main")} />;
       case "crowdsense":
         return <CrowdSenseScreen onBack={() => setScreen("main")} />;
+  
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
