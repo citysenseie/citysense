@@ -95,12 +95,8 @@ export default function App() {
         return <SafeSpacesScreen onBack={() => setScreen("main")} />;
       case "childsafety":
         return <ChildSafetyScreen onBack={() => setScreen("main")} />;
-      case "livelocation":
-        return <LiveLocationScreen onBack={() => setScreen("main")} />;
       case "nightmode":
         return <NightModeScreen onBack={() => setScreen("main")} />;
-        case "safespaces":
-          return <SafeSpacesScreen onBack={() => setScreen("main")} />;
       case "crowdsense":
         return <CrowdSenseScreen onBack={() => setScreen("main")} />;
   

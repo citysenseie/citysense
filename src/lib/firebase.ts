@@ -10,9 +10,10 @@ import {
   serverTimestamp,
   GeoPoint,
   Timestamp,
-  doc,
-updateDoc,
-increment,
+    doc,
+  updateDoc,
+  increment,
+  deleteDoc,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 const firebaseConfig = {
@@ -29,6 +30,17 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-export { collection, addDoc, getDocs, query, orderBy, serverTimestamp, GeoPoint, Timestamp, doc,
-updateDoc,
-increment,};
+export {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  serverTimestamp,
+  GeoPoint,
+  Timestamp,
+  doc,
+  updateDoc,
+  increment,
+  deleteDoc,
+};
