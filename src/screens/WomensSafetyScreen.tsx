@@ -4,6 +4,7 @@ interface WomensSafetyScreenProps {
   onBack: () => void;
   onWalkMeHome: () => void;
   onSafeSpaces: () => void;
+  onTrustedContacts: () => void;
 }
 
 export default function WomensSafetyScreen({

@@ -13,6 +13,7 @@ interface NearbyScreenProps {
   onLiveLocation: () => void;
   onNightMode: () => void;
   onCrowdSense: () => void;
+  onTrustedContacts: () => void;
 }
 
 
@@ -27,7 +28,8 @@ export default function NearbyScreen({
   onChildSafety,
   onLiveLocation,
   onNightMode,
-  onCrowdSense
+  onCrowdSense,
+  onTrustedContacts,
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -229,6 +231,12 @@ export default function NearbyScreen({
   className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
 >
   🌐 Crowd Sense
+</button>
+<button
+  onClick={onTrustedContacts}
+  className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
+>
+  🕒 Trusted Contacts
 </button>
 
 <div className="mt-2 mb-3">

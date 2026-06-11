@@ -1,3 +1,4 @@
+import TrustedContactsScreen from "@/screens/TrustedContactsScreen";
 import NightModeScreen from "@/screens/NightModeScreen";
 import LiveLocationScreen from "@/screens/LiveLocationScreen";
 import ChildSafetyScreen from "@/screens/ChildSafetyScreen";
@@ -37,7 +38,8 @@ type Screen =
   | "childsafety"
   | "nightmode"
   | "crowdsense"
-  | "safespaces";
+  | "safespaces"
+  | "trustedcontacts";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -80,15 +82,18 @@ export default function App() {
 
       case "parkprotect":
         return <ParkProtectScreen onBack={() => setScreen("main")} />;
+        case "trustedcontacts":
+  return <TrustedContactsScreen onBack={() => setScreen("main")} />;
 
       case "roadhazard":
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
       case "womenssafety":
         return (
-         <WomensSafetyScreen
+          <WomensSafetyScreen
   onBack={() => setScreen("main")}
   onWalkMeHome={() => setScreen("walkmehome")}
   onSafeSpaces={() => setScreen("safespaces")}
+  onTrustedContacts={() => setScreen("trustedcontacts")}
 />
         );
       case "safespaces":
@@ -124,6 +129,7 @@ export default function App() {
             onLiveLocation={() => setScreen("livelocation")}
             onNightMode={() => setScreen("nightmode")}
             onCrowdSense={() => setScreen("crowdsense")}
+            onTrustedContacts={() => setScreen("trustedcontacts")}
           />
         );
 
