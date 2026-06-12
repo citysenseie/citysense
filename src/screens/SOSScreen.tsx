@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { auth, db, collection, getDocs } from "@/lib/firebase";
 import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
@@ -8,11 +9,6 @@ interface EmergencyContact {
   phone: string;
 }
 
-const DEFAULT_CONTACTS: EmergencyContact[] = [
-  { id: "1", name: "Emergency Services", phone: "911" },
-  { id: "2", name: "Campus Security", phone: "(555) 123-4567" },
-];
-
 export default function SOSScreen() {
   const { location } = useLocation();
   const { submitReport } = useReports();
@@ -21,6 +17,37 @@ export default function SOSScreen() {
   const [timerActive, setTimerActive] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(300);
   const [sirenOn, setSirenOn] = useState(false);
+const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+const loadTrustedContacts = async () => {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  try {
+    const contactsRef = collection(
+      db,
+      "users",
+      user.uid,
+      "trustedContacts"
+    );
+
+    const snapshot = await getDocs(contactsRef);
+
+    const loadedContacts: EmergencyContact[] =
+      snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        phone: doc.data().phone,
+      }));
+
+    setContacts(loadedContacts);
+  } catch (error) {
+    console.error(error);
+  }
+};
+  useEffect(() => {
+    loadTrustedContacts();
+  }, []);
 
   useEffect(() => {
     if (!activated) return;
@@ -194,7 +221,7 @@ const handleSOSActivate = async () => {
         {/* Emergency Contacts */}
         <p className="text-sm font-bold text-[#F5F3EF] mt-6 mb-3">Emergency Contacts</p>
         <div className="space-y-2">
-          {DEFAULT_CONTACTS.map((contact) => (
+         {contacts.map((contact) => (
             <a
               key={contact.id}
               href={`tel:${contact.phone}`}
