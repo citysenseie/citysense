@@ -18,7 +18,7 @@ export default function WalkMeHomeScreen({
   const [destination, setDestination] = useState("");
   const [walkStarted, setWalkStarted] = useState(false);
   const [emergencyTriggered, setEmergencyTriggered] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(20); // testing
+  const [timeLeft, setTimeLeft] = useState(300);
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function WalkMeHomeScreen({
                 return;
               }
 
-              setTimeLeft(20);
+              setTimeLeft(300);
               setEmergencyTriggered(false);
               setWalkStarted(true);
             }}
