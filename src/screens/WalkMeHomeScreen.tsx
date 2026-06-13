@@ -17,6 +17,7 @@ export default function WalkMeHomeScreen({
 }: WalkMeHomeScreenProps) {
   const [destination, setDestination] = useState("");
   const [walkStarted, setWalkStarted] = useState(false);
+  const [emergencyTriggered, setEmergencyTriggered] = useState(false);
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
 
   const loadContacts = async () => {
@@ -88,6 +89,17 @@ export default function WalkMeHomeScreen({
         </>
       ) : (
         <div className="space-y-4">
+          {emergencyTriggered && (
+  <div className="bg-[#7F1D1D] border border-[#EF4444] rounded-2xl p-4">
+    <h2 className="font-bold text-white">
+      🚨 Emergency Escalation Triggered
+    </h2>
+
+    <p className="text-sm text-[#FCA5A5] mt-2">
+      Trusted contacts are ready to receive an emergency alert.
+    </p>
+  </div>
+)}
           <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
             <p className="text-xs text-[#7BA3A1] mb-1">Walking to</p>
             <h2 className="text-lg font-bold">{destination}</h2>
@@ -98,7 +110,9 @@ export default function WalkMeHomeScreen({
 
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
-            <p className="text-3xl font-bold text-[#22C55E]">5:00</p>
+           <p className="text-3xl font-bold text-[#22C55E]">
+  {emergencyTriggered ? "00:00" : "05:00"}
+</p>
             <p className="text-xs text-[#7BA3A1] mt-2">
               Check in when you arrive or if you feel safe.
             </p>
@@ -125,6 +139,32 @@ export default function WalkMeHomeScreen({
             }}
             className="w-full bg-[#EF4444] text-white font-bold py-4 rounded-2xl"
           >
+            <button
+  onClick={() => {
+    setEmergencyTriggered(true);
+    alert(
+      `Safety timer expired. Emergency prepared for ${contacts.length} trusted contact${
+        contacts.length > 1 ? "s" : ""
+      }.`
+    );
+  }}
+  className="w-full bg-[#E8A838] text-black font-bold py-4 rounded-2xl"
+>
+  ⏱ Simulate Missed Check-In
+  <button
+  onClick={() => {
+    setEmergencyTriggered(true);
+    alert(
+      `Safety timer expired. Emergency prepared for ${contacts.length} trusted contact${
+        contacts.length > 1 ? "s" : ""
+      }.`
+    );
+  }}
+  className="w-full bg-[#E8A838] text-black font-bold py-4 rounded-2xl"
+>
+  ⏱ Simulate Missed Check-In
+</button>
+</button>
             🚨 Send Alert
           </button>
 
