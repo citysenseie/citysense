@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { auth, db, collection, getDocs } from "@/lib/firebase";
 import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
@@ -18,27 +19,20 @@ export default function SOSScreen() {
   const [timerSeconds, setTimerSeconds] = useState(300);
   const [sirenOn, setSirenOn] = useState(false);
 const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+
 const loadTrustedContacts = async () => {
   const user = auth.currentUser;
-
   if (!user) return;
 
   try {
-    const contactsRef = collection(
-      db,
-      "users",
-      user.uid,
-      "trustedContacts"
-    );
-
+    const contactsRef = collection(db, "users", user.uid, "trustedContacts");
     const snapshot = await getDocs(contactsRef);
 
-    const loadedContacts: EmergencyContact[] =
-      snapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        phone: doc.data().phone,
-      }));
+    const loadedContacts: EmergencyContact[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      name: (doc.data() as any).name,
+      phone: (doc.data() as any).phone,
+    }));
 
     setContacts(loadedContacts);
   } catch (error) {

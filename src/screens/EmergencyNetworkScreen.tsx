@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { MapPin, Phone, Users, ShieldCheck } from "lucide-react";
-import { auth, db, collection, getDocs } from "@/lib/firebase";
+import {
+  auth,
+  db,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "@/lib/firebase";
 
+import { useLocation } from "@/hooks/useLocation";
 interface EmergencyNetworkScreenProps {
   onBack: () => void;
 }
@@ -18,7 +26,8 @@ export default function EmergencyNetworkScreen({
 }: EmergencyNetworkScreenProps) {
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [activeAlert, setActiveAlert] = useState<any>(null);
+  const { location } = useLocation();
   const loadContacts = async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -42,19 +51,55 @@ export default function EmergencyNetworkScreen({
     }
   };
 
-  const sendEmergencyAlert = () => {
-    if (contacts.length === 0) {
-      alert("No trusted contacts found. Add trusted contacts first.");
-      return;
-    }
+  const sendEmergencyAlert = async () => {
+  const user = auth.currentUser;
 
-    alert(
-      `Emergency alert prepared for ${contacts.length} trusted contact${
-        contacts.length > 1 ? "s" : ""
-      }.`
-    );
-  };
+  if (!user) {
+    alert("Please log in first.");
+    return;
+  }
 
+  if (contacts.length === 0) {
+    alert("No trusted contacts found.");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "emergencyAlerts"), {
+      userId: user.uid,
+      status: "active",
+
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
+      address: location?.address ?? "Unknown location",
+
+      contactCount: contacts.length,
+
+      contacts: contacts.map((c) => ({
+        name: c.name,
+        phone: c.phone,
+        relationship: c.relationship,
+      })),
+
+      createdAt: serverTimestamp(),
+    });
+
+   setActiveAlert({
+  status: "ACTIVE",
+  address: location?.address ?? "Unknown location",
+  contacts: contacts.length,
+  createdAt: new Date().toLocaleString(),
+});
+  } catch (error: any) {
+  console.error(error);
+
+  alert(
+    `Failed to create emergency alert:\n\n${
+      error?.message || "Unknown error"
+    }`
+  );
+}
+};
   useEffect(() => {
     loadContacts();
   }, []);
@@ -75,6 +120,41 @@ export default function EmergencyNetworkScreen({
         </p>
       </div>
 
+{activeAlert && (
+  <div className="bg-[#7F1D1D] border border-[#EF4444] rounded-2xl p-4 mb-5">
+    <h2 className="text-lg font-bold text-white mb-3">
+      🚨 ACTIVE EMERGENCY
+    </h2>
+
+    <div className="space-y-2 text-sm">
+      <p>
+        <strong>Status:</strong> {activeAlert.status}
+      </p>
+
+      <p>
+        <strong>Location:</strong> {activeAlert.address}
+      </p>
+
+      <p>
+        <strong>Trusted Contacts:</strong> {activeAlert.contacts}
+      </p>
+
+      <p>
+        <strong>Created:</strong> {activeAlert.createdAt}
+      </p>
+    </div>
+
+    <button
+      onClick={() => {
+        setActiveAlert(null);
+        alert("Emergency marked as safe.");
+      }}
+      className="w-full mt-4 bg-[#22C55E] text-black font-bold py-3 rounded-xl"
+    >
+      ✅ Mark Safe
+    </button>
+  </div>
+)}
       <button
         onClick={sendEmergencyAlert}
         className="w-full bg-[#EF4444] text-white font-bold py-4 rounded-2xl mb-5 animate-pulse"
