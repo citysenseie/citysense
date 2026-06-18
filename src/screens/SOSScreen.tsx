@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { auth, db, collection, getDocs } from "@/lib/firebase";
+import { auth, db, collection, getDocs, addDoc, serverTimestamp } from "@/lib/firebase";
 import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
@@ -70,18 +70,42 @@ const loadTrustedContacts = async () => {
 const handleSOSActivate = async () => {
   setActivated(true);
 
-  if (!location) return;
+  const user = auth.currentUser;
 
-  await submitReport({
-    type: "unsafe",
-    category: "sos",
-    description: "Emergency SOS activated",
-    severity: "high",
-    latitude: location.latitude,
-    longitude: location.longitude,
-    address: location.address || "Unknown location",
-    userId: "sos-user",
-  });
+  if (!user || !location) return;
+
+  try {
+    await submitReport({
+      type: "unsafe",
+      category: "sos",
+      description: "Emergency SOS activated",
+      severity: "high",
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address: location.address || "Unknown location",
+      userId: user.uid,
+    });
+
+    await addDoc(collection(db, "emergencyAlerts"), {
+      userId: user.uid,
+
+      type: "sos",
+      severity: "high",
+      status: "active",
+
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address: location.address || "Unknown location",
+
+      contactCount: contacts.length,
+
+      createdAt: serverTimestamp(),
+    });
+
+    console.log("SOS emergency alert created");
+  } catch (error) {
+    console.error("Failed to create SOS alert:", error);
+  }
 };
   // Active SOS countdown screen
   if (activated && countdown > 0) {

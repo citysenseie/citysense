@@ -7,6 +7,8 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
 } from "@/lib/firebase";
 
 import { useLocation } from "@/hooks/useLocation";
@@ -65,7 +67,7 @@ export default function EmergencyNetworkScreen({
   }
 
   try {
-    await addDoc(collection(db, "emergencyAlerts"), {
+    const docRef = await addDoc(collection(db, "emergencyAlerts"), {
       userId: user.uid,
       status: "active",
 
@@ -84,7 +86,8 @@ export default function EmergencyNetworkScreen({
       createdAt: serverTimestamp(),
     });
 
-   setActiveAlert({
+  setActiveAlert({
+  id: docRef.id,
   status: "ACTIVE",
   address: location?.address ?? "Unknown location",
   contacts: contacts.length,
@@ -145,10 +148,23 @@ export default function EmergencyNetworkScreen({
     </div>
 
     <button
-      onClick={() => {
-        setActiveAlert(null);
-        alert("Emergency marked as safe.");
-      }}
+      onClick={async () => {
+  try {
+    await updateDoc(
+      doc(db, "emergencyAlerts", activeAlert.id),
+      {
+        status: "safe",
+      }
+    );
+
+    setActiveAlert(null);
+
+    alert("Emergency marked as safe.");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to update emergency status.");
+  }
+}}
       className="w-full mt-4 bg-[#22C55E] text-black font-bold py-3 rounded-xl"
     >
       ✅ Mark Safe
