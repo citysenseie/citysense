@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { auth, db, collection, getDocs } from "@/lib/firebase";
+import {
+  auth,
+  db,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "@/lib/firebase";
 
 interface WalkMeHomeScreenProps {
   onBack: () => void;
@@ -74,16 +81,37 @@ useEffect(() => {
     if (!walkStarted || emergencyTriggered) return;
 
     if (timeLeft <= 0) {
-      setEmergencyTriggered(true);
+  setEmergencyTriggered(true);
 
-      alert(
-        `Safety timer expired. Emergency prepared for ${contacts.length} trusted contact${
-          contacts.length > 1 ? "s" : ""
-        }.`
-      );
+  const createEmergencyAlert = async () => {
+  const user = auth.currentUser;
 
-      return;
-    }
+  try {
+    const docRef = await addDoc(collection(db, "emergencyAlerts"), {
+      userId: user?.uid ?? "unknown",
+
+      type: "walk_me_home",
+      status: "active",
+      severity: "high",
+
+      latitude: userLocation?.latitude ?? null,
+      longitude: userLocation?.longitude ?? null,
+
+      destination,
+
+      contactCount: contacts.length,
+
+      createdAt: serverTimestamp(),
+    });
+
+    console.log("WALK HOME ALERT CREATED:", docRef.id);
+  } catch (error) {
+    console.error("WALK HOME ALERT FAILED:", error);
+  }
+};
+  createEmergencyAlert();
+  return;
+}
 
     const timer = setTimeout(() => {
       setTimeLeft((prev) => prev - 1);
@@ -161,7 +189,7 @@ useEffect(() => {
     setDestinationLng(place.lng);
     setEstimatedMinutes(minutes);
 
-    setTimeLeft((minutes + 5) * 60);
+    setTimeLeft(10);
   };
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
