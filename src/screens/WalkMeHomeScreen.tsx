@@ -20,6 +20,30 @@ export default function WalkMeHomeScreen({
   const [emergencyTriggered, setEmergencyTriggered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
+  const [estimatedMinutes, setEstimatedMinutes] = useState<number | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  const [destinationLat, setDestinationLat] = useState<number | null>(null);
+  const [destinationLng, setDestinationLng] = useState<number | null>(null);
+
+useEffect(() => {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      setUserLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    },
+    () => {
+      alert("Unable to determine your current location.");
+    }
+  );
+}, []);
 
   useEffect(() => {
     const loadContacts = async () => {
@@ -68,6 +92,27 @@ export default function WalkMeHomeScreen({
     return () => clearTimeout(timer);
   }, [walkStarted, timeLeft, emergencyTriggered, contacts.length]);
 
+  const getDistanceKm = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371;
+
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -77,6 +122,47 @@ export default function WalkMeHomeScreen({
       .padStart(2, "0")}`;
   };
 
+  const calculateWalkTime = () => {
+    if (!destination.trim()) return;
+
+    const destinationDatabase: Record<
+      string,
+      { lat: number; lng: number }
+    > = {
+      "eeklo station": {
+        lat: 51.1875,
+        lng: 3.5669,
+      },
+
+      "eeklo hospital": {
+        lat: 51.1845,
+        lng: 3.5802,
+      },
+    };
+
+    const place =
+      destinationDatabase[destination.toLowerCase()];
+
+    if (!place || !userLocation) {
+      alert("Destination not found.");
+      return;
+    }
+
+    const distance = getDistanceKm(
+      userLocation.latitude,
+      userLocation.longitude,
+      place.lat,
+      place.lng
+    );
+
+    const minutes = Math.ceil((distance / 5) * 60);
+
+    setDestinationLat(place.lat);
+    setDestinationLng(place.lng);
+    setEstimatedMinutes(minutes);
+
+    setTimeLeft((minutes + 5) * 60);
+  };
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
       <button onClick={onBack} className="text-sm text-[#E8A838] mb-4">
@@ -121,14 +207,32 @@ export default function WalkMeHomeScreen({
                 return;
               }
 
-              setTimeLeft(300);
-              setEmergencyTriggered(false);
-              setWalkStarted(true);
+              calculateWalkTime();
+
+setEmergencyTriggered(false);
+setWalkStarted(true);
             }}
             className="w-full bg-[#22C55E] text-black font-bold py-4 rounded-2xl"
           >
             Start Walk
           </button>
+          {estimatedMinutes && (
+            <>
+              <div className="bg-[#1A2E2D] rounded-2xl p-4 mt-4">
+                <p>🚶 Estimated Walk Time</p>
+                <p className="text-xl font-bold">{estimatedMinutes} min</p>
+              </div>
+
+              {destinationLat !== null && destinationLng !== null && (
+                <div className="bg-[#1A2E2D] rounded-2xl p-4 mt-4">
+                  <p className="text-sm text-[#7BA3A1]">Destination coordinates</p>
+                  <p className="text-xs text-[#F5F3EF]">
+                    {destinationLat.toFixed(4)}, {destinationLng.toFixed(4)}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </>
       ) : (
         <div className="space-y-4">
