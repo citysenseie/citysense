@@ -4,6 +4,8 @@ import {
   db,
   collection,
   getDocs,
+  doc,
+updateDoc,
   addDoc,
   serverTimestamp,
 } from "@/lib/firebase";
@@ -35,7 +37,7 @@ export default function WalkMeHomeScreen({
 
   const [destinationLat, setDestinationLat] = useState<number | null>(null);
   const [destinationLng, setDestinationLng] = useState<number | null>(null);
-
+const [alertId, setAlertId] = useState<string | null>(null);
 useEffect(() => {
   if (!navigator.geolocation) return;
 
@@ -51,7 +53,50 @@ useEffect(() => {
     }
   );
 }, []);
+useEffect(() => {
+  if (!walkStarted) return;
 
+  const watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      setUserLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    },
+    (error) => {
+      console.error(error);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 10000,
+    }
+  );
+
+  return () => {
+    navigator.geolocation.clearWatch(watchId);
+  };
+}, [walkStarted]);
+useEffect(() => {
+  if (!alertId || !userLocation) return;
+
+  const updateLocation = async () => {
+    try {
+      await updateDoc(
+        doc(db, "emergencyAlerts", alertId),
+        {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          lastUpdated: serverTimestamp(),
+        }
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  updateLocation();
+}, [userLocation, alertId]);
   useEffect(() => {
     const loadContacts = async () => {
       const user = auth.currentUser;
@@ -80,38 +125,46 @@ useEffect(() => {
   useEffect(() => {
     if (!walkStarted || emergencyTriggered) return;
 
+    const handleExpiration = async () => {
+      if (timeLeft <= 0) {
+        setEmergencyTriggered(true);
+
+        const user = auth.currentUser;
+
+        if (user) {
+          const docRef = await addDoc(collection(db, "emergencyAlerts"), {
+  userId: user.uid,
+  latitude: userLocation?.latitude,
+  longitude: userLocation?.longitude,
+  destinationLat,
+  destinationLng,
+
+  type: "walk_me_home",
+  severity: "high",
+  status: "active",
+
+  destination,
+
+  contactCount: contacts.length,
+
+  createdAt: serverTimestamp(),
+});
+        setAlertId(docRef.id);
+        
+        }
+
+        alert(
+          `Safety timer expired. Emergency prepared for ${contacts.length} trusted contact${
+            contacts.length > 1 ? "s" : ""
+          }.`
+        );
+      }
+    };
+
     if (timeLeft <= 0) {
-  setEmergencyTriggered(true);
-
-  const createEmergencyAlert = async () => {
-  const user = auth.currentUser;
-
-  try {
-    const docRef = await addDoc(collection(db, "emergencyAlerts"), {
-      userId: user?.uid ?? "unknown",
-
-      type: "walk_me_home",
-      status: "active",
-      severity: "high",
-
-      latitude: userLocation?.latitude ?? null,
-      longitude: userLocation?.longitude ?? null,
-
-      destination,
-
-      contactCount: contacts.length,
-
-      createdAt: serverTimestamp(),
-    });
-
-    console.log("WALK HOME ALERT CREATED:", docRef.id);
-  } catch (error) {
-    console.error("WALK HOME ALERT FAILED:", error);
-  }
-};
-  createEmergencyAlert();
-  return;
-}
+      handleExpiration();
+      return;
+    }
 
     const timer = setTimeout(() => {
       setTimeLeft((prev) => prev - 1);
@@ -189,7 +242,7 @@ useEffect(() => {
     setDestinationLng(place.lng);
     setEstimatedMinutes(minutes);
 
-    setTimeLeft(10);
+    setTimeLeft((minutes + 5) * 60);
   };
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
@@ -273,6 +326,12 @@ setWalkStarted(true);
               <p className="text-sm text-[#FCA5A5] mt-2">
                 Trusted contacts are ready to receive an emergency alert.
               </p>
+
+              {alertId && (
+                <p className="text-xs text-[#FCA5A5] mt-2">
+                  Alert ID: {alertId}
+                </p>
+              )}
             </div>
           )}
 
@@ -280,7 +339,17 @@ setWalkStarted(true);
             <p className="text-xs text-[#7BA3A1] mb-1">Walking to</p>
             <h2 className="text-lg font-bold">{destination}</h2>
           </div>
+<div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
+  <p className="text-xs text-[#7BA3A1] mb-1">
+    Current Location
+  </p>
 
+  <p className="text-sm">
+    {userLocation?.latitude?.toFixed(5)},
+    {" "}
+    {userLocation?.longitude?.toFixed(5)}
+  </p>
+</div>
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
 
@@ -292,7 +361,7 @@ setWalkStarted(true);
           <button
             onClick={() => {
               alert("Check-in confirmed. You are marked safe.");
-              setTimeLeft(20);
+              setTimeLeft(300);
               setEmergencyTriggered(false);
               setWalkStarted(false);
               setDestination("");
@@ -317,7 +386,7 @@ setWalkStarted(true);
 
           <button
             onClick={() => {
-              setTimeLeft(20);
+              setTimeLeft(300);
               setEmergencyTriggered(false);
               setWalkStarted(false);
               setDestination("");
