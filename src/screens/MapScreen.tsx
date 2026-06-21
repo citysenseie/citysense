@@ -112,7 +112,17 @@ const getTimeRemaining = (report: any) => {
 return `${Math.ceil(remainingMinutes / 60)}h`;
 };
 
-const nearbyReports = reports;
+const nearbyReports = reports.filter((report) => {
+  const reportTime =
+    report.timestamp instanceof Date
+      ? report.timestamp.getTime()
+      : new Date(report.timestamp).getTime();
+
+  const expiryHours = getReportExpiryHours(report);
+
+  return Date.now() - reportTime <
+    expiryHours * 60 * 60 * 1000;
+});
 
 const filteredReports = (
   selectedFilter === "all"

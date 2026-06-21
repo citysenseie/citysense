@@ -44,7 +44,24 @@ export function useReports() {
           };
         });
 
-        setReports(data);
+        const activeReports = data.filter((report) => {
+  const reportTime = report.timestamp.getTime();
+
+  let expiryHours = 2;
+
+  if (report.category === "sos") expiryHours = 1;
+  else if (report.category === "police_presence") expiryHours = 2;
+  else if (report.type === "safe") expiryHours = 12;
+  else if (report.severity === "high") expiryHours = 6;
+  else if (report.severity === "medium") expiryHours = 4;
+
+  return (
+    Date.now() - reportTime <
+    expiryHours * 60 * 60 * 1000
+  );
+});
+
+setReports(activeReports);
         setLoading(false);
       },
       () => {
