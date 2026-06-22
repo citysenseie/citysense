@@ -149,19 +149,25 @@ const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
 
   const safetyScore = Math.max(
   0,
-  Math.min(100, 100 + safeCount * 3 - unsafeImpact - sosReports * 25)
+  Math.min(
+    100,
+    100 +
+      safeCount * 2 -
+      unsafeImpact * 0.5 -
+      sosReports * 30
+  )
 );
 
   const scoreColor =
-    safetyScore >= 80 ? "#4ADE80" : safetyScore >= 60 ? "#E8A838" : "#EF4444";
+    safetyScore >= 85 ? "#4ADE80" : safetyScore >= 70 ? "#E8A838" : "#EF4444";
 
   const scoreLabel =
-    safetyScore >= 80 ? "Safe" : safetyScore >= 60 ? "Caution" : "Unsafe";
+    safetyScore >= 85? "Safe" : safetyScore >= 70 ? "Caution" : "Unsafe";
 
   const riskMessage =
-    safetyScore >= 80
+    safetyScore >= 85
       ? "Area looks stable"
-      : safetyScore >= 60
+      : safetyScore >= 70
       ? "Stay aware nearby"
       : "Avoid if possible";
 
@@ -173,24 +179,24 @@ const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
       : "Stable activity";
 
   const recommendedAction =
-    safetyScore >= 80
+    safetyScore >= 85
       ? "Move normally"
-      : safetyScore >= 60
+      : safetyScore >= 70
       ? "Stay alert"
       : "Avoid this area";
 
   const hotZone =
-  unsafeCount >= 10
+  unsafeCount >= 15
       ? "High Risk Zone"
-      : unsafeCount >= 5
+      : unsafeCount >= 8
       ? "Elevated Risk"
       : "Normal Activity";
 const threatLevel =
-  safetyScore < 40 || highReports >= 5 || sosReports >= 2
+  sosReports >= 2
     ? "HIGH"
-    : safetyScore < 65 || unsafeCount >= 5
+    : highReports >= 3
     ? "ELEVATED"
-    : safetyScore < 80 || unsafeCount >= 2
+    : unsafeCount >= 8
     ? "GUARDED"
     : "LOW";
   const recentActivityLevel =
