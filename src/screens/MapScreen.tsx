@@ -149,7 +149,7 @@ const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
 
   const safetyScore = Math.max(
   0,
-  Math.min(100, 70 + safeCount * 5 - unsafeImpact - sosReports * 25)
+  Math.min(100, 100 + safeCount * 3 - unsafeImpact - sosReports * 25)
 );
 
   const scoreColor =
@@ -180,13 +180,13 @@ const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
       : "Avoid this area";
 
   const hotZone =
-    unsafeCount >= 5
+  unsafeCount >= 10
       ? "High Risk Zone"
-      : unsafeCount >= 3
+      : unsafeCount >= 5
       ? "Elevated Risk"
       : "Normal Activity";
 const threatLevel =
-  safetyScore < 50 || highReports >= 3 || sosReports > 0
+  safetyScore < 40 || highReports >= 5 || sosReports >= 2
     ? "HIGH"
     : safetyScore < 65 || unsafeCount >= 5
     ? "ELEVATED"
