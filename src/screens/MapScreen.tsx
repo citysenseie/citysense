@@ -1,3 +1,20 @@
+ import { useMap } from "react-leaflet";
+
+function RecenterMap({
+  latitude,
+  longitude,
+}: {
+  latitude: number;
+  longitude: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([latitude, longitude], 15);
+  }, [latitude, longitude, map]);
+
+  return null;
+}
  import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
  import{ useEffect, useState } from "react";
@@ -345,15 +362,15 @@ const aiSummary =
 )}
 
         <MapContainer
-  center={[lat, lng]}
-  zoom={14}
-  style={{ height: "100%", width: "100%" }}
->
-  <TileLayer
-    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    attribution="&copy; OpenStreetMap contributors"
-  />
-
+          center={[lat, lng]}
+          zoom={15}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; OpenStreetMap contributors"
+          />
+<RecenterMap latitude={lat} longitude={lng} />
   <Marker position={[lat, lng]}>
     <Popup>
       📍 Your Location
@@ -382,11 +399,7 @@ const aiSummary =
 
         
         
-          <div className="relative">
-            <div className="w-5 h-5 rounded-full bg-[#E8A838] border-4 border-white shadow-lg" />
-            <div className="absolute inset-0 rounded-full bg-[#E8A83880] animate-ping" />
-          </div>
-        </div>
+         
 
         <div className="absolute top-4 left-4 z-30 bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl max-w-[230px]">
           <div className="flex items-center gap-2">
@@ -505,6 +518,7 @@ const aiSummary =
             </>
           )}
         </div>
+      </div>
       
       <div className="absolute bottom-28 right-4 flex flex-col gap-2 z-40">
   <button
