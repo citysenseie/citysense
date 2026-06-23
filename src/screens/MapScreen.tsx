@@ -1,3 +1,5 @@
+ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
  import{ useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
@@ -342,71 +344,44 @@ const aiSummary =
 </div>
 )}
 
-        <iframe
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${
-            lng - 0.01
-          }%2C${lat - 0.01}%2C${lng + 0.01}%2C${
-            lat + 0.01
-          }&layer=mapnik&marker=${lat}%2C${lng}`}
-          className="w-full h-full border-0"
-          title="CitySense Map"
-        />
-
-        {filteredReports.slice(0, 8).map((report, index) => (
-         <div
-  key={report.id}
-  className="absolute z-10 cursor-pointer"
-  style={{
-    top: `${35 + (index % 4) * 12}%`,
-    left: `${40 + (index % 5) * 10}%`,
-  }}
+        <MapContainer
+  center={[lat, lng]}
+  zoom={14}
+  style={{ height: "100%", width: "100%" }}
 >
-            <div className="relative">
-              <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-[#0F1E1EE8] text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-  {getReportLabel(report.category)}
-</div>
-              <div
-                className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
-                  report.category === "sos"
-  ? "bg-[#EF4444]"
-  : report.category === "police_presence"
-  ? "bg-[#3B82F6]"
-  : report.type === "safe"
-  ? "bg-[#4ADE80]"
-  : report.severity === "high"
-  ? "bg-[#EF4444]"
-  : report.severity === "medium"
-  ? "bg-[#F97316]"
-  : "bg-[#E8A838]"
-                }`}
-              />
-
-             {report.type === "unsafe" && (
-  <div
-    className={`absolute rounded-full blur-2xl -z-10 ${
-      unsafeCount >= 10
-        ? "opacity-60 animate-pulse"
-        : unsafeCount >= 5
-        ? "opacity-50"
-        : "opacity-35"
-    } ${
-      report.severity === "high"
-        ? unsafeCount >= 10
-          ? "bg-[#EF4444] w-32 h-32 -top-14 -left-14"
-          : "bg-[#EF4444] w-24 h-24 -top-10 -left-10"
-        : report.severity === "medium"
-        ? unsafeCount >= 10
-          ? "bg-[#F97316] w-28 h-28 -top-12 -left-12"
-          : "bg-[#F97316] w-20 h-20 -top-8 -left-8"
-        : "bg-[#E8A838] w-16 h-16 -top-6 -left-6"
-    }`}
+  <TileLayer
+    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    attribution="&copy; OpenStreetMap contributors"
   />
-)}
-            </div>
-          </div>
-        ))}
 
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+  <Marker position={[lat, lng]}>
+    <Popup>
+      📍 Your Location
+    </Popup>
+  </Marker>
+
+  {filteredReports.map((report) => (
+    <Marker
+      key={report.id}
+      position={[report.latitude, report.longitude]}
+    >
+      <Popup>
+        <strong>{getReportLabel(report.category)}</strong>
+
+        <br />
+
+        {report.description}
+
+        <br />
+
+        {getTimeAgo(report.timestamp)}
+      </Popup>
+    </Marker>
+  ))}
+</MapContainer>
+
+        
+        
           <div className="relative">
             <div className="w-5 h-5 rounded-full bg-[#E8A838] border-4 border-white shadow-lg" />
             <div className="absolute inset-0 rounded-full bg-[#E8A83880] animate-ping" />
@@ -723,6 +698,7 @@ const aiSummary =
     </div>
   </div>
 )}
+        <div className="absolute bottom-4 left-4 z-20 w-80 max-h-72 overflow-y-auto bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
           <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>

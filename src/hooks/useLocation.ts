@@ -43,7 +43,13 @@ export function useLocation() {
       },
       () => {
         setError("Location access denied");
-        setLocation({ latitude: 40.7128, longitude: -74.006, address: "New York, NY" });
+        setLocation((prev) =>
+          prev ?? {
+            latitude: 51.1857,
+            longitude: 3.5701,
+            address: "Melkerij, Eeklo, East Flanders",
+          }
+        );
         setLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -51,10 +57,8 @@ export function useLocation() {
   }, []);
 
   useEffect(() => {
-    getLocation();
-    const interval = setInterval(getLocation, 30000);
-    return () => clearInterval(interval);
-  }, [getLocation]);
+  getLocation();
+}, [getLocation]);
 
   return { location, loading, error, refresh: getLocation };
 }
