@@ -56,8 +56,12 @@ export function useLocation() {
     );
   }, []);
 
-  useEffect(() => {
-  getLocation();
+ useEffect(() => {
+  getLocation(); // Load immediately
+
+  const interval = setInterval(getLocation, 300000); // Refresh every 5 min
+
+  return () => clearInterval(interval);
 }, [getLocation]);
 
   return { location, loading, error, refresh: getLocation };
