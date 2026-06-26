@@ -30,6 +30,17 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
+function FixMapSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+  }, [map]);
+
+  return null;
+}
 
 export default function MapScreen() {
   const { location } = useLocation();
@@ -362,10 +373,12 @@ const aiSummary =
 )}
 
         <MapContainer
+        
           center={[lat, lng]}
           zoom={15}
           style={{ height: "100%", width: "100%" }}
         >
+          <FixMapSize />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
@@ -517,8 +530,9 @@ const aiSummary =
               <p className="text-[9px] text-[#E8A838] mt-1">{timeRisk}</p>
             </>
           )}
-        </div>
-      </div>
+          </div>
+      
+
       
       <div className="absolute bottom-28 right-4 flex flex-col gap-2 z-40">
   <button
@@ -831,5 +845,6 @@ const aiSummary =
         </div>
       </div>
     </div>
+  </div>
   );
 }
