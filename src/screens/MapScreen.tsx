@@ -636,7 +636,7 @@ const aiSummary =
   </div>
 )}
 
-<div className="absolute bottom-32 left-4 z-50">
+<div className="absolute left-4 right-4 bottom-14 z-40">
   <div className="px-2 py-1 rounded-lg text-[9px] font-bold shadow-xl border bg-[#2A0F0F] text-[#EF4444] border-[#EF444460]">
     ALERT MODE
   </div>
