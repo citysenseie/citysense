@@ -1,4 +1,7 @@
- import { useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useEffect, useState } from "react";
 
 function RecenterMap({
   latitude,
@@ -15,9 +18,6 @@ function RecenterMap({
 
   return null;
 }
- import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
- import{ useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,7 +41,13 @@ function FixMapSize() {
 
   return null;
 }
-
+const userIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 export default function MapScreen() {
   const { location } = useLocation();
  const { reports, fetchReports, submitReport } = useReports();
@@ -93,7 +99,35 @@ const [selectedSeverity, setSelectedSeverity] = useState<
     if (category === "other") return "📍 Other";
     return category.replace(/_/g, " ");
   };
+const getReportIcon = (type: string) => {
+  let color = "blue";
 
+  switch (type) {
+    case "suspicious":
+      color = "red";
+      break;
+
+    case "safe":
+      color = "green";
+      break;
+
+    case "police":
+      color = "violet";
+      break;
+
+    case "hazard":
+      color = "orange";
+      break;
+  }
+
+  return new L.Icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+  });
+};
   const getTimeAgo = (timestamp: any) => {
   const reportTime =
     timestamp instanceof Date
@@ -341,9 +375,8 @@ const aiSummary =
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
       <div
-        className="relative overflow-hidden"
-        style={{ height: "calc(100vh - 180px)" }}
-      >
+  className="relative overflow-hidden h-full"
+>
        <div
   className={`absolute top-0 left-0 right-0 z-40 text-center py-2 text-xs font-bold tracking-wider shadow-lg ${
     threatLevel === "HIGH" ? "animate-pulse" : ""
@@ -373,11 +406,10 @@ const aiSummary =
 )}
 
         <MapContainer
-        
-          center={[lat, lng]}
-          zoom={15}
-          style={{ height: "100%", width: "100%" }}
-        >
+  center={[lat, lng]}
+  zoom={15}
+  className="h-full w-full z-0"
+>
           <FixMapSize />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -389,22 +421,44 @@ const aiSummary =
       📍 Your Location
     </Popup>
   </Marker>
-
+<Marker position={[lat, lng]} icon={userIcon}>
+  <Popup>
+    📍 You are here
+    <br />
+    {location?.address}
+  </Popup>
+</Marker>
+<Circle
+  center={[lat, lng]}
+  radius={1000}
+  pathOptions={{
+    color: "#22c55e",
+    fillColor: "#22c55e",
+    fillOpacity: 0.1,
+  }}
+/>
   {filteredReports.map((report) => (
     <Marker
       key={report.id}
       position={[report.latitude, report.longitude]}
+      icon={getReportIcon(report.type)}
     >
       <Popup>
-        <strong>{getReportLabel(report.category)}</strong>
-
-        <br />
-
-        {report.description}
-
-        <br />
-
-        {getTimeAgo(report.timestamp)}
+        <div className="text-sm">
+          <strong>{getReportLabel(report.category)}</strong>
+          <p>{report.description}</p>
+          <p>
+            Distance:{" "}
+            {getDistanceKm(
+              lat,
+              lng,
+              report.latitude,
+              report.longitude
+            ).toFixed(1)}
+            km
+          </p>
+          <p>{getTimeAgo(report.timestamp)}</p>
+        </div>
       </Popup>
     </Marker>
   ))}
