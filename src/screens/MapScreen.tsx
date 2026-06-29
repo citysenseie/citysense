@@ -416,11 +416,6 @@ const aiSummary =
             attribution="&copy; OpenStreetMap contributors"
           />
 <RecenterMap latitude={lat} longitude={lng} />
-  <Marker position={[lat, lng]}>
-    <Popup>
-      📍 Your Location
-    </Popup>
-  </Marker>
 <Marker position={[lat, lng]} icon={userIcon}>
   <Popup>
     📍 You are here
@@ -468,7 +463,7 @@ const aiSummary =
         
          
 
-        <div className="absolute top-4 left-4 z-30 bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl max-w-[230px]">
+        <div className="absolute top-12 left-4 z-30 bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl max-w-[230px]">
           <div className="flex items-center gap-2">
   <div className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
 
