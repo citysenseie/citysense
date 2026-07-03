@@ -2,6 +2,18 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-le
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
+import { useLocation } from "@/hooks/useLocation";
+import { useReports } from "@/hooks/useReports";
+import { useAuth } from "@/hooks/useAuth";
+import { storage } from "@/lib/firebase";
+import { db, doc, updateDoc, increment } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  MapPin,
+  Navigation,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react";
 
 function RecenterMap({
   latitude,
@@ -18,18 +30,6 @@ function RecenterMap({
 
   return null;
 }
-import { useLocation } from "@/hooks/useLocation";
-import { useReports } from "@/hooks/useReports";
-import { useAuth } from "@/hooks/useAuth";
-import { storage } from "@/lib/firebase";
-import { db, doc, updateDoc, increment } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  MapPin,
-  Navigation,
-  AlertTriangle,
-  ShieldCheck,
-} from "lucide-react";
 function FixMapSize() {
   const map = useMap();
 
@@ -52,10 +52,12 @@ export default function MapScreen() {
   const { location } = useLocation();
  const { reports, fetchReports, submitReport } = useReports();
   const { user } = useAuth();
+  const [showSafetyCard, setShowSafetyCard] = useState(true);
 
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
   const [quickReportSent, setQuickReportSent] = useState(false);
+  const [showNearbyReports, setShowNearbyReports] = useState(false);
  
   const [showReportModal, setShowReportModal] = useState(false);
 const [quickDescription, setQuickDescription] = useState("");
@@ -129,13 +131,14 @@ const getReportIcon = (type: string) => {
   });
 };
   const getTimeAgo = (timestamp: any) => {
+  // NOTE: imports above were moved to top to avoid syntax errors
+
   const reportTime =
     timestamp instanceof Date
       ? timestamp.getTime()
       : new Date(timestamp).getTime();
 
   const diffMinutes = Math.floor((Date.now() - reportTime) / (1000 * 60));
-
   if (diffMinutes < 1) return "Just now";
   if (diffMinutes < 60) return `${diffMinutes} min ago`;
 
@@ -372,6 +375,8 @@ const aiSummary =
     : nearbyReports.length >= 4
     ? "Moderate report density"
     : "Low report density";
+  
+
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
       <div
@@ -459,11 +464,23 @@ const aiSummary =
   ))}
 </MapContainer>
 
-        
-        
-         
+        <div className="absolute inset-0">
+        <div className="absolute top-12 left-4 z-30">
+  <button
+    onClick={() => setShowSafetyCard(!showSafetyCard)}
+    className="mb-2 bg-[#0F1E1E]
+               text-[#E8A838]
+               rounded-full px-3 py-1
+               text-xs font-bold shadow-lg"
+  >
+    {showSafetyCard ? "Hide Safety" : "Show Safety"}
+  </button>
 
-        <div className="absolute top-12 left-4 z-30 bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl max-w-[230px]">
+  {showSafetyCard && (
+    <div>
+      <div className="bg-[#0F1E1E] rounded-2xl px-4 py-3
+                      border border-[#2D5A5840]
+                      shadow-xl max-w-[230px]">
           <div className="flex items-center gap-2">
   <div className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
 
@@ -542,7 +559,11 @@ const aiSummary =
   </div>
 )}
 
-
+<button
+ onClick={() => setShowNearbyReports(!showNearbyReports)}
+>
+ {showNearbyReports ? "Hide Reports" : "Show Reports"}
+</button>
 
           <button
             onClick={() => setShowDetails(!showDetails)}
@@ -627,8 +648,11 @@ const aiSummary =
   🚨 SOS
 </button>
 </div>
+    </div>
+  )}
+</div>
 {location && (
-  <div className="absolute bottom-12 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
+  <div className="absolute bottom-40 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
     <div className="flex items-center gap-1.5">
       <MapPin className="w-3 h-3 text-[#E8A838]" />
       <p className="text-xs text-[#F5F3EF] truncate">{location.address}</p>
@@ -674,224 +698,226 @@ const aiSummary =
           <Navigation className="w-5 h-5 text-[#0F1E1E]" />
         </button>
 {showReportModal && (
-  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-6">
-    <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-5 w-full max-w-sm shadow-2xl">
-      <h2 className="text-lg font-bold text-[#F5F3EF] mb-3">
-        New Report
-      </h2>
+  <>
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-6">
+      <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+        <h2 className="text-lg font-bold text-[#F5F3EF] mb-3">
+          New Report
+        </h2>
 
-      <p className="text-xs text-[#7BA3A1] mb-4">
-        Reporting as: {getReportLabel(selectedQuickType)}
-      </p>
+        <p className="text-xs text-[#7BA3A1] mb-4">
+          Reporting as: {getReportLabel(selectedQuickType)}
+        </p>
 
-      <div className="mb-4">
-        <p className="text-xs text-[#7BA3A1] mb-2">Severity</p>
+        <div className="mb-4">
+          <p className="text-xs text-[#7BA3A1] mb-2">Severity</p>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSelectedSeverity("low")}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-              selectedSeverity === "low"
-                ? "bg-[#E8A838] text-[#0F1E1E]"
-                : "bg-[#0F1E1E] text-[#7BA3A1]"
-            }`}
-          >
-            Low
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedSeverity("low")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+                selectedSeverity === "low"
+                  ? "bg-[#E8A838] text-[#0F1E1E]"
+                  : "bg-[#0F1E1E] text-[#7BA3A1]"
+              }`}
+            >
+              Low
+            </button>
 
-          <button
-            onClick={() => setSelectedSeverity("medium")}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-              selectedSeverity === "medium"
-                ? "bg-[#F97316] text-white"
-                : "bg-[#0F1E1E] text-[#7BA3A1]"
-            }`}
-          >
-            Medium
-          </button>
+            <button
+              onClick={() => setSelectedSeverity("medium")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+                selectedSeverity === "medium"
+                  ? "bg-[#F97316] text-white"
+                  : "bg-[#0F1E1E] text-[#7BA3A1]"
+              }`}
+            >
+              Medium
+            </button>
 
-          <button
-            onClick={() => setSelectedSeverity("high")}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold ${
-              selectedSeverity === "high"
-                ? "bg-[#EF4444] text-white"
-                : "bg-[#0F1E1E] text-[#7BA3A1]"
-            }`}
-          >
-            High
-          </button>
+            <button
+              onClick={() => setSelectedSeverity("high")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold ${
+                selectedSeverity === "high"
+                  ? "bg-[#EF4444] text-white"
+                  : "bg-[#0F1E1E] text-[#7BA3A1]"
+              }`}
+            >
+              High
+            </button>
+          </div>
         </div>
-      </div>
 
-      <textarea
-        value={quickDescription}
-        onChange={(e) => setQuickDescription(e.target.value)}
-        placeholder="Describe what is happening..."
-        className="w-full h-24 rounded-xl bg-[#0F1E1E] border border-[#2D5A5840] text-[#F5F3EF] text-sm p-3 resize-none outline-none"
-      />
-
-      <div className="mt-3">
-        <label className="block text-xs text-[#7BA3A1] mb-2">
-          Add photo
-        </label>
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setReportPhoto(e.target.files?.[0] || null)}
-          className="w-full text-xs text-[#7BA3A1]"
+        <textarea
+          value={quickDescription}
+          onChange={(e) => setQuickDescription(e.target.value)}
+          placeholder="Describe what is happening..."
+          className="w-full h-24 rounded-xl bg-[#0F1E1E] border border-[#2D5A5840] text-[#F5F3EF] text-sm p-3 resize-none outline-none"
         />
 
-        {reportPhoto && (
-          <div className="text-[10px] text-[#E8A838] mt-1">
-            Photo selected: {reportPhoto.name}
-          </div>
-        )}
-      </div>
+        <div className="mt-3">
+          <label className="block text-xs text-[#7BA3A1] mb-2">
+            Add photo
+          </label>
 
-      <div className="flex gap-3 mt-4">
-        <button
-          onClick={() => {
-            setShowReportModal(false);
-            setReportPhoto(null);
-          }}
-          className="flex-1 py-2 rounded-xl bg-[#0F1E1E] text-[#7BA3A1]"
-        >
-          Cancel
-        </button>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setReportPhoto(e.target.files?.[0] || null)}
+            className="w-full text-xs text-[#7BA3A1]"
+          />
 
-        <button
-          onClick={async () => {
-            await handleQuickUnsafeReport();
-            setShowReportModal(false);
-            setQuickDescription("");
-            setReportPhoto(null);
-          }}
-          className="flex-1 py-2 rounded-xl bg-[#E8A838] text-[#0F1E1E] font-bold"
-        >
-          Submit
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-        <div className="absolute bottom-4 left-4 z-20 w-80 max-h-72 overflow-y-auto bg-[#0F1E1E] rounded-2xl px-4 py-3 border border-[#2D5A5840] shadow-xl">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
-          <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
-        </div>
-
-        <div className="space-y-2">
-          {filteredReports.slice(0, 4).map((report) => (
-            <div
-              key={report.id}
-              className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
-            >
-              <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  report.type === "safe"
-                    ? "bg-[#4ADE8020]"
-                    : report.severity === "high"
-                    ? "bg-[#7F1D1D]"
-                    : report.severity === "medium"
-                    ? "bg-[#EF444420]"
-                    : "bg-[#F9731620]"
-                }`}
-              >
-                {report.type === "safe" ? (
-                  <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[#F5F3EF] truncate">
-                  {getReportLabel(report.category)}
-                </p>
-
-                <p className="text-[11px] text-[#7BA3A1] truncate">
-                  {report.address}
-                </p>
-
-                <p className="text-[10px] text-[#E8A838]">
-                  {getDistanceKm(
-                    lat,
-                    lng,
-                    report.latitude,
-                    report.longitude
-                  ).toFixed(1)}{" "}
-                  km away
-                </p>
-                <p className="text-[10px] text-[#7BA3A1]">
-                  Fresh • {getTimeAgo(report.timestamp)}
-                </p>
-                {getTimeRemaining(report) !== "0 min" && (
-                  <p className="text-[9px] text-[#E8A838]">
-                    Expires in {getTimeRemaining(report)}
-                  </p>
-                )}
-
-                <p
-                  className={`text-[10px] font-bold ${
-                    report.severity === "high"
-                      ? "text-[#EF4444]"
-                      : report.severity === "medium"
-                      ? "text-[#F97316]"
-                      : "text-[#E8A838]"
-                  }`}
-                >
-                  Severity: {report.severity?.toUpperCase()}
-                </p>
-                <p className="text-[9px] text-[#7BA3A1]">
-                  {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
-                </p>
-                <div>
-                  <p className="text-[9px] text-[#E8A838]">
-                    Source: CitySense user
-                  </p>
-
-                  <p className="text-[9px] text-[#E8A838] mt-1">
-                    📷 Photo available
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1 mr-2">
-                <button
-                  onClick={() => handleVote(report.id!, "upvotes")}
-                  className="text-[10px] text-[#4ADE80] font-semibold"
-                >
-                  👍 {report.upvotes || 0}
-                </button>
-                <button
-                  onClick={() => handleVote(report.id!, "downvotes")}
-                  className="text-[10px] text-[#EF4444] font-semibold"
-                >
-                  👎 {report.downvotes || 0}
-                </button>
-              </div>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  report.type === "safe"
-                    ? "bg-[#4ADE8020] text-[#4ADE80]"
-                    : report.severity === "high"
-                    ? "bg-[#7F1D1D] text-[#FCA5A5]"
-                    : report.severity === "medium"
-                    ? "bg-[#EF444420] text-[#EF4444]"
-                    : "bg-[#F9731620] text-[#FDBA74]"
-                }`}
-              >
-                {report.severity ? `${report.type} • ${report.severity}` : report.type}
-              </span>
-            </div>
-          ))}
-
-          {filteredReports.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-xs text-[#7BA3A1]">No reports in this area</p>
+          {reportPhoto && (
+            <div className="text-[10px] text-[#E8A838] mt-1">
+              Photo selected: {reportPhoto.name}
             </div>
           )}
         </div>
+
+        <div className="flex gap-3 mt-4">
+          <button
+            onClick={() => {
+              setShowReportModal(false);
+              setReportPhoto(null);
+            }}
+            className="flex-1 py-2 rounded-xl bg-[#0F1E1E] text-[#7BA3A1]"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={async () => {
+              await handleQuickUnsafeReport();
+              setShowReportModal(false);
+              setQuickDescription("");
+              setReportPhoto(null);
+            }}
+            className="flex-1 py-2 rounded-xl bg-[#E8A838] text-[#0F1E1E] font-bold"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+    
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
+        <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
+      </div>
+
+      <div className="space-y-2">
+        {filteredReports.slice(0, 4).map((report) => (
+          <div
+            key={report.id}
+            className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
+          >
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                report.type === "safe"
+                  ? "bg-[#4ADE8020]"
+                  : report.severity === "high"
+                  ? "bg-[#7F1D1D]"
+                  : report.severity === "medium"
+                  ? "bg-[#EF444420]"
+                  : "bg-[#F9731620]"
+              }`}
+            >
+              {report.type === "safe" ? (
+                <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[#F5F3EF] truncate">
+                {getReportLabel(report.category)}
+              </p>
+
+              <p className="text-[11px] text-[#7BA3A1] truncate">
+                {report.address}
+              </p>
+
+              <p className="text-[10px] text-[#E8A838]">
+                {getDistanceKm(
+                  lat,
+                  lng,
+                  report.latitude,
+                  report.longitude
+                ).toFixed(1)}{" "}
+                km away
+              </p>
+              <p className="text-[10px] text-[#7BA3A1]">
+                Fresh • {getTimeAgo(report.timestamp)}
+              </p>
+              {getTimeRemaining(report) !== "0 min" && (
+                <p className="text-[9px] text-[#E8A838]">
+                  Expires in {getTimeRemaining(report)}
+                </p>
+              )}
+
+              <p
+                className={`text-[10px] font-bold ${
+                  report.severity === "high"
+                    ? "text-[#EF4444]"
+                    : report.severity === "medium"
+                    ? "text-[#F97316]"
+                    : "text-[#E8A838]"
+                }`}
+              >
+                Severity: {report.severity?.toUpperCase()}
+              </p>
+              <p className="text-[9px] text-[#7BA3A1]">
+                {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
+              </p>
+              <div>
+                <p className="text-[9px] text-[#E8A838]">
+                  Source: CitySense user
+                </p>
+
+                <p className="text-[9px] text-[#E8A838] mt-1">
+                  📷 Photo available
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 mr-2">
+              <button
+                onClick={() => handleVote(report.id!, "upvotes")}
+                className="text-[10px] text-[#4ADE80] font-semibold"
+              >
+                👍 {report.upvotes || 0}
+              </button>
+              <button
+                onClick={() => handleVote(report.id!, "downvotes")}
+                className="text-[10px] text-[#EF4444] font-semibold"
+              >
+                👎 {report.downvotes || 0}
+              </button>
+            </div>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                report.type === "safe"
+                  ? "bg-[#4ADE8020] text-[#4ADE80]"
+                  : report.severity === "high"
+                  ? "bg-[#7F1D1D] text-[#FCA5A5]"
+                  : report.severity === "medium"
+                  ? "bg-[#EF444420] text-[#EF4444]"
+                  : "bg-[#F9731620] text-[#FDBA74]"
+              }`}
+            >
+              {report.severity ? `${report.type} • ${report.severity}` : report.type}
+            </span>
+          </div>
+        ))}
+
+        {filteredReports.length === 0 && (
+          <div className="text-center py-4">
+            <p className="text-xs text-[#7BA3A1]">No reports in this area</p>
+          </div>
+        )}
+      </div>
+  </>
+)}
       </div>
     </div>
   </div>
