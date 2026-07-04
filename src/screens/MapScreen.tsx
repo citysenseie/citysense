@@ -475,7 +475,7 @@ const aiSummary =
 )}
 
   {showSafetyCard && (
-    <div className="absolute top-24 left-4 z-30 w-72 bg-[#111827] rounded-3xl p-5 shadow-xl border border-[#2D5A5840]">
+    <div className="absolute top-20 left-4 z-30 w-60 bg-[#111827]/95 rounded-2xl p-3 shadow-xl border border-[#2D5A5840]">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
@@ -626,7 +626,7 @@ const aiSummary =
       
 
       
-      <div className="absolute bottom-28 right-4 flex flex-col gap-2 z-40">
+      <div className="absolute bottom-72 right-4 flex flex-col gap-2 z-40">
   <button
     onClick={() => setSelectedQuickType("suspicious_activity")}
     className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
@@ -671,7 +671,7 @@ const aiSummary =
 </button>
 </div>
 {location && (
-  <div className="absolute bottom-40 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
+  <div className="absolute bottom-52 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
     <div className="flex items-center gap-1.5">
       <MapPin className="w-3 h-3 text-[#E8A838]" />
       <p className="text-xs text-[#F5F3EF] truncate">{location.address}</p>
@@ -829,7 +829,7 @@ const aiSummary =
 
   <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#0F1E1E] via-[#0F1E1E80] to-transparent pointer-events-none z-30" />
 
-  <div className="absolute bottom-0 left-0 right-0 max-h-64 overflow-y-auto z-20 px-4 pt-4">
+  <div className="absolute bottom-20 left-0 right-0 max-h-48 overflow-y-auto z-40 px-4 pt-2">
     <div className="bg-[#0F1E1E80] backdrop-blur rounded-xl p-3 border border-[#2D5A5820]">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
