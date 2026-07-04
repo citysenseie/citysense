@@ -56,18 +56,19 @@ export default function MapScreen() {
 
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
-  const [quickReportSent, setQuickReportSent] = useState(false);
-  const [showNearbyReports, setShowNearbyReports] = useState(false);
- 
+
   const [showReportModal, setShowReportModal] = useState(false);
 const [quickDescription, setQuickDescription] = useState("");
 const [reportPhoto, setReportPhoto] = useState<File | null>(null);
+    const [quickReportSent, setQuickReportSent] = useState(false);
 const [selectedSeverity, setSelectedSeverity] = useState<
   "low" | "medium" | "high"
 >("medium");
   const [selectedQuickType, setSelectedQuickType] = useState<
   "suspicious_activity" | "police_presence" | "safe_area" | "sos"
 >("suspicious_activity");
+
+  
 
   useEffect(() => {
     fetchReports();
@@ -379,9 +380,7 @@ const aiSummary =
 
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
-      <div
-  className="relative overflow-hidden h-full"
->
+      <div className="relative overflow-hidden h-full">
        <div
   className={`absolute top-0 left-0 right-0 z-40 text-center py-2 text-xs font-bold tracking-wider shadow-lg ${
     threatLevel === "HIGH" ? "animate-pulse" : ""
@@ -465,142 +464,167 @@ const aiSummary =
 </MapContainer>
 
         <div className="absolute inset-0">
-        <div className="absolute top-12 left-4 z-30">
-  <button
-    onClick={() => setShowSafetyCard(!showSafetyCard)}
-    className="mb-2 bg-[#0F1E1E]
-               text-[#E8A838]
-               rounded-full px-3 py-1
-               text-xs font-bold shadow-lg"
-  >
-    {showSafetyCard ? "Hide Safety" : "Show Safety"}
-  </button>
+       <div className="absolute top-12 left-4 z-30">
+
+  {!showSafetyCard && (
+    <button
+      onClick={() => setShowSafetyCard(true)}
+      className="bg-[#0F1E1E] text-[#E8A838] rounded-full px-4 py-2 text-xs font-bold shadow-lg"
+    >
+      🛡️ Show Safety
+    </button>
+  )}
 
   {showSafetyCard && (
-    <div>
-      <div className="bg-[#0F1E1E] rounded-2xl px-4 py-3
-                      border border-[#2D5A5840]
-                      shadow-xl max-w-[230px]">
-          <div className="flex items-center gap-2">
-  <div className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
+    <div className="w-72 bg-[#111827] rounded-3xl p-5 shadow-xl border border-[#2D5A5840]">
 
-  <p className="text-[10px] uppercase tracking-wider text-[#7BA3A1] font-semibold">
-    Area Safety
-  </p>
-</div>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-green-400">🛡️</span>
+          <h3 className="text-white font-bold">
+            AREA SAFETY
+          </h3>
+        </div>
 
-          <p className="text-[9px] text-[#7BA3A1] mt-1">Updated {lastUpdated}</p>
+        <button
+          onClick={() => setShowSafetyCard(false)}
+          className="text-gray-400 hover:text-white text-lg"
+        >
+          ▼
+        </button>
+      </div>
 
-          <p className="text-[10px] text-[#E8A838] mt-1 font-bold">{hotZone}</p>
-          <p
-  className={`text-[10px] font-bold mt-1 ${
-    threatLevel === "HIGH"
-      ? "text-[#EF4444]"
-      : threatLevel === "ELEVATED"
-      ? "text-[#F97316]"
-      : threatLevel === "GUARDED"
-      ? "text-[#E8A838]"
-      : "text-[#4ADE80]"
-  }`}
->
-  Threat Level: {threatLevel}
-</p>
-        <div className="flex gap-3 mt-1 text-[9px] font-semibold">
-  <span className="text-[#EF4444]">🔴 {highReports}</span>
-  <span className="text-[#F97316]">🟠 {mediumReports}</span>
-  <span className="text-[#E8A838]">🟡 {lowReports}</span>
-</div>
+      <p className="text-[9px] text-[#7BA3A1]">
+        Updated {lastUpdated}
+      </p>
 
-          <div className="flex gap-3 mt-1 text-[10px]">
-            <span className="text-[#4ADE80]">{safeCount} safe</span>
-            <span className="text-[#EF4444]">{unsafeCount} alerts</span>
-          </div>
+      <p className="text-[10px] text-[#E8A838] mt-1 font-bold">
+        {hotZone}
+      </p>
 
-          <div className="flex items-center gap-2 mt-2">
+      <p
+        className={`text-[10px] font-bold mt-1 ${
+          threatLevel === "HIGH"
+            ? "text-[#EF4444]"
+            : threatLevel === "ELEVATED"
+            ? "text-[#F97316]"
+            : threatLevel === "GUARDED"
+            ? "text-[#E8A838]"
+            : "text-[#4ADE80]"
+        }`}
+      >
+        Threat Level: {threatLevel}
+      </p>
+
+      <div className="flex gap-3 mt-2 text-[9px] font-semibold">
+        <span className="text-[#EF4444]">🔴 {highReports}</span>
+        <span className="text-[#F97316]">🟠 {mediumReports}</span>
+        <span className="text-[#E8A838]">🟡 {lowReports}</span>
+      </div>
+
+      <div className="flex gap-3 mt-2 text-[10px]">
+        <span className="text-[#4ADE80]">
+          {safeCount} safe
+        </span>
+
+        <span className="text-[#EF4444]">
+          {unsafeCount} alerts
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3 mt-3">
+
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+          style={{
+            backgroundColor: `${scoreColor}20`,
+            color: scoreColor,
+          }}
+        >
+          {safetyScore}
+        </div>
+
+        <div className="flex-1">
+
+          <div className="w-full h-1.5 bg-[#1A2E2D] rounded-full overflow-hidden">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+              className="h-full rounded-full transition-all duration-500"
               style={{
-                backgroundColor: `${scoreColor}20`,
-                color: scoreColor,
+                width: `${safetyScore}%`,
+                backgroundColor: scoreColor,
               }}
-            >
-              {safetyScore}
-            </div>
-            <div className="mt-2">
-  <div className="w-full h-1.5 bg-[#1A2E2D] rounded-full overflow-hidden">
-    <div
-      className="h-full rounded-full transition-all duration-500"
-      style={{
-        width: `${safetyScore}%`,
-        backgroundColor: scoreColor,
-      }}
-    />
-  </div>
-
-  <p className="text-[8px] text-[#7BA3A1] mt-1">
-    Safety confidence level
-  </p>
-</div>
-
-            <div>
-              <p className="text-sm font-semibold" style={{ color: scoreColor }}>
-                {scoreLabel}
-              </p>
-              <p className="text-[10px] text-[#7BA3A1]">{riskMessage}</p>
-            </div>
+            />
           </div>
-          
 
+          <p className="text-[8px] text-[#7BA3A1] mt-1">
+            Safety confidence level
+          </p>
 
-    
-{quickReportSent && (
-  <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-30 bg-[#4ADE8020] border border-[#4ADE8060] text-[#4ADE80] px-4 py-2 rounded-full text-xs font-bold shadow-lg">
-    Report sent
-  </div>
-)}
-
-<button
- onClick={() => setShowNearbyReports(!showNearbyReports)}
->
- {showNearbyReports ? "Hide Reports" : "Show Reports"}
-</button>
-
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="text-[9px] text-[#E8A838] mt-1 underline"
+          <p
+            className="text-sm font-semibold mt-1"
+            style={{ color: scoreColor }}
           >
-            {showDetails ? "Hide details" : "Show details"}
-          </button>
+            {scoreLabel}
+          </p>
 
-          {showDetails && (
-            <>
-            <p className="text-[9px] text-[#E8A838] mt-1 italic">
-  {aiSummary}
-</p>
-<p className="text-[9px] text-[#7BA3A1] mt-1">
-  {reportDensity}
-</p>
-<p className="text-[9px] text-[#F5F3EF] mt-1 font-semibold">
+          <p className="text-[10px] text-[#7BA3A1]">
+            {riskMessage}
+          </p>
+        </div>
+
+      </div>
+
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="text-[10px] text-[#E8A838] mt-3 underline"
+      >
+        {showDetails
+          ? "Hide details"
+          : "Show details"}
+      </button>
+
+      {showDetails && (
+        <>
+          <p className="text-[9px] text-[#E8A838] mt-2 italic">
+            {aiSummary}
+          </p>
+
+          <p className="text-[9px] text-[#7BA3A1] mt-1">
+            {reportDensity}
+          </p>
+
+          <p className="text-[9px] text-[#F5F3EF] mt-1 font-semibold">
             Recommended: {recommendedAction}
           </p>
-              <div className="flex items-center gap-1 mt-1">
-  <span>
-    {unsafeCount > safeCount
-      ? "🔺"
-      : safeCount > unsafeCount
-      ? "🟢"
-      : "➖"}
-  </span>
 
-  <p className="text-[9px] text-[#E8A838]">
-    {trendMessage}
-  </p>
-</div>
-              <p className="text-[9px] text-[#7BA3A1] mt-1">{recentActivityLevel}</p>
-              <p className="text-[9px] text-[#E8A838] mt-1">{timeRisk}</p>
-            </>
-          )}
+          <div className="flex items-center gap-1 mt-1">
+            <span>
+              {unsafeCount > safeCount
+                ? "🔺"
+                : safeCount > unsafeCount
+                ? "🟢"
+                : "➖"}
+            </span>
+
+            <p className="text-[9px] text-[#E8A838]">
+              {trendMessage}
+            </p>
           </div>
+
+          <p className="text-[9px] text-[#7BA3A1] mt-1">
+            {recentActivityLevel}
+          </p>
+
+          <p className="text-[9px] text-[#E8A838] mt-1">
+            {timeRisk}
+          </p>
+        </>
+      )}
+
+    </div>
+  )}
+</div>
       
 
       
@@ -649,8 +673,7 @@ const aiSummary =
 </button>
 </div>
     </div>
-  )}
-</div>
+  </div>
 {location && (
   <div className="absolute bottom-40 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
     <div className="flex items-center gap-1.5">
@@ -799,7 +822,15 @@ const aiSummary =
         </div>
       </div>
     </div>
-    
+    </>
+  )}
+
+  {quickReportSent && (
+    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 rounded-full bg-[#4ADE80] px-4 py-2 text-xs font-bold text-[#0F1E1E] shadow-lg">
+      Report submitted successfully!
+    </div>
+  )}
+
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
         <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
@@ -916,10 +947,6 @@ const aiSummary =
           </div>
         )}
       </div>
-  </>
-)}
-      </div>
     </div>
-  </div>
   );
 }
