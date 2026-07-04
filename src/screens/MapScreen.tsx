@@ -314,7 +314,8 @@ const threatLevel =
     console.error("Vote failed:", error);
   }
 };
- const handleQuickUnsafeReport = async () => {
+
+async function handleQuickUnsafeReport() {
   if (!location) return;
 
   let photoUrl = "";
@@ -335,24 +336,24 @@ const threatLevel =
   }
 
   await submitReport({
-  type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
-  category: selectedQuickType,
- description:
-  quickDescription ||
-  (selectedQuickType === "sos"
-    ? "Emergency SOS reported"
-    : "Quick unsafe report"),
-  severity:
-  selectedQuickType === "sos"
-    ? "high"
-    : selectedSeverity,
-  latitude: lat,
-  longitude: lng,
-  address: location.address || "Unknown location",
-  userId: user?.uid || "anonymous",
-  userName: user?.displayName || "Anonymous User",
-  photoUrl: photoUrl || "",
-});
+    type: selectedQuickType === "safe_area" ? "safe" : "unsafe",
+    category: selectedQuickType,
+    description:
+      quickDescription ||
+      (selectedQuickType === "sos"
+        ? "Emergency SOS reported"
+        : "Quick unsafe report"),
+    severity:
+      selectedQuickType === "sos"
+        ? "high"
+        : selectedSeverity,
+    latitude: lat,
+    longitude: lng,
+    address: location.address || "Unknown location",
+    userId: user?.uid || "anonymous",
+    userName: user?.displayName || "Anonymous User",
+    photoUrl: photoUrl || "",
+  });
 
   fetchReports();
   setQuickReportSent(true);
@@ -360,7 +361,8 @@ const threatLevel =
   setTimeout(() => {
     setQuickReportSent(false);
   }, 2000);
-};
+}
+
   
 const aiSummary =
   safetyScore >= 85
@@ -463,20 +465,17 @@ const aiSummary =
   ))}
 </MapContainer>
 
-        <div className="absolute inset-0">
-       <div className="absolute top-12 left-4 z-30">
-
-  {!showSafetyCard && (
-    <button
-      onClick={() => setShowSafetyCard(true)}
-      className="bg-[#0F1E1E] text-[#E8A838] rounded-full px-4 py-2 text-xs font-bold shadow-lg"
-    >
-      🛡️ Show Safety
-    </button>
-  )}
+       {!showSafetyCard && (
+  <button
+    onClick={() => setShowSafetyCard(true)}
+    className="absolute top-12 left-4 z-50 bg-[#0F1E1E] text-[#E8A838] rounded-full px-4 py-2 text-xs font-bold shadow-lg"
+  >
+    🛡️ Show Safety
+  </button>
+)}
 
   {showSafetyCard && (
-    <div className="w-72 bg-[#111827] rounded-3xl p-5 shadow-xl border border-[#2D5A5840]">
+    <div className="absolute top-24 left-4 z-30 w-72 bg-[#111827] rounded-3xl p-5 shadow-xl border border-[#2D5A5840]">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
@@ -624,7 +623,6 @@ const aiSummary =
 
     </div>
   )}
-</div>
       
 
       
@@ -672,8 +670,6 @@ const aiSummary =
   🚨 SOS
 </button>
 </div>
-    </div>
-  </div>
 {location && (
   <div className="absolute bottom-40 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
     <div className="flex items-center gap-1.5">
@@ -831,13 +827,17 @@ const aiSummary =
     </div>
   )}
 
+  <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#0F1E1E] via-[#0F1E1E80] to-transparent pointer-events-none z-30" />
+
+  <div className="absolute bottom-0 left-0 right-0 max-h-64 overflow-y-auto z-20 px-4 pt-4">
+    <div className="bg-[#0F1E1E80] backdrop-blur rounded-xl p-3 border border-[#2D5A5820]">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
         <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
       </div>
 
       <div className="space-y-2">
-        {filteredReports.slice(0, 4).map((report) => (
+        {filteredReports.slice(0, 4).map((report: any) => (
           <div
             key={report.id}
             className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
@@ -948,5 +948,8 @@ const aiSummary =
         )}
       </div>
     </div>
+  </div>
+</div>
+</div>
   );
 }
