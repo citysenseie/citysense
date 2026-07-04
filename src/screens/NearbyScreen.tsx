@@ -1,4 +1,35 @@
-import { MapPin, Shield, Hospital, Car, Utensils, Moon } from "lucide-react";
+import {
+  Shield,
+  MapPin,
+  Car,
+  Navigation,
+  LocateFixed,
+  Siren,
+  Flame,
+  Zap,
+  Fuel,
+  PlugZap,
+  Wrench,
+  CircleParking,
+  ShoppingCart,
+  Landmark,
+  Wifi,
+  Smartphone,
+  Hotel,
+  Baby,
+  TreePine,
+  School,
+  Waves,
+  Dumbbell,
+  UtensilsCrossed,
+  Pill,
+  Drum,
+  Building2,
+  Compass,
+  Hand,
+  HeartPulse,
+  Cross,
+} from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 
 interface NearbyScreenProps {
@@ -16,20 +47,11 @@ interface NearbyScreenProps {
   onTrustedContacts: () => void;
 }
 
-
 export default function NearbyScreen({
   onSafeHaven,
   onDriverMode,
   onWalkMeHome,
-  onParkProtect,
-  onEmergencyNetwork,
-  onRoadHazard,
-  onWomensSafety,
-  onChildSafety,
   onLiveLocation,
-  onNightMode,
-  onCrowdSense,
-  onTrustedContacts,
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
@@ -43,235 +65,168 @@ export default function NearbyScreen({
     );
   };
 
-  const sections = [
+  const quickActions = [
     {
-  title: "🛡️ Safe Haven",
-  icon: Shield,
-  items: [
-    "🚓 Police Station",
-    "🏥 Hospital",
-    "💊 Pharmacy",
-    "🏨 Hotel",
-    "🛒 24 Hour Store",
-    "🕌 Mosque",
-  ],
-},
+      label: "Find Safe Place",
+      icon: Shield,
+      onClick: onSafeHaven,
+      accent: "border-[#EF4444]",
+      iconColor: "text-[#EF4444]",
+    },
     {
-    title: "🚨 Emergency",
-    icon: Hospital,
-    items: [
-      "🚑 Emergency Room",
-      "🔥 Fire Station",
-      "⚡ AED Defibrillator",
-      "🏥 Urgent Care",
-      "👩 Women's Shelter",
-    ],
-  },
-     {
-    title: "🕌 Muslim Friendly",
-    icon: MapPin,
-    items: [
-      "🕌 Mosque",
-      "🍽️ Halal Food",
-      "📖 Islamic Center",
-    ],
-  },
+      label: "Walk Me Home",
+      icon: Navigation,
+      onClick: onWalkMeHome,
+      accent: "border-[#10B981]",
+      iconColor: "text-[#10B981]",
+    },
     {
-    title: "🚗 Driver Help",
-    icon: Car,
-    items: [
-      "⛽ Gas Station",
-      "🔌 EV Charger",
-      "🔧 Car Repair",
-      "🛞 Tire Shop",
-      "🅿️ Parking",
-    ],
-  },
-     {
-    title: "🍽️ Daily Essentials",
-    icon: Utensils,
-    items: [
-      "🛒 Grocery Store",
-      "🏧 ATM",
-      "🚻 Public Toilet",
-      "📶 Free Wi-Fi",
-      "📱 Phone Repair",
-    ],
-  },
+      label: "Driver Mode",
+      icon: Car,
+      onClick: onDriverMode,
+      accent: "border-[#3B82F6]",
+      iconColor: "text-[#3B82F6]",
+    },
     {
-  title: "🌙 Night Mode",
-  icon: Moon,
-  items: [
-    "💊 Open Pharmacy",
-    "⛽ Open Gas Station",
-    "🏨 Open Hotel",
-    "🍔 Open Restaurant",
-    "🚓 Police Station",
-  ],
-},
+      label: "Live Location",
+      icon: LocateFixed,
+      onClick: onLiveLocation,
+      accent: "border-[#F59E0B]",
+      iconColor: "text-[#F59E0B]",
+    },
+  ];
 
-{
-  title: "👨‍👩‍👧 Family Safety",
-  icon: Shield,
-  items: [
-    "🛝 Playground",
-    "🌳 Park",
-    "🏫 School",
-    "🏊 Swimming Pool",
-    "⚽ Sports Center",
-    "🍽️ Family Restaurant",
-  ],
-},
-
-
-{
-  title: "🚨 Disaster & Emergency",
-  icon: Hospital,
-  items: [
-    "🚑 Ambulance",
-    "🔥 Fire Station",
-    "⚡ AED Defibrillator",
-    "🆘 Emergency Shelter",
-    "🌊 Flood Zone",
-  ],
-},
-
-{
-  title: "🕌 Prayer & Faith",
-  icon: MapPin,
-  items: [
-    "🕌 Mosque",
-    "📖 Islamic Center",
-    "🧭 Qibla Direction",
-    "🤲 Prayer Space",
-  ],
-},
- ];
-
-  // onCrowdSense is received via props
+  const categories = [
+    {
+      title: "Safety & Emergency",
+      items: [
+        { label: "Police Station", icon: Siren },
+        { label: "Hospital", icon: HeartPulse },
+        { label: "Pharmacy", icon: Pill },
+        { label: "Emergency Room", icon: Cross },
+        { label: "Fire Station", icon: Flame },
+        { label: "AED Defibrillator", icon: Zap },
+      ],
+    },
+    {
+      title: "Driver",
+      items: [
+        { label: "Gas Station", icon: Fuel },
+        { label: "EV Charger", icon: PlugZap },
+        { label: "Car Repair", icon: Wrench },
+        { label: "Parking", icon: CircleParking },
+        { label: "Tire Shop", icon: Wrench },
+      ],
+    },
+    {
+      title: "Daily Essentials",
+      items: [
+        { label: "Grocery Store", icon: ShoppingCart },
+        { label: "ATM", icon: Landmark },
+        { label: "Public Toilet", icon: MapPin },
+        { label: "Free Wi-Fi", icon: Wifi },
+        { label: "Phone Repair", icon: Smartphone },
+        { label: "Hotel", icon: Hotel },
+      ],
+    },
+    {
+      title: "Family",
+      items: [
+        { label: "Playground", icon: Baby },
+        { label: "Park", icon: TreePine },
+        { label: "School", icon: School },
+        { label: "Swimming Pool", icon: Waves },
+        { label: "Sports Center", icon: Dumbbell },
+        { label: "Family Restaurant", icon: UtensilsCrossed },
+      ],
+    },
+    {
+      title: "Night",
+      items: [
+        { label: "Open Pharmacy", icon: Pill },
+        { label: "Open Gas Station", icon: Fuel },
+        { label: "Open Hotel", icon: Hotel },
+        { label: "Open Restaurant", icon: UtensilsCrossed },
+        { label: "Police Station", icon: Siren },
+      ],
+    },
+    {
+      title: "Faith & Prayer",
+      items: [
+        { label: "Mosque", icon: Drum },
+        { label: "Islamic Center", icon: Building2 },
+        { label: "Qibla Direction", icon: Compass },
+        { label: "Prayer Space", icon: Hand },
+      ],
+    },
+  ];
 
   return (
-  <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
-    <h1 className="text-2xl font-bold mb-1">Nearby Help</h1>
+    <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-4 pb-24">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-[#F5F3EF]">Nearby Help</h1>
+        <p className="text-sm text-[#7BA3A1]">
+          Find useful places and safety support near you.
+        </p>
+      </div>
 
-    <p className="text-sm text-[#7BA3A1] mb-5">
-      Find safe places, emergency help, and daily essentials near you.
-    </p>
-<div className="mb-3">
-  <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
-    Featured Safety Tools
-  </p>
-</div>
-    <button
-      onClick={onSafeHaven}
-      className="w-full mb-4 bg-[#EF4444] text-white py-4 rounded-2xl font-bold shadow-lg"
-    >
-      🛡️ Find Safe Place Now
-    </button>
+      {/* Quick Actions */}
+      <div className="mb-5">
+        <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold mb-3">
+          Quick Actions
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.label}
+                onClick={action.onClick}
+                className={`flex items-center gap-2 bg-[#1A2E2D] border ${action.accent} rounded-xl px-3 py-3 text-left active:scale-95 transition-transform`}
+              >
+                <Icon className={`w-5 h-5 ${action.iconColor} shrink-0`} />
+                <span className="text-sm font-medium text-[#F5F3EF]">
+                  {action.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-    <button
-      onClick={onDriverMode}
-      className="w-full mb-5 bg-[#3B82F6] text-white py-4 rounded-2xl font-bold shadow-lg"
-    >
-      🚗 Driver Mode
-    </button>
-
-    <button
-      onClick={onWalkMeHome}
-      className="w-full mb-5 bg-[#10B981] text-white py-4 rounded-2xl font-bold shadow-lg"
-    >
-      🚶 Walk Me Home
-    </button>
-
-    <button
-      onClick={onLiveLocation}
-      className="w-full mb-5 bg-[#F59E0B] text-white py-4 rounded-2xl font-bold shadow-lg"
-    >
-      📍 Live Location
-    </button>
-    
-    <button
-  onClick={onEmergencyNetwork}
-  className="w-full mb-5 bg-[#DC2626] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🚨 Emergency Network
-</button>
-<button
-  onClick={onParkProtect}
-  className="w-full mb-5 bg-[#2563EB] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🅿️ Park & Protect
-</button>
-<button
-  onClick={onRoadHazard}
-  className="w-full mb-5 bg-[#F59E0B] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🚧 Road Hazard
-</button>
-<button
-  onClick={onWomensSafety}
-  className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  👩 Women’s Safety
-</button>
-<button
-  onClick={onChildSafety}
-  className="w-full mb-5 bg-[#06B6D4] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  👶 Child Safety
-</button>
-<button
-  onClick={onNightMode}
-  className="w-full mb-5 bg-[#1E293B] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🌙 Night Mode
-</button>
-<button
-  onClick={onCrowdSense}
-  className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🌐 Crowd Sense
-</button>
-<button
-  onClick={onTrustedContacts}
-  className="w-full mb-5 bg-[#8B5CF6] text-white py-4 rounded-2xl font-bold shadow-lg"
->
-  🕒 Trusted Contacts
-</button>
-
-<div className="mt-2 mb-3">
-  <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
-    Nearby Categories
-  </p>
-</div>
-    <div className="space-y-4">
-        {sections.map((section) => {
-          const Icon = section.icon;
-
-          return (
+      {/* Nearby Categories */}
+      <div className="mb-3">
+        <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold mb-3">
+          Nearby Categories
+        </p>
+        <div className="flex flex-col gap-3">
+          {categories.map((category) => (
             <div
-              key={section.title}
+              key={category.title}
               className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Icon className="w-5 h-5 text-[#E8A838]" />
-                <h2 className="font-bold text-[#F5F3EF]">{section.title}</h2>
-              </div>
-
+              <h2 className="font-bold text-[#F5F3EF] text-sm mb-3">
+                {category.title}
+              </h2>
               <div className="grid grid-cols-2 gap-2">
-                {section.items.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => openNearby(item)}
-                    className="bg-[#0F1E1E] border border-[#2D5A5840] rounded-xl px-3 py-3 text-xs text-left text-[#F5F3EF] active:scale-95"
-                  >
-                    {item}
-                  </button>
-                ))}
+                {category.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => openNearby(item.label)}
+                      className="flex items-center gap-2 bg-[#0F1E1E] border border-[#2D5A5840] rounded-xl px-3 min-h-[48px] text-left text-sm text-[#F5F3EF] active:scale-95 transition-transform"
+                    >
+                      <Icon className="w-4 h-4 text-[#7BA3A1] shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
