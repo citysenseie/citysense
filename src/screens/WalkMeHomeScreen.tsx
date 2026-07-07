@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  MapContainer,
+  Marker,
+  Polyline,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import {
   auth,
   db,
   collection,
@@ -20,6 +29,48 @@ interface TrustedContact {
   phone: string;
   relationship: string;
 }
+type MovementMode =
+  | "walking"
+  | "cycling"
+  | "vehicle"
+  | "stopped";
+
+interface JourneyPoint {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  speed: number | null;
+}
+
+function SafeJourneyMapController({
+  latitude,
+  longitude,
+}: {
+  latitude: number;
+  longitude: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([latitude, longitude], map.getZoom(), { animate: true });
+  }, [latitude, longitude, map]);
+
+  return null;
+}
+
+const journeyUserIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:22px;height:22px;border-radius:50%;background:#3B82F6;border:4px solid white;box-shadow:0 0 0 8px rgba(59,130,246,0.25);"></div>`,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+});
+
+const journeyDestinationIcon = L.divIcon({
+  className: "",
+  html: `<div style="font-size:30px;transform:translate(-4px,-22px);">📍</div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+});
 
 export default function WalkMeHomeScreen({
   onBack,
@@ -37,32 +88,83 @@ export default function WalkMeHomeScreen({
 
   const [destinationLat, setDestinationLat] = useState<number | null>(null);
   const [destinationLng, setDestinationLng] = useState<number | null>(null);
-const [alertId, setAlertId] = useState<string | null>(null);
-useEffect(() => {
-  if (!navigator.geolocation) return;
+  const [alertId, setAlertId] = useState<string | null>(null);
+  const [journeyPoints, setJourneyPoints] = useState<JourneyPoint[]>([]);
+  const [journeySeconds, setJourneySeconds] = useState(0);
+  const [distanceTravelled, setDistanceTravelled] = useState(0);
+  const [movementMode, setMovementMode] = useState<MovementMode>("stopped");
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      setUserLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-    },
-    () => {
-      alert("Unable to determine your current location.");
-    }
-  );
-}, []);
-useEffect(() => {
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => {
+        alert("Unable to determine your current location.");
+      }
+    );
+  }, []);
+
+  useEffect(() => {
   if (!walkStarted) return;
 
   const watchId = navigator.geolocation.watchPosition(
     (position) => {
-      setUserLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-    },
+  const latitude = position.coords.latitude;
+  const longitude = position.coords.longitude;
+  const speed = position.coords.speed;
+
+  setUserLocation({
+    latitude,
+    longitude,
+  });
+
+  const newPoint: JourneyPoint = {
+    latitude,
+    longitude,
+    timestamp: Date.now(),
+    speed,
+  };
+
+  setJourneyPoints((previousPoints) => {
+    const lastPoint = previousPoints[previousPoints.length - 1];
+
+    if (lastPoint) {
+      const segmentDistance = getDistanceKm(
+        lastPoint.latitude,
+        lastPoint.longitude,
+        latitude,
+        longitude
+      );
+
+      if (segmentDistance < 0.5) {
+        setDistanceTravelled(
+          (previousDistance) =>
+            previousDistance + segmentDistance
+        );
+      }
+    }
+
+    return [...previousPoints.slice(-199), newPoint];
+  });
+
+  const speedKmh = speed !== null ? speed * 3.6 : 0;
+
+  if (speedKmh < 1.5) {
+    setMovementMode("stopped");
+  } else if (speedKmh < 8) {
+    setMovementMode("walking");
+  } else if (speedKmh < 25) {
+    setMovementMode("cycling");
+  } else {
+    setMovementMode("vehicle");
+  }
+},
     (error) => {
       console.error(error);
     },
@@ -77,6 +179,15 @@ useEffect(() => {
     navigator.geolocation.clearWatch(watchId);
   };
 }, [walkStarted]);
+
+  useEffect(() => {
+    if (!walkStarted) return;
+    const journeyTimer = window.setInterval(() => {
+      setJourneySeconds((previous) => previous + 1);
+    }, 1000);
+    return () => window.clearInterval(journeyTimer);
+  }, [walkStarted]);
+
 useEffect(() => {
   if (!alertId || !userLocation) return;
 
@@ -203,6 +314,25 @@ useEffect(() => {
       .padStart(2, "0")}`;
   };
 
+  const remainingDistance =
+    userLocation && destinationLat !== null && destinationLng !== null
+      ? getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          destinationLat,
+          destinationLng
+        )
+      : null;
+
+  const movementLabel =
+    movementMode === "walking"
+      ? "🚶 Walking"
+      : movementMode === "cycling"
+      ? "🚲 Cycling"
+      : movementMode === "vehicle"
+      ? "🚗 In vehicle"
+      : "⏸️ Stopped";
+
   const calculateWalkTime = () => {
     if (!destination.trim()) return;
 
@@ -290,8 +420,11 @@ useEffect(() => {
 
               calculateWalkTime();
 
-setEmergencyTriggered(false);
-setWalkStarted(true);
+              setJourneyPoints([]);
+              setJourneySeconds(0);
+              setDistanceTravelled(0);
+              setEmergencyTriggered(false);
+              setWalkStarted(true);
             }}
             className="w-full bg-[#22C55E] text-black font-bold py-4 rounded-2xl"
           >
@@ -339,17 +472,109 @@ setWalkStarted(true);
             <p className="text-xs text-[#7BA3A1] mb-1">Walking to</p>
             <h2 className="text-lg font-bold">{destination}</h2>
           </div>
-<div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
-  <p className="text-xs text-[#7BA3A1] mb-1">
-    Current Location
-  </p>
+{userLocation && (
+            <div className="relative h-[360px] overflow-hidden rounded-3xl border border-[#2D5A5840] shadow-xl">
+              <MapContainer
+                center={[userLocation.latitude, userLocation.longitude]}
+                zoom={16}
+                className="h-full w-full z-0"
+                zoomControl={false}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution="&copy; OpenStreetMap contributors"
+                />
+                <SafeJourneyMapController
+                  latitude={userLocation.latitude}
+                  longitude={userLocation.longitude}
+                />
+                <Marker
+                  position={[userLocation.latitude, userLocation.longitude]}
+                  icon={journeyUserIcon}
+                >
+                  <Popup>Current live location</Popup>
+                </Marker>
 
-  <p className="text-sm">
-    {userLocation?.latitude?.toFixed(5)},
-    {" "}
-    {userLocation?.longitude?.toFixed(5)}
-  </p>
-</div>
+                {destinationLat !== null && destinationLng !== null && (
+                  <>
+                    <Marker
+                      position={[destinationLat, destinationLng]}
+                      icon={journeyDestinationIcon}
+                    >
+                      <Popup>{destination}</Popup>
+                    </Marker>
+                    <Polyline
+                      positions={[
+                        [userLocation.latitude, userLocation.longitude],
+                        [destinationLat, destinationLng],
+                      ]}
+                      pathOptions={{
+                        color: "#E8A838",
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: "8 8",
+                      }}
+                    />
+                  </>
+                )}
+
+                {journeyPoints.length > 1 && (
+                  <Polyline
+                    positions={journeyPoints.map((point) => [
+                      point.latitude,
+                      point.longitude,
+                    ])}
+                    pathOptions={{
+                      color: "#3B82F6",
+                      weight: 5,
+                      opacity: 0.85,
+                    }}
+                  />
+                )}
+              </MapContainer>
+
+              <div className="absolute top-3 left-3 right-3 z-[500] flex justify-between gap-2 pointer-events-none">
+                <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 shadow-lg">
+                  <p className="text-[10px] text-[#7BA3A1]">LIVE JOURNEY</p>
+                  <p className="text-sm font-bold text-white">{movementLabel}</p>
+                </div>
+                <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 text-right shadow-lg">
+                  <p className="text-[10px] text-[#7BA3A1]">JOURNEY TIME</p>
+                  <p className="text-sm font-bold text-[#E8A838]">
+                    {formatTime(journeySeconds)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-3 left-3 right-3 z-[500] pointer-events-none">
+                <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg">
+                  <p className="text-[10px] text-[#7BA3A1]">SAFE JOURNEY TO</p>
+                  <p className="font-bold text-white truncate">📍 {destination}</p>
+                  <div className="flex justify-between gap-3 mt-2 text-xs">
+                    <span className="text-[#E8A838]">
+                      {distanceTravelled.toFixed(2)} km travelled
+                    </span>
+                    <span className="text-[#4ADE80]">
+                      {remainingDistance !== null
+                        ? `${remainingDistance.toFixed(2)} km remaining`
+                        : "Calculating distance"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#4ADE80] mt-1">
+                    🛡️ Guardian monitoring active
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
+            <p className="text-xs text-[#7BA3A1] mb-1">Distance travelled</p>
+            <p className="text-sm">{distanceTravelled.toFixed(2)} km</p>
+          </div>
+          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
+            <p className="text-xs text-[#7BA3A1] mb-1">Movement mode</p>
+            <p className="text-sm capitalize">{movementMode}</p>
+          </div>
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
 
