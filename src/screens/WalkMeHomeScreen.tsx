@@ -567,13 +567,42 @@ useEffect(() => {
               </div>
             </div>
           )}
-          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
-            <p className="text-xs text-[#7BA3A1] mb-1">Distance travelled</p>
-            <p className="text-sm">{distanceTravelled.toFixed(2)} km</p>
-          </div>
-          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
-            <p className="text-xs text-[#7BA3A1] mb-1">Movement mode</p>
-            <p className="text-sm capitalize">{movementMode}</p>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
+              <p className="text-[10px] text-[#7BA3A1] mb-1">MODE</p>
+              <p className="text-xs font-bold text-white truncate">{movementLabel}</p>
+            </div>
+            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
+              <p className="text-[10px] text-[#7BA3A1] mb-1">TRAVELLED</p>
+              <p className="text-xs font-bold text-[#E8A838]">{distanceTravelled.toFixed(2)} km</p>
+            </div>
+            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
+              <p className="text-[10px] text-[#7BA3A1] mb-1">LEFT</p>
+              <p className="text-xs font-bold text-[#4ADE80]">
+                {remainingDistance !== null ? `${remainingDistance.toFixed(2)} km` : "--"}
+              </p>
+            </div>
+            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
+              <p className="text-[10px] text-[#7BA3A1] mb-1">ETA</p>
+              <p className="text-xs font-bold text-white">
+                {remainingDistance !== null
+                  ? `${Math.max(
+                      1,
+                      Math.ceil(
+                        (remainingDistance /
+                          (movementMode === "walking"
+                            ? 5
+                            : movementMode === "cycling"
+                            ? 15
+                            : movementMode === "vehicle"
+                            ? 40
+                            : 5)) *
+                          60
+                      )
+                    )} min`
+                  : "--"}
+              </p>
+            </div>
           </div>
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
