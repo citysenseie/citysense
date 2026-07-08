@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -93,6 +93,9 @@ export default function WalkMeHomeScreen({
   const [journeySeconds, setJourneySeconds] = useState(0);
   const [distanceTravelled, setDistanceTravelled] = useState(0);
   const [movementMode, setMovementMode] = useState<MovementMode>("stopped");
+  const [arrived, setArrived] = useState(false);
+  const speedSamplesRef = useRef<number[]>([]);
+  const arrivalSamplesRef = useRef(0);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -153,16 +156,24 @@ export default function WalkMeHomeScreen({
     return [...previousPoints.slice(-199), newPoint];
   });
 
-  const speedKmh = speed !== null ? speed * 3.6 : 0;
+  const speedKmh = speed !== null && speed >= 0 ? speed * 3.6 : null;
 
-  if (speedKmh < 1.5) {
-    setMovementMode("stopped");
-  } else if (speedKmh < 8) {
-    setMovementMode("walking");
-  } else if (speedKmh < 25) {
-    setMovementMode("cycling");
-  } else {
-    setMovementMode("vehicle");
+  if (speedKmh !== null) {
+    speedSamplesRef.current = [...speedSamplesRef.current.slice(-5), speedKmh];
+    const samples = speedSamplesRef.current;
+    const averageSpeedKmh =
+      samples.reduce((total, value) => total + value, 0) / samples.length;
+    const maxSpeedKmh = Math.max(...samples);
+
+    if (averageSpeedKmh < 1.5 && maxSpeedKmh < 3) {
+      setMovementMode("stopped");
+    } else if (averageSpeedKmh < 9 && maxSpeedKmh < 14) {
+      setMovementMode("walking");
+    } else if (averageSpeedKmh < 22 && maxSpeedKmh < 32) {
+      setMovementMode("cycling");
+    } else {
+      setMovementMode("vehicle");
+    }
   }
 },
     (error) => {
@@ -333,6 +344,24 @@ useEffect(() => {
       ? "🚗 In vehicle"
       : "⏸️ Stopped";
 
+  useEffect(() => {
+    if (!walkStarted || arrived || remainingDistance === null) return;
+
+    if (remainingDistance <= 0.06) {
+      arrivalSamplesRef.current += 1;
+    } else {
+      arrivalSamplesRef.current = 0;
+    }
+
+    if (arrivalSamplesRef.current >= 3) {
+      setArrived(true);
+      setWalkStarted(false);
+      setTimeLeft(0);
+      setMovementMode("stopped");
+      alert(`🎉 Arrived safely at ${destination}.`);
+    }
+  }, [walkStarted, arrived, remainingDistance, destination]);
+
   const calculateWalkTime = () => {
     if (!destination.trim()) return;
 
@@ -424,6 +453,9 @@ useEffect(() => {
               setJourneySeconds(0);
               setDistanceTravelled(0);
               setEmergencyTriggered(false);
+              setArrived(false);
+              arrivalSamplesRef.current = 0;
+              speedSamplesRef.current = [];
               setWalkStarted(true);
             }}
             className="w-full bg-[#22C55E] text-black font-bold py-4 rounded-2xl"
@@ -567,42 +599,13 @@ useEffect(() => {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-4 gap-2">
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
-              <p className="text-[10px] text-[#7BA3A1] mb-1">MODE</p>
-              <p className="text-xs font-bold text-white truncate">{movementLabel}</p>
-            </div>
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
-              <p className="text-[10px] text-[#7BA3A1] mb-1">TRAVELLED</p>
-              <p className="text-xs font-bold text-[#E8A838]">{distanceTravelled.toFixed(2)} km</p>
-            </div>
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
-              <p className="text-[10px] text-[#7BA3A1] mb-1">LEFT</p>
-              <p className="text-xs font-bold text-[#4ADE80]">
-                {remainingDistance !== null ? `${remainingDistance.toFixed(2)} km` : "--"}
-              </p>
-            </div>
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-2 py-3 text-center">
-              <p className="text-[10px] text-[#7BA3A1] mb-1">ETA</p>
-              <p className="text-xs font-bold text-white">
-                {remainingDistance !== null
-                  ? `${Math.max(
-                      1,
-                      Math.ceil(
-                        (remainingDistance /
-                          (movementMode === "walking"
-                            ? 5
-                            : movementMode === "cycling"
-                            ? 15
-                            : movementMode === "vehicle"
-                            ? 40
-                            : 5)) *
-                          60
-                      )
-                    )} min`
-                  : "--"}
-              </p>
-            </div>
+          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
+            <p className="text-xs text-[#7BA3A1] mb-1">Distance travelled</p>
+            <p className="text-sm">{distanceTravelled.toFixed(2)} km</p>
+          </div>
+          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
+            <p className="text-xs text-[#7BA3A1] mb-1">Movement mode</p>
+            <p className="text-sm capitalize">{movementMode}</p>
           </div>
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
