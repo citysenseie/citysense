@@ -33,6 +33,7 @@ type MovementMode =
   | "walking"
   | "cycling"
   | "vehicle"
+  | "train"
   | "stopped";
 
 interface JourneyPoint {
@@ -96,6 +97,8 @@ export default function WalkMeHomeScreen({
   const [arrived, setArrived] = useState(false);
   const speedSamplesRef = useRef<number[]>([]);
   const arrivalSamplesRef = useRef(0);
+  const [movementConfidence, setMovementConfidence] = useState(0);
+  const trainEvidenceRef = useRef(0);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -165,14 +168,41 @@ export default function WalkMeHomeScreen({
       samples.reduce((total, value) => total + value, 0) / samples.length;
     const maxSpeedKmh = Math.max(...samples);
 
-    if (averageSpeedKmh < 1.5 && maxSpeedKmh < 3) {
+    // Train Intelligence v1:
+    // Require sustained high-speed evidence across several GPS updates.
+    // We intentionally do not call this "train" from a single speed sample.
+    const trainSpeedEvidence =
+      averageSpeedKmh >= 45 && maxSpeedKmh >= 60;
+
+    if (trainSpeedEvidence) {
+      trainEvidenceRef.current = Math.min(
+        5,
+        trainEvidenceRef.current + 1
+      );
+    } else {
+      trainEvidenceRef.current = Math.max(
+        0,
+        trainEvidenceRef.current - 1
+      );
+    }
+
+    if (trainEvidenceRef.current >= 3) {
+      setMovementMode("train");
+      setMovementConfidence(
+        Math.min(95, 72 + trainEvidenceRef.current * 4)
+      );
+    } else if (averageSpeedKmh < 1.5 && maxSpeedKmh < 3) {
       setMovementMode("stopped");
+      setMovementConfidence(92);
     } else if (averageSpeedKmh < 9 && maxSpeedKmh < 14) {
       setMovementMode("walking");
+      setMovementConfidence(86);
     } else if (averageSpeedKmh < 22 && maxSpeedKmh < 32) {
       setMovementMode("cycling");
+      setMovementConfidence(72);
     } else {
       setMovementMode("vehicle");
+      setMovementConfidence(78);
     }
   }
 },
@@ -342,6 +372,8 @@ useEffect(() => {
       ? "🚲 Cycling"
       : movementMode === "vehicle"
       ? "🚗 In vehicle"
+      : movementMode === "train"
+      ? "🚆 Train likely"
       : "⏸️ Stopped";
 
   useEffect(() => {
@@ -456,6 +488,8 @@ useEffect(() => {
               setArrived(false);
               arrivalSamplesRef.current = 0;
               speedSamplesRef.current = [];
+              trainEvidenceRef.current = 0;
+              setMovementConfidence(0);
               setWalkStarted(true);
             }}
             className="w-full bg-[#22C55E] text-black font-bold py-4 rounded-2xl"
@@ -569,6 +603,11 @@ useEffect(() => {
                 <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 shadow-lg">
                   <p className="text-[10px] text-[#7BA3A1]">LIVE JOURNEY</p>
                   <p className="text-sm font-bold text-white">{movementLabel}</p>
+                  <p className="text-[10px] text-[#7BA3A1]">
+                    {movementConfidence > 0
+                      ? `${movementConfidence}% confidence`
+                      : "Identifying transport..."}
+                  </p>
                 </div>
                 <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 text-right shadow-lg">
                   <p className="text-[10px] text-[#7BA3A1]">JOURNEY TIME</p>
