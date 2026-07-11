@@ -43,6 +43,15 @@ interface JourneyPoint {
   speed: number | null;
 }
 
+interface AddressSuggestion {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+type RoutePoint = [number, number];
+
 function SafeJourneyMapController({
   latitude,
   longitude,
@@ -97,8 +106,196 @@ export default function WalkMeHomeScreen({
   const [arrived, setArrived] = useState(false);
   const speedSamplesRef = useRef<number[]>([]);
   const arrivalSamplesRef = useRef(0);
-  const [movementConfidence, setMovementConfidence] = useState(0);
+ const [, setMovementConfidence] = useState(0);
   const trainEvidenceRef = useRef(0);
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
+  const [routeDurationSeconds, setRouteDurationSeconds] = useState<number | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
+  const addressSearchTimerRef = useRef<number | null>(null);
+
+  const searchAddresses = (query: string) => {
+    setDestination(query);
+    setDestinationLat(null);
+    setDestinationLng(null);
+    setAddressSuggestions([]);
+
+    if (addressSearchTimerRef.current !== null) {
+      window.clearTimeout(addressSearchTimerRef.current);
+    }
+
+    if (query.trim().length < 3) return;
+
+    addressSearchTimerRef.current = window.setTimeout(async () => {
+      setIsSearchingAddress(true);
+
+      try {
+        const params = new URLSearchParams({
+          q: query.trim(),
+          format: "jsonv2",
+          addressdetails: "1",
+          limit: "6",
+          countrycodes: "be,nl,fr,de,lu",
+        });
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+          {
+            headers: {
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Address search failed: ${response.status}`);
+        }
+
+        const results = (await response.json()) as AddressSuggestion[];
+        setAddressSuggestions(results);
+      } catch (error) {
+        console.error("Address search error:", error);
+        setAddressSuggestions([]);
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 450);
+  };
+
+  const calculateRoute = async (
+    destinationLatitude: number,
+    destinationLongitude: number
+  ) => {
+    if (!userLocation) {
+      alert("Current GPS location is not available yet.");
+      return false;
+    }
+
+    setIsRouting(true);
+
+    try {
+      const routeUrl =
+        `https://routing.openstreetmap.de/routed-foot/route/v1/driving/` +
+        `${userLocation.longitude},${userLocation.latitude};` +
+        `${destinationLongitude},${destinationLatitude}` +
+        `?overview=full&geometries=geojson&steps=false`;
+
+      const response = await fetch(routeUrl);
+
+      if (!response.ok) {
+        throw new Error(`Route request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const route = data?.routes?.[0];
+
+      if (!route) {
+        alert("No walking route could be found to this destination.");
+        return false;
+      }
+
+      const points: RoutePoint[] = route.geometry.coordinates.map(
+        ([longitude, latitude]: [number, number]) => [latitude, longitude]
+      );
+
+      setRoutePoints(points);
+      setRouteDistanceKm(route.distance / 1000);
+      setRouteDurationSeconds(route.duration);
+      setEstimatedMinutes(Math.max(1, Math.ceil(route.duration / 60)));
+      setTimeLeft(300);
+
+      return true;
+    } catch (error) {
+      console.error("Routing error:", error);
+      alert("CitySense could not calculate the route. Please try again.");
+      return false;
+    } finally {
+      setIsRouting(false);
+    }
+  };
+
+  const selectDestination = async (place: AddressSuggestion) => {
+    const latitude = Number(place.lat);
+    const longitude = Number(place.lon);
+
+    setDestination(place.display_name);
+    setDestinationLat(latitude);
+    setDestinationLng(longitude);
+    setAddressSuggestions([]);
+
+    await calculateRoute(latitude, longitude);
+  };
+
+  const resolveDestinationAndRoute = async () => {
+    if (!destination.trim()) {
+      alert("Please enter your destination first.");
+      return false;
+    }
+
+    if (!userLocation) {
+      alert("Waiting for your current GPS location. Please try again in a moment.");
+      return false;
+    }
+
+    if (destinationLat !== null && destinationLng !== null) {
+      return calculateRoute(destinationLat, destinationLng);
+    }
+
+    setIsSearchingAddress(true);
+
+    try {
+      const params = new URLSearchParams({
+        q: destination.trim(),
+        format: "jsonv2",
+        addressdetails: "1",
+        limit: "1",
+        countrycodes: "be,nl,fr,de,lu",
+      });
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+        { headers: { Accept: "application/json" } }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Address search failed: ${response.status}`);
+      }
+
+      const results = (await response.json()) as AddressSuggestion[];
+      const place = results[0];
+
+      if (!place) {
+        alert("Address not found. Try adding the city or postcode.");
+        return false;
+      }
+
+      const latitude = Number(place.lat);
+      const longitude = Number(place.lon);
+
+      setDestination(place.display_name);
+      setDestinationLat(latitude);
+      setDestinationLng(longitude);
+      setAddressSuggestions([]);
+
+      return calculateRoute(latitude, longitude);
+    } catch (error) {
+      console.error("Destination lookup error:", error);
+      alert("CitySense could not search for that address. Please try again.");
+      return false;
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (addressSearchTimerRef.current !== null) {
+        window.clearTimeout(addressSearchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -356,13 +553,34 @@ useEffect(() => {
   };
 
   const remainingDistance =
-    userLocation && destinationLat !== null && destinationLng !== null
+    routeDistanceKm !== null
+      ? Math.max(0, routeDistanceKm - distanceTravelled)
+      : userLocation && destinationLat !== null && destinationLng !== null
       ? getDistanceKm(
           userLocation.latitude,
           userLocation.longitude,
           destinationLat,
           destinationLng
         )
+      : null;
+
+  const liveEtaSeconds =
+    routeDurationSeconds !== null && routeDistanceKm !== null && routeDistanceKm > 0
+      ? Math.max(
+          60,
+          Math.round(
+            routeDurationSeconds *
+              ((remainingDistance ?? routeDistanceKm) / routeDistanceKm)
+          )
+        )
+      : null;
+
+  const arrivalTime =
+    liveEtaSeconds !== null
+      ? new Date(Date.now() + liveEtaSeconds * 1000).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : null;
 
   const movementLabel =
@@ -394,47 +612,6 @@ useEffect(() => {
     }
   }, [walkStarted, arrived, remainingDistance, destination]);
 
-  const calculateWalkTime = () => {
-    if (!destination.trim()) return;
-
-    const destinationDatabase: Record<
-      string,
-      { lat: number; lng: number }
-    > = {
-      "eeklo station": {
-        lat: 51.1875,
-        lng: 3.5669,
-      },
-
-      "eeklo hospital": {
-        lat: 51.1845,
-        lng: 3.5802,
-      },
-    };
-
-    const place =
-      destinationDatabase[destination.toLowerCase()];
-
-    if (!place || !userLocation) {
-      alert("Destination not found.");
-      return;
-    }
-
-    const distance = getDistanceKm(
-      userLocation.latitude,
-      userLocation.longitude,
-      place.lat,
-      place.lng
-    );
-
-    const minutes = Math.ceil((distance / 5) * 60);
-
-    setDestinationLat(place.lat);
-    setDestinationLng(place.lng);
-    setEstimatedMinutes(minutes);
-
-    setTimeLeft((minutes + 5) * 60);
-  };
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
       <button onClick={onBack} className="text-sm text-[#E8A838] mb-4">
@@ -460,26 +637,46 @@ useEffect(() => {
 
       {!walkStarted ? (
         <>
-          <input
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="Where are you going?"
-            className="w-full bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-4 py-3 mb-4"
-          />
+          <div className="relative mb-4">
+            <input
+              value={destination}
+              onChange={(e) => searchAddresses(e.target.value)}
+              placeholder="Search any address, station or place..."
+              autoComplete="off"
+              className="w-full bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-4 py-3"
+            />
+
+            {isSearchingAddress && (
+              <p className="text-xs text-[#7BA3A1] mt-2 px-1">
+                Searching places...
+              </p>
+            )}
+
+            {addressSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-[1000] bg-[#132625] border border-[#2D5A58] rounded-2xl overflow-hidden shadow-2xl max-h-72 overflow-y-auto">
+                {addressSuggestions.map((place) => (
+                  <button
+                    key={place.place_id}
+                    type="button"
+                    onClick={() => selectDestination(place)}
+                    className="w-full text-left px-4 py-3 border-b border-[#2D5A5840] last:border-b-0 hover:bg-[#1A2E2D]"
+                  >
+                    <p className="text-sm text-white">📍 {place.display_name}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
-            onClick={() => {
-              if (!destination.trim()) {
-                alert("Please enter your destination first.");
-                return;
-              }
-
+            onClick={async () => {
               if (contacts.length === 0) {
-                alert("Add trusted contacts before starting Walk Me Home.");
+                alert("Add trusted contacts before starting Safe Journey.");
                 return;
               }
 
-              calculateWalkTime();
+              const routeReady = await resolveDestinationAndRoute();
+              if (!routeReady) return;
 
               setJourneyPoints([]);
               setJourneySeconds(0);
@@ -492,9 +689,10 @@ useEffect(() => {
               setMovementConfidence(0);
               setWalkStarted(true);
             }}
-            className="w-full bg-[#22C55E] text-black font-bold py-4 rounded-2xl"
+            disabled={isRouting || isSearchingAddress}
+            className="w-full bg-[#22C55E] disabled:opacity-50 text-black font-bold py-4 rounded-2xl"
           >
-            Start Walk
+            {isRouting ? "Calculating Route..." : "Start Safe Journey"}
           </button>
           {estimatedMinutes && (
             <>
@@ -569,18 +767,16 @@ useEffect(() => {
                     >
                       <Popup>{destination}</Popup>
                     </Marker>
-                    <Polyline
-                      positions={[
-                        [userLocation.latitude, userLocation.longitude],
-                        [destinationLat, destinationLng],
-                      ]}
-                      pathOptions={{
-                        color: "#E8A838",
-                        weight: 3,
-                        opacity: 0.7,
-                        dashArray: "8 8",
-                      }}
-                    />
+                    {routePoints.length > 1 && (
+                      <Polyline
+                        positions={routePoints}
+                        pathOptions={{
+                          color: "#E8A838",
+                          weight: 5,
+                          opacity: 0.9,
+                        }}
+                      />
+                    )}
                   </>
                 )}
 
@@ -601,13 +797,17 @@ useEffect(() => {
 
               <div className="absolute top-3 left-3 right-3 z-[500] flex justify-between gap-2 pointer-events-none">
                 <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 shadow-lg">
-                  <p className="text-[10px] text-[#7BA3A1]">LIVE JOURNEY</p>
-                  <p className="text-sm font-bold text-white">{movementLabel}</p>
-                  <p className="text-[10px] text-[#7BA3A1]">
-                    {movementConfidence > 0
-                      ? `${movementConfidence}% confidence`
-                      : "Identifying transport..."}
-                  </p>
+                 <p className="text-[10px] text-[#7BA3A1]">
+  🛡 SAFE JOURNEY
+</p>
+
+<p className="text-base font-bold text-white">
+  {movementLabel}
+</p>
+
+<p className="text-[10px] text-[#7BA3A1]">
+  Guardian Monitoring Active
+</p>
                 </div>
                 <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-3 py-2 text-right shadow-lg">
                   <p className="text-[10px] text-[#7BA3A1]">JOURNEY TIME</p>
@@ -621,18 +821,31 @@ useEffect(() => {
                 <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg">
                   <p className="text-[10px] text-[#7BA3A1]">SAFE JOURNEY TO</p>
                   <p className="font-bold text-white truncate">📍 {destination}</p>
-                  <div className="flex justify-between gap-3 mt-2 text-xs">
-                    <span className="text-[#E8A838]">
-                      {distanceTravelled.toFixed(2)} km travelled
-                    </span>
-                    <span className="text-[#4ADE80]">
-                      {remainingDistance !== null
-                        ? `${remainingDistance.toFixed(2)} km remaining`
-                        : "Calculating distance"}
-                    </span>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                    <div>
+                      <p className="text-[#7BA3A1]">TRAVELLED</p>
+                      <p className="text-[#E8A838] font-bold">
+                        {distanceTravelled.toFixed(2)} km
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[#7BA3A1]">REMAINING</p>
+                      <p className="text-[#4ADE80] font-bold">
+                        {remainingDistance !== null
+                          ? `${remainingDistance.toFixed(2)} km`
+                          : "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[#7BA3A1]">ARRIVE AT</p>
+                      <p className="text-white font-bold">{arrivalTime ?? "—"}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-[#4ADE80] mt-1">
+                  <p className="text-xs text-[#4ADE80] mt-2">
                     🛡️ Guardian monitoring active
+                    {liveEtaSeconds !== null
+                      ? ` • ETA ${Math.ceil(liveEtaSeconds / 60)} min`
+                      : ""}
                   </p>
                 </div>
               </div>
