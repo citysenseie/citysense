@@ -32,10 +32,10 @@ interface TrustedContact {
 type MovementMode =
   | "walking"
   | "cycling"
-  | "vehicle"
+  | "car"
+  | "bus"
   | "train"
   | "stopped";
-
 interface JourneyPoint {
   latitude: number;
   longitude: number;
@@ -115,7 +115,7 @@ export default function WalkMeHomeScreen({
   const [routeDurationSeconds, setRouteDurationSeconds] = useState<number | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const addressSearchTimerRef = useRef<number | null>(null);
-
+const [journeyId, setJourneyId] = useState<string | null>(null);
   const searchAddresses = (query: string) => {
     setDestination(query);
     setDestinationLat(null);
@@ -317,7 +317,7 @@ export default function WalkMeHomeScreen({
   if (!walkStarted) return;
 
   const watchId = navigator.geolocation.watchPosition(
-    (position) => {
+    async (position) => {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
   const speed = position.coords.speed;
@@ -326,7 +326,20 @@ export default function WalkMeHomeScreen({
     latitude,
     longitude,
   });
+if (journeyId) {
+  await updateDoc(doc(db, "journeys", journeyId), {
+    currentLat: latitude,
+    currentLng: longitude,
 
+    movementMode,
+
+    distanceTravelledKm: distanceTravelled,
+
+    distanceRemainingKm: remainingDistance,
+
+    lastUpdated: serverTimestamp(),
+  });
+}
   const newPoint: JourneyPoint = {
     latitude,
     longitude,
@@ -397,10 +410,14 @@ export default function WalkMeHomeScreen({
     } else if (averageSpeedKmh < 22 && maxSpeedKmh < 32) {
       setMovementMode("cycling");
       setMovementConfidence(72);
-    } else {
-      setMovementMode("vehicle");
-      setMovementConfidence(78);
-    }
+    } else if (averageSpeedKmh < 70) {
+  setMovementMode("car");
+  setMovementConfidence(80);
+}
+else {
+  setMovementMode("bus");
+  setMovementConfidence(75);
+}
   }
 },
     (error) => {
@@ -583,18 +600,36 @@ useEffect(() => {
         })
       : null;
 
-  const movementLabel =
-    movementMode === "walking"
-      ? "🚶 Walking"
-      : movementMode === "cycling"
-      ? "🚲 Cycling"
-      : movementMode === "vehicle"
-      ? "🚗 In vehicle"
-      : movementMode === "train"
-      ? "🚆 Train likely"
-      : "⏸️ Stopped";
-
+ const movementLabel =
+  movementMode === "walking"
+    ? "🚶 Walking"
+    : movementMode === "cycling"
+    ? "🚲 Cycling"
+    : movementMode === "car"
+    ? "🚗 Driving"
+    : movementMode === "bus"
+    ? "🚌 On a Bus"
+    : movementMode === "train"
+    ? "🚆 On a Train"
+    : "⏸️ Stopped";
   useEffect(() => {
+    const handleArrival = async () => {
+      if (journeyId) {
+        await updateDoc(doc(db, "journeys", journeyId), {
+          status: "completed",
+          endedAt: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+        });
+      }
+
+      setArrived(true);
+      setWalkStarted(false);
+      setTimeLeft(0);
+      setMovementMode("stopped");
+
+      alert(`🎉 Arrived safely at ${destination}.`);
+    };
+
     if (!walkStarted || arrived || remainingDistance === null) return;
 
     if (remainingDistance <= 0.06) {
@@ -604,13 +639,9 @@ useEffect(() => {
     }
 
     if (arrivalSamplesRef.current >= 3) {
-      setArrived(true);
-      setWalkStarted(false);
-      setTimeLeft(0);
-      setMovementMode("stopped");
-      alert(`🎉 Arrived safely at ${destination}.`);
+      void handleArrival();
     }
-  }, [walkStarted, arrived, remainingDistance, destination]);
+  }, [walkStarted, arrived, remainingDistance, destination, journeyId]);
 
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
@@ -620,8 +651,8 @@ useEffect(() => {
 
       <div className="bg-[#14532D] border border-[#22C55E] rounded-2xl p-4 mb-5">
         <h1 className="text-xl font-bold text-white mb-2">
-          👣 Walk Me Home
-        </h1>
+  🛡 Safe Journey
+</h1>
 
         <p className="text-sm text-[#BBF7D0]">
           Start a safe journey and check in regularly.
@@ -688,6 +719,41 @@ useEffect(() => {
               trainEvidenceRef.current = 0;
               setMovementConfidence(0);
               setWalkStarted(true);
+              const user = auth.currentUser;
+
+if (user && userLocation) {
+  const journeyRef = await addDoc(collection(db, "journeys"), {
+    userId: user.uid,
+    userName: user.displayName || "Unknown",
+
+    destination,
+
+    destinationLat,
+    destinationLng,
+
+    currentLat: userLocation.latitude,
+    currentLng: userLocation.longitude,
+
+    movementMode: "walking",
+    movementConfidence: 100,
+
+    speedKmh: 0,
+
+    distanceTravelledKm: 0,
+    distanceRemainingKm: routeDistanceKm,
+
+    etaMinutes: estimatedMinutes,
+
+    guardianIds: contacts.map((c) => c.id),
+
+    status: "active",
+
+    startedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp(),
+  });
+
+  setJourneyId(journeyRef.id);
+}
             }}
             disabled={isRouting || isSearchingAddress}
             className="w-full bg-[#22C55E] disabled:opacity-50 text-black font-bold py-4 rounded-2xl"
@@ -851,14 +917,8 @@ useEffect(() => {
               </div>
             </div>
           )}
-          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
-            <p className="text-xs text-[#7BA3A1] mb-1">Distance travelled</p>
-            <p className="text-sm">{distanceTravelled.toFixed(2)} km</p>
-          </div>
-          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4">
-            <p className="text-xs text-[#7BA3A1] mb-1">Movement mode</p>
-            <p className="text-sm capitalize">{movementMode}</p>
-          </div>
+          
+          
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
 
@@ -902,7 +962,7 @@ useEffect(() => {
             }}
             className="w-full bg-[#1A2E2D] text-[#7BA3A1] font-bold py-3 rounded-2xl"
           >
-            Cancel Walk
+            End Safe Journey
           </button>
         </div>
       )}

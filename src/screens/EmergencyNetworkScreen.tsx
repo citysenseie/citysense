@@ -149,6 +149,8 @@ export default function EmergencyNetworkScreen({
 
     <button
       onClick={async () => {
+  console.log("Alert ID:", activeAlert.id);
+
   try {
     await updateDoc(
       doc(db, "emergencyAlerts", activeAlert.id),
@@ -157,9 +159,8 @@ export default function EmergencyNetworkScreen({
       }
     );
 
-    setActiveAlert(null);
-
     alert("Emergency marked as safe.");
+    setActiveAlert(null);
   } catch (error) {
     console.error(error);
     alert("Failed to update emergency status.");
