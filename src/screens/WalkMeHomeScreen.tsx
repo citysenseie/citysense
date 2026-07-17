@@ -67,7 +67,6 @@ function SafeJourneyMapController({
 
   return null;
 }
-
 const journeyUserIcon = L.divIcon({
   className: "",
   html: `<div style="width:22px;height:22px;border-radius:50%;background:#3B82F6;border:4px solid white;box-shadow:0 0 0 8px rgba(59,130,246,0.25);"></div>`,
@@ -95,6 +94,22 @@ export default function WalkMeHomeScreen({
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [journeyEvents, setJourneyEvents] = useState<
+  { time: string; event: string }[]
+>([]);
+
+  const addJourneyEvent = (event: string) => {
+    const time = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    setJourneyEvents((previousEvents) => [
+      ...previousEvents,
+      { time, event },
+    ]);
+  };
 
   const [destinationLat, setDestinationLat] = useState<number | null>(null);
   const [destinationLng, setDestinationLng] = useState<number | null>(null);
@@ -102,12 +117,15 @@ export default function WalkMeHomeScreen({
   const [journeyPoints, setJourneyPoints] = useState<JourneyPoint[]>([]);
   const [journeySeconds, setJourneySeconds] = useState(0);
   const [distanceTravelled, setDistanceTravelled] = useState(0);
+  const [lastGpsUpdate, setLastGpsUpdate] = useState<string>("Never");
+  const [lastGpsTimestamp, setLastGpsTimestamp] = useState<number | null>(null);
   const [movementMode, setMovementMode] = useState<MovementMode>("stopped");
   const [arrived, setArrived] = useState(false);
   const speedSamplesRef = useRef<number[]>([]);
   const arrivalSamplesRef = useRef(0);
  const [, setMovementConfidence] = useState(0);
   const trainEvidenceRef = useRef(0);
+  const lastMovementRef = useRef<MovementMode>("stopped");
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
@@ -115,13 +133,12 @@ export default function WalkMeHomeScreen({
   const [routeDurationSeconds, setRouteDurationSeconds] = useState<number | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const addressSearchTimerRef = useRef<number | null>(null);
-const [journeyId, setJourneyId] = useState<string | null>(null);
+  const [journeyId, setJourneyId] = useState<string | null>(null);
   const searchAddresses = (query: string) => {
     setDestination(query);
     setDestinationLat(null);
     setDestinationLng(null);
     setAddressSuggestions([]);
-
     if (addressSearchTimerRef.current !== null) {
       window.clearTimeout(addressSearchTimerRef.current);
     }
@@ -323,9 +340,12 @@ const [journeyId, setJourneyId] = useState<string | null>(null);
   const speed = position.coords.speed;
 
   setUserLocation({
-    latitude,
-    longitude,
-  });
+  latitude,
+  longitude,
+});
+
+setLastGpsUpdate("Just now");
+setLastGpsTimestamp(Date.now());
 if (journeyId) {
   await updateDoc(doc(db, "journeys", journeyId), {
     currentLat: latitude,
@@ -599,8 +619,25 @@ useEffect(() => {
           minute: "2-digit",
         })
       : null;
+const journeyProgress =
+  routeDistanceKm && routeDistanceKm > 0
+    ? Math.min(
+        100,
+        (distanceTravelled / routeDistanceKm) * 100
+      )
+    : 0;
+    
+ const currentSpeed =
+  journeyPoints.length > 0
+    ? journeyPoints[journeyPoints.length - 1].speed
+    : null;
 
- const movementLabel =
+const currentSpeedKmh =
+  currentSpeed !== null && currentSpeed >= 0
+    ? currentSpeed * 3.6
+    : 0;
+
+const movementLabel =
   movementMode === "walking"
     ? "🚶 Walking"
     : movementMode === "cycling"
@@ -612,6 +649,38 @@ useEffect(() => {
     : movementMode === "train"
     ? "🚆 On a Train"
     : "⏸️ Stopped";
+
+const [journeyStatus, setJourneyStatus] = useState("Waiting");
+
+useEffect(() => {
+  if (!walkStarted) return;
+
+  if (lastMovementRef.current !== movementMode) {
+    lastMovementRef.current = movementMode;
+    addJourneyEvent(movementLabel);
+    if (movementMode === "stopped") {
+      addJourneyEvent("🟡 Stopped");
+    } else {
+      addJourneyEvent("🟢 Safe and On Route");
+    }
+  }
+}, [movementMode, movementLabel, walkStarted]);
+useEffect(() => {
+  if (lastGpsTimestamp === null) return;
+
+  const interval = setInterval(() => {
+    const seconds = Math.floor((Date.now() - lastGpsTimestamp) / 1000);
+
+    if (seconds < 60) {
+      setLastGpsUpdate(`${seconds} sec ago`);
+    } else {
+      const minutes = Math.floor(seconds / 60);
+      setLastGpsUpdate(`${minutes} min ago`);
+    }
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [lastGpsTimestamp]);
   useEffect(() => {
     const handleArrival = async () => {
       if (journeyId) {
@@ -626,7 +695,8 @@ useEffect(() => {
       setWalkStarted(false);
       setTimeLeft(0);
       setMovementMode("stopped");
-
+addJourneyEvent(`🏁 Arrived safely at ${destination}`);
+setJourneyStatus("✅ Arrived Safely");
       alert(`🎉 Arrived safely at ${destination}.`);
     };
 
@@ -719,8 +789,14 @@ useEffect(() => {
               trainEvidenceRef.current = 0;
               setMovementConfidence(0);
               setWalkStarted(true);
-              const user = auth.currentUser;
-
+              addJourneyEvent("🟢 Safe Journey started");
+              
+if (estimatedMinutes !== null) {
+  addJourneyEvent(
+    `🗺️ Route ready • ${estimatedMinutes} min estimated`
+  );
+}
+const user = auth.currentUser;
 if (user && userLocation) {
   const journeyRef = await addDoc(collection(db, "journeys"), {
     userId: user.uid,
@@ -907,18 +983,96 @@ if (user && userLocation) {
                       <p className="text-white font-bold">{arrivalTime ?? "—"}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#4ADE80] mt-2">
-                    🛡️ Guardian monitoring active
-                    {liveEtaSeconds !== null
-                      ? ` • ETA ${Math.ceil(liveEtaSeconds / 60)} min`
-                      : ""}
-                  </p>
+                  <div className="mt-3">
+  <div className="flex justify-between text-xs text-[#7BA3A1] mb-1">
+    <span>Journey Progress</span>
+    <span>{journeyProgress.toFixed(0)}%</span>
+  </div>
+<div className="mt-3 flex justify-between items-center">
+  <div>
+    <p className="text-[10px] text-[#7BA3A1]">CURRENT SPEED</p>
+    <p className="text-white font-bold">
+      {currentSpeedKmh.toFixed(1)} km/h
+    </p>
+  </div>
+<div className="mt-3 rounded-xl bg-[#163232] p-3">
+  <p className="text-[10px] text-[#7BA3A1]">
+    JOURNEY STATUS
+  </p>
+<div className="mt-3 rounded-xl bg-[#163232] p-3">
+  <p className="text-[10px] text-[#7BA3A1]">
+    LAST GPS UPDATE
+  </p>
+
+  <p
+  className={`font-semibold ${
+    lastGpsUpdate.includes("min")
+      ? "text-yellow-400"
+      : "text-green-400"
+  }`}
+>
+  {lastGpsUpdate}
+</p>
+</div>
+  <p className="text-[#4ADE80] font-semibold">
+    {journeyStatus}
+  </p>
+</div>
+  <div className="text-right">
+    <p className="text-[10px] text-[#7BA3A1]">MOVEMENT</p>
+    <p className="text-[#4ADE80] font-bold">
+      {movementLabel}
+    </p>
+  </div>
+</div>
+  <div className="w-full h-2 bg-[#2D5A58] rounded-full overflow-hidden">
+    <div
+      className="h-full bg-[#22C55E] transition-all duration-500"
+      style={{ width: `${journeyProgress}%` }}
+    />
+  </div>
+</div>
+                 <p className="text-xs text-[#4ADE80] mt-2">
+  🟢 Guardian Live
+
+  {liveEtaSeconds !== null
+    ? ` • ETA ${Math.ceil(liveEtaSeconds / 60)} min`
+    : ""}
+
+  {remainingDistance !== null
+    ? ` • ${remainingDistance.toFixed(2)} km left`
+    : ""}
+</p>
                 </div>
               </div>
             </div>
           )}
           
-          
+          <div className="bg-[#1A2E2D] rounded-2xl p-4">
+  <h3 className="text-lg font-bold mb-3">
+    📍 Journey Timeline
+  </h3>
+
+  {journeyEvents.length === 0 ? (
+    <p className="text-sm text-[#7BA3A1]">
+      No journey events yet.
+    </p>
+  ) : (
+    <div className="space-y-2 max-h-48 overflow-y-auto">
+      {journeyEvents.map((item, index) => (
+        <div
+          key={index}
+          className="flex justify-between border-b border-[#2D5A5840] pb-2"
+        >
+          <span>{item.event}</span>
+          <span className="text-[#7BA3A1] text-sm">
+            {item.time}
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
 
@@ -957,6 +1111,8 @@ if (user && userLocation) {
             onClick={() => {
               setTimeLeft(300);
               setEmergencyTriggered(false);
+              addJourneyEvent("🛑 Journey ended by user");
+              setJourneyStatus("⚪ Journey Ended");
               setWalkStarted(false);
               setDestination("");
             }}

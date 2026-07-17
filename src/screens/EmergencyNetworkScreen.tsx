@@ -107,6 +107,12 @@ export default function EmergencyNetworkScreen({
     loadContacts();
   }, []);
 
+  const journeyEvents = [
+    { event: "Started trip", time: "08:00 AM" },
+    { event: "Passed waypoint", time: "08:25 AM" },
+    { event: "Arrived destination", time: "09:10 AM" },
+  ];
+
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
       <button onClick={onBack} className="text-sm text-[#E8A838] mb-4">
@@ -244,7 +250,21 @@ export default function EmergencyNetworkScreen({
 
       <div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4">
         <h2 className="font-bold mb-2">Future Features</h2>
+<div className="bg-[#1A2E2D] rounded-2xl p-4">
+  <h3 className="font-bold mb-3">📍 Journey Timeline</h3>
 
+  <div className="space-y-2 max-h-48 overflow-y-auto">
+    {journeyEvents.map((item, index) => (
+      <div
+        key={index}
+        className="flex justify-between text-sm border-b border-[#2D5A5840] pb-2"
+      >
+        <span>{item.event}</span>
+        <span className="text-[#7BA3A1]">{item.time}</span>
+      </div>
+    ))}
+  </div>
+</div>
         <ul className="space-y-2 text-sm text-[#7BA3A1]">
           <li>📍 Live location sharing</li>
           <li>🚨 Real SOS alerts to contacts</li>

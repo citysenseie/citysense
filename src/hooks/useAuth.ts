@@ -6,7 +6,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+const [journeyStatus, setJourneyStatus] = useState("🟢 Safe and On Route");
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -42,5 +42,5 @@ export function useAuth() {
     await signOut(auth);
   }, []);
 
-  return { user, loading, error, login, signup, logout };
+  return { user, loading, error, login, signup, logout, journeyStatus, setJourneyStatus };
 }
