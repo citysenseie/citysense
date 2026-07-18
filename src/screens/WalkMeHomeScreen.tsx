@@ -68,6 +68,7 @@ function SafeJourneyMapController({
 
   return null;
 }
+
 const journeyUserIcon = L.divIcon({
   className: "",
   html: `<div style="width:22px;height:22px;border-radius:50%;background:#3B82F6;border:4px solid white;box-shadow:0 0 0 8px rgba(59,130,246,0.25);"></div>`,
@@ -135,7 +136,24 @@ export default function WalkMeHomeScreen({
   const [isRouting, setIsRouting] = useState(false);
   const addressSearchTimerRef = useRef<number | null>(null);
   const [journeyId, setJourneyId] = useState<string | null>(null);
+  const [riskLevel, setRiskLevel] = useState<"Low" | "Medium" | "High">("Low");
+
+const [guardianMessage, setGuardianMessage] = useState(
+  "Journey looks normal."
+);
+
+const [routeDeviation, setRouteDeviation] = useState(0);
+
+const distanceBetweenPoints = (
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+) => {
+  return Math.hypot(lat1 - lat2, lng1 - lng2);
+};
   const searchAddresses = (query: string) => {
+
     setDestination(query);
     setDestinationLat(null);
     setDestinationLng(null);
@@ -220,6 +238,23 @@ export default function WalkMeHomeScreen({
 
       setRoutePoints(points);
       setRouteDistanceKm(route.distance / 1000);
+   if (userLocation && routePoints.length > 0) {
+  const nearestPoint = routePoints.reduce((closest, point) =>
+  distanceBetweenPoints(userLocation.latitude, userLocation.longitude, point[0], point[1]) <
+  distanceBetweenPoints(userLocation.latitude, userLocation.longitude, closest[0], closest[1])
+    ? point
+    : closest
+);
+
+  setRouteDeviation(
+   distanceBetweenPoints(
+  userLocation.latitude,
+  userLocation.longitude,
+  nearestPoint[0],
+  nearestPoint[1]
+) * 111000
+  );
+}
       setRouteDurationSeconds(route.duration);
       setEstimatedMinutes(Math.max(1, Math.ceil(route.duration / 60)));
       setTimeLeft(300);
@@ -330,6 +365,43 @@ export default function WalkMeHomeScreen({
       }
     );
   }, []);
+useEffect(() => {
+    if (!walkStarted) return;
+
+    if (lastMovementRef.current !== movementMode) {
+      lastMovementRef.current = movementMode;
+     setRiskLevel(
+  routeDeviation > 100 || (movementMode === "stopped" && journeySeconds > 600)
+  ? "High"
+  : (routeDeviation > 30 && routeDeviation <= 100) ||
+(movementMode === "stopped" && journeySeconds > 180)
+  ? "Medium"
+  : "Low"
+);
+    setGuardianMessage(
+  routeDeviation > 100
+   ? "⚠️ High risk deviation detected."
+    : movementMode === "stopped" && journeySeconds > 600
+    ? "⚠️ High risk stop detected."
+    : movementMode === "stopped" && journeySeconds > 180
+    ? "⚠️ Unexpected stop detected."
+    : remainingDistance !== null && remainingDistance < 0.05
+? "✅ Almost at your destination."
+: routeDeviation > 30
+? `User is ${routeDeviation.toFixed(0)} m away from the planned route.`
+: "Journey looks normal."
+);
+      setRouteDeviation(
+ remainingDistance !== null && remainingDistance < 0.05
+  ? 0
+  : movementMode === "stopped"
+  ? 5
+  : 15
+);
+
+       addJourneyEvent(movementLabel);
+    }
+  }, [movementMode]);
 
   useEffect(() => {
   if (!walkStarted) return;
@@ -344,6 +416,24 @@ export default function WalkMeHomeScreen({
   latitude,
   longitude,
 });
+
+if (routePoints.length > 0) {
+  const nearestPoint = routePoints.reduce((closest, point) =>
+    distanceBetweenPoints(latitude, longitude, point[0], point[1]) <
+    distanceBetweenPoints(latitude, longitude, closest[0], closest[1])
+      ? point
+      : closest
+  );
+
+  setRouteDeviation(
+    distanceBetweenPoints(
+      latitude,
+      longitude,
+      nearestPoint[0],
+      nearestPoint[1]
+    ) * 111000
+  );
+}
 
 setLastGpsUpdate("Just now");
 setLastGpsTimestamp(Date.now());
@@ -1048,7 +1138,64 @@ if (user && userLocation) {
               </div>
             </div>
           )}
-          
+          <div className="bg-[#1A2E2D] rounded-2xl p-5 border border-[#22C55E40]">
+  <h3 className="text-lg font-bold mb-4">
+    🛡 Guardian AI
+  </h3>
+
+  <div className="space-y-3">
+
+    <div className="flex justify-between">
+      <span>Status</span>
+      <span className="text-green-400">
+        {guardianMessage}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Movement</span>
+      <span>{movementLabel}</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Current Speed</span>
+      <span>{currentSpeedKmh.toFixed(1)} km/h</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Risk Level</span>
+      <span
+        className={
+          riskLevel === "Low"
+            ? "text-green-400"
+            : riskLevel === "Medium"
+            ? "text-yellow-400"
+            : "text-red-400"
+        }
+      >
+       {
+ 
+  riskLevel === "Low"
+    ? "🟢 Low"
+    : riskLevel === "Medium"
+    ? "🟡 Medium"
+    : "🔴 High"
+}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Route Deviation</span>
+      <span>{routeDeviation.toFixed(0)} m</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>ETA</span>
+      <span>{arrivalTime ?? "--"}</span>
+    </div>
+
+  </div>
+</div>
           <div className="bg-[#1A2E2D] rounded-2xl p-4">
   <h3 className="text-lg font-bold mb-3">
     📍 Journey Timeline
