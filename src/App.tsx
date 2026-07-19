@@ -1,4 +1,4 @@
-import TrustedContactsScreen from "@/screens/TrustedContactsScreen";
+import CrowdSenseScreen from "@/screens/CrowdSenseScreen";
 import NightModeScreen from "@/screens/NightModeScreen";
 import LiveLocationScreen from "@/screens/LiveLocationScreen";
 import ChildSafetyScreen from "@/screens/ChildSafetyScreen";
@@ -20,8 +20,6 @@ import WalkMeHomeScreen from "@/screens/WalkMeHomeScreen";
 import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
-import CrowdSenseScreen from "./screens/CrowdSenseScreen";
-import SafeSpacesScreen from "@/screens/SafeSpacesScreen";
 
 type Screen =
   | "login"
@@ -37,14 +35,14 @@ type Screen =
   | "womenssafety"
   | "childsafety"
   | "nightmode"
-  | "crowdsense"
-  | "safespaces"
-  | "trustedcontacts";
+  | "crowdsense";
 
 export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("login");
   const [activeTab, setActiveTab] = useState<Tab>("map");
+ 
+  
 
   useEffect(() => {
     if (!loading && user) {
@@ -53,6 +51,7 @@ export default function App() {
       setScreen("login");
     }
   }, [user, loading]);
+
 
   const renderScreen = () => {
     switch (screen) {
@@ -82,29 +81,19 @@ export default function App() {
 
       case "parkprotect":
         return <ParkProtectScreen onBack={() => setScreen("main")} />;
-        case "trustedcontacts":
-  return <TrustedContactsScreen onBack={() => setScreen("main")} />;
 
       case "roadhazard":
         return <RoadHazardScreen onBack={() => setScreen("main")} />;
       case "womenssafety":
-        return (
-          <WomensSafetyScreen
-  onBack={() => setScreen("main")}
-  onWalkMeHome={() => setScreen("walkmehome")}
-  onSafeSpaces={() => setScreen("safespaces")}
-  onTrustedContacts={() => setScreen("trustedcontacts")}
-/>
-        );
-      case "safespaces":
-        return <SafeSpacesScreen onBack={() => setScreen("main")} />;
+        return <WomensSafetyScreen onBack={() => setScreen("main")} onWalkMeHome={() => setScreen("walkmehome")} onSafeSpaces={() => {}} onTrustedContacts={() => {}} />;
       case "childsafety":
         return <ChildSafetyScreen onBack={() => setScreen("main")} />;
+      case "livelocation":
+        return <LiveLocationScreen onBack={() => setScreen("main")} />;
       case "nightmode":
         return <NightModeScreen onBack={() => setScreen("main")} />;
       case "crowdsense":
         return <CrowdSenseScreen onBack={() => setScreen("main")} />;
-  
       default:
         return <LoginScreen onSwitch={() => setScreen("signup")} />;
     }
@@ -129,7 +118,7 @@ export default function App() {
             onLiveLocation={() => setScreen("livelocation")}
             onNightMode={() => setScreen("nightmode")}
             onCrowdSense={() => setScreen("crowdsense")}
-            onTrustedContacts={() => setScreen("trustedcontacts")}
+            onTrustedContacts={() => {}}
           />
         );
 

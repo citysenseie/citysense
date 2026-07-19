@@ -236,7 +236,7 @@ const onDriverMode = () => {
       iconColor: "text-[#EF4444]",
     },
     {
-      label: "Walk Me Home",
+      label: "Safe Journey",
       icon: Navigation,
       onClick: onWalkMeHome,
       accent: "border-[#10B981]",

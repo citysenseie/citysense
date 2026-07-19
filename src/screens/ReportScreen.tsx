@@ -5,13 +5,45 @@ import { useReports } from "@/hooks/useReports";
 import { AlertTriangle, ShieldCheck, Camera, MapPin, Send, CheckCircle } from "lucide-react";
 
 const CATEGORIES = [
-  { id: "poor_lighting", label: "Poor Lighting", icon: "flashlight" },
-  { id: "suspicious", label: "Suspicious Activity", icon: "alert" },
-  { id: "police_presence", label: "Police Presence", icon: "shield" },
-  { id: "construction", label: "Construction", icon: "hardhat" },
-  { id: "crowded_area", label: "Crowded Area", icon: "users" },
-  { id: "other", label: "Other", icon: "more" },
+  { id: "crime", label: "🚔 Crime" },
+  { id: "traffic", label: "🚗 Traffic" },
+  { id: "environment", label: "🌧 Environment" },
+  { id: "medical", label: "🏥 Medical" },
+  { id: "community", label: "👥 Community" },
 ];
+  
+const INCIDENT_TYPES: Record<string, string[]> = {
+  crime: [
+    "Robbery",
+    "Assault",
+    "Burglary",
+    "Gunshots",
+    "Vandalism",
+  ],
+  traffic: [
+    "Accident",
+    "Aggressive Driver",
+    "Drunk Driver",
+    "Road Rage",
+    "Street Racing",
+  ],
+  environment: [
+    "Flood",
+    "Fire",
+    "Gas Leak",
+    "Power Outage",
+  ],
+  medical: [
+    "Medical Emergency",
+    "Injured Person",
+    "Heart Attack",
+  ],
+  community: [
+    "Missing Person",
+    "Lost Child",
+    "Animal Hazard",
+  ],
+};
 
 export default function ReportScreen() {
   const { user } = useAuth();
@@ -19,6 +51,7 @@ export default function ReportScreen() {
   const { submitReport } = useReports();
   const [reportType, setReportType] = useState<"safe" | "unsafe">("unsafe");
   const [category, setCategory] = useState("");
+  const [incidentType, setIncidentType] = useState("");
   const [description, setDescription] = useState("");
  const [severity] = useState<"low" | "medium" | "high">("medium");
 const [submitted, setSubmitted] = useState(false);
@@ -112,7 +145,10 @@ const [submitted, setSubmitted] = useState(false);
           {CATEGORIES.map((c) => (
             <button
               key={c.id}
-              onClick={() => setCategory(c.id)}
+              onClick={() => {
+  setCategory(c.id);
+  setIncidentType("");
+}}
               className={`py-3 px-3 rounded-xl text-xs font-semibold text-left transition-all ${
                 category === c.id
                   ? reportType === "safe"
@@ -125,7 +161,29 @@ const [submitted, setSubmitted] = useState(false);
             </button>
           ))}
         </div>
+{category && (
+  <>
+    <p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">
+      Incident Type
+    </p>
 
+    <div className="grid grid-cols-2 gap-2">
+      {INCIDENT_TYPES[category]?.map((type) => (
+        <button
+          key={type}
+          onClick={() => setIncidentType(type)}
+          className={`py-3 px-3 rounded-xl text-xs font-semibold transition-all ${
+            incidentType === type
+              ? "bg-[#E8A838] text-[#0F1E1E]"
+              : "bg-[#1A2E2D] border border-[#2D5A5840] text-[#7BA3A1]"
+          }`}
+        >
+          {type}
+        </button>
+      ))}
+    </div>
+  </>
+)}
         {/* Description */}
         <p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">Description</p>
         <textarea
@@ -141,21 +199,21 @@ const [submitted, setSubmitted] = useState(false);
           Add Photo (Optional)
         </button>
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={!category || submitting}
-          className={`w-full mt-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-            category && !submitting
-              ? reportType === "safe"
-                ? "bg-[#4ADE80] text-[#0F1E1E] active:scale-[0.98]"
-                : "bg-[#EF4444] text-white active:scale-[0.98]"
-              : "bg-[#1E3A3A40] text-[#7BA3A160] cursor-not-allowed"
-          }`}
-        >
-          <Send className="w-4 h-4" />
-          {submitting ? "Submitting..." : "Submit Report"}
-        </button>
+       {/* Submit */}
+<button
+  onClick={handleSubmit}
+  disabled={!category || !incidentType || submitting}
+  className={`w-full mt-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+    category && incidentType && !submitting
+      ? reportType === "safe"
+        ? "bg-[#4ADE80] text-[#0F1E1E] active:scale-[0.98]"
+        : "bg-[#EF4444] text-white active:scale-[0.98]"
+      : "bg-[#1E3A3A40] text-[#7BA3A160] cursor-not-allowed"
+  }`}
+>
+  <Send className="w-4 h-4" />
+  {submitting ? "Submitting..." : "Submit Report"}
+</button>
       </div>
     </div>
   );

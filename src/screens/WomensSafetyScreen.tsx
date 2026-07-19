@@ -78,7 +78,7 @@ export default function WomensSafetyScreen({
           onClick={onWalkMeHome}
           className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4 text-left"
         >
-          👣 Walk Me Home
+          👣 Safe Journey
         </button>
       </div>
 
