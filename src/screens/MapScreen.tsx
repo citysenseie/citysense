@@ -1,4 +1,5 @@
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { heatPoints } from "../data/SafetyHeatmap";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
@@ -103,6 +104,7 @@ const [selectedSeverity, setSelectedSeverity] = useState<
     return category.replace(/_/g, " ");
   };
 const getReportIcon = (type: string) => {
+
   let color = "blue";
 
   switch (type) {
@@ -193,6 +195,7 @@ const nearbyReports = reports.filter((report) => {
 });
 
 const filteredReports = (
+  
   selectedFilter === "all"
     ? nearbyReports
     : nearbyReports.filter((r) => r.type === selectedFilter)
@@ -413,7 +416,7 @@ const aiSummary =
 
         <MapContainer
   center={[lat, lng]}
-  zoom={15}
+  zoom={18}
   className="h-full w-full z-0"
 >
           <FixMapSize />
@@ -438,7 +441,36 @@ const aiSummary =
     fillOpacity: 0.1,
   }}
 />
+<Circle
+  center={[heatPoints[0].latitude, heatPoints[0].longitude]}
+  radius={120}
+  pathOptions={{
+    color: "red",
+    fillColor: "red",
+    fillOpacity: 0.5,
+  }}
+/>
+<Circle
+  center={[heatPoints[1].latitude, heatPoints[1].longitude]}
+  radius={120}
+  pathOptions={{
+    color: "orange",
+    fillColor: "orange",
+    fillOpacity: 0.5,
+  }}
+/>
+<Circle
+  center={[heatPoints[2].latitude, heatPoints[2].longitude]}
+  radius={120}
+  pathOptions={{
+    color: "yellow",
+    fillColor: "yellow",
+    fillOpacity: 0.5,
+  }}
+/>
+console.log("📍 REPORT", report.latitude, report.longitude, report.type, report.category);
   {filteredReports.map((report) => (
+
     <Marker
       key={report.id}
       position={[report.latitude, report.longitude]}

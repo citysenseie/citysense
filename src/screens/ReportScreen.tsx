@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { AlertTriangle, ShieldCheck, Camera, MapPin, Send, CheckCircle } from "lucide-react";
-
+import LocationPickerMap from "@/components/LocationPickerMap";
 const CATEGORIES = [
   { id: "crime", label: "🚔 Crime" },
   { id: "traffic", label: "🚗 Traffic" },
@@ -44,7 +44,32 @@ const INCIDENT_TYPES: Record<string, string[]> = {
     "Animal Hazard",
   ],
 };
+const DESCRIPTION_PLACEHOLDERS: Record<string, string> = {
+  Robbery: "Describe what happened, suspect description, direction of travel...",
+  Assault: "Describe the incident, injuries, and whether emergency services are needed...",
+  Burglary: "Describe the location, entry point, and any suspects seen...",
+  Gunshots: "How many shots were heard? Which direction did they come from?",
+  Vandalism: "Describe the damage and any suspects seen...",
 
+  Accident: "Describe the vehicles involved and whether there are injuries...",
+  "Aggressive Driver": "Vehicle make, model, color, license plate (if known)...",
+  "Drunk Driver": "Describe the vehicle, driving behavior, and direction of travel...",
+  "Road Rage": "Describe what happened and the vehicles involved...",
+  "Street Racing": "Number of vehicles, location, direction of travel...",
+
+  Flood: "How deep is the water? Is the road still passable?",
+  Fire: "Describe the fire and whether emergency services are on scene...",
+  "Gas Leak": "Describe any smell, location, and immediate danger...",
+  "Power Outage": "Which area is affected?",
+
+  "Medical Emergency": "Describe the person's condition and whether an ambulance is needed...",
+  "Injured Person": "Describe the injuries and exact location...",
+  "Heart Attack": "Describe the situation and confirm emergency services have been called...",
+
+  "Missing Person": "Description, clothing, last known location...",
+  "Lost Child": "Description, age, clothing, last seen...",
+  "Animal Hazard": "Describe the animal and exact location...",
+};
 export default function ReportScreen() {
   const { user } = useAuth();
   const { location } = useLocation();
@@ -53,7 +78,13 @@ export default function ReportScreen() {
   const [category, setCategory] = useState("");
   const [incidentType, setIncidentType] = useState("");
   const [description, setDescription] = useState("");
- const [severity] = useState<"low" | "medium" | "high">("medium");
+const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
+const [timeOfIncident, setTimeOfIncident] = useState("Just now");
+const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+const [showLocationPicker, setShowLocationPicker] = useState(false);
+const [selectedIncidentLocation, setSelectedIncidentLocation] = useState<
+  [number, number] | null
+>(null);
 const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,11 +96,15 @@ const [submitted, setSubmitted] = useState(false);
       category,
       description,
       severity,
-      latitude: location?.latitude ?? 40.7128,
-      longitude: location?.longitude ?? -74.006,
+      latitude: useCurrentLocation
+  ? (location?.latitude ?? 40.7128)
+  : (selectedIncidentLocation?.[0] ?? location?.latitude ?? 40.7128),
+
+longitude: useCurrentLocation
+  ? (location?.longitude ?? -74.006)
+  : (selectedIncidentLocation?.[1] ?? location?.longitude ?? -74.006),
       address: location?.address ?? "Unknown location",
       userId: user?.uid ?? "anonymous",
-      
     });
     if (ok) {
       setSubmitted(true);
@@ -184,12 +219,129 @@ const [submitted, setSubmitted] = useState(false);
     </div>
   </>
 )}
+{/* Severity */}
+<p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">
+  Severity
+</p>
+<p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">
+  Time of Incident
+</p>
+
+<div className="grid grid-cols-2 gap-2">
+  {[
+    "Just now",
+    "Within 15 min",
+    "Within 1 hour",
+    "Today",
+    "Yesterday",
+  ].map((time) => (
+    <button
+      key={time}
+      onClick={() => setTimeOfIncident(time)}
+      className={`py-3 rounded-xl text-xs font-semibold transition-all ${
+        timeOfIncident === time
+          ? "bg-[#E8A838] text-[#0F1E1E]"
+          : "bg-[#1A2E2D] border border-[#2D5A5840] text-[#7BA3A1]"
+      }`}
+    >
+      {time}
+    </button>
+  ))}
+</div>
+<div className="grid grid-cols-3 gap-2">
+  {[
+    { id: "low", label: "🟢 Low" },
+    { id: "medium", label: "🟡 Medium" },
+    { id: "high", label: "🔴 High" },
+  ].map((level) => (
+    <button
+      key={level.id}
+      onClick={() =>
+        setSeverity(level.id as "low" | "medium" | "high")
+      }
+      className={`py-3 rounded-xl text-sm font-semibold transition-all ${
+        severity === level.id
+          ? "bg-[#E8A838] text-[#0F1E1E]"
+          : "bg-[#1A2E2D] border border-[#2D5A5840] text-[#7BA3A1]"
+      }`}
+    >
+      {level.label}
+    </button>
+  ))}
+</div>
+<p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">
+  Incident Location
+</p>
+
+<button
+  onClick={() => setUseCurrentLocation(!useCurrentLocation)}
+  className="w-full py-3 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] text-[#F5F3EF]"
+>
+  {useCurrentLocation
+    ? "📍 Using Current Location"
+    : "📌 Choose Location on Map"}
+</button>
+{useCurrentLocation && (
+  <div className="mt-2 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] p-3">
+    <p className="text-xs text-[#7BA3A1]">Current Address</p>
+    <p className="text-sm text-[#F5F3EF]">
+      {location?.address ?? "Detecting location..."}
+    </p>
+  </div>
+)}
+{!useCurrentLocation && (
+  <button
+   onClick={() => setShowLocationPicker(true)}
+    className="mt-2 w-full py-3 rounded-xl border-2 border-dashed border-[#E8A838] text-[#E8A838] font-semibold hover:bg-[#E8A83820] transition-all"
+  >
+    🗺️ Open Map & Drop Pin
+  </button>
+)}
+{showLocationPicker && (
+  <div className="fixed inset-0 z-50 bg-[#0F1E1E] flex flex-col">
+    <div className="flex items-center justify-between p-4 border-b border-[#2D5A5840]">
+      <h3 className="text-lg font-bold text-[#F5F3EF]">
+        Choose Incident Location
+      </h3>
+
+      <button
+        onClick={() => setShowLocationPicker(false)}
+        className="text-[#E8A838] font-semibold"
+      >
+        Close
+      </button>
+    </div>
+
+    <div className="flex-1">
+  <LocationPickerMap
+  onLocationSelect={setSelectedIncidentLocation}
+/>
+{selectedIncidentLocation && (
+  <div className="p-3 space-y-3">
+    <div className="text-center text-sm text-white">
+      Selected location:
+      <br />
+      {selectedIncidentLocation[0].toFixed(6)},{" "}
+      {selectedIncidentLocation[1].toFixed(6)}
+    </div>
+
+    <button
+      onClick={() => setShowLocationPicker(false)}
+      className="w-full rounded-lg bg-[#38B2AC] py-3 font-medium text-white"
+    >
+      Use this location
+    </button>
+  </div>
+)}
+</div>
+  </div>
+)}
         {/* Description */}
         <p className="text-sm font-semibold text-[#F5F3EF] mt-5 mb-2">Description</p>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder={`Describe why this area is ${reportType}...`}
+          placeholder={DESCRIPTION_PLACEHOLDERS[incidentType] || `Describe why this area is ${reportType}...`}
           className="w-full h-24 bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-4 py-3 text-sm text-[#F5F3EF] placeholder:text-[#7BA3A160] focus:outline-none focus:border-[#E8A838] resize-none"
         />
 

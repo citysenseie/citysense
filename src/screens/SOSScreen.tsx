@@ -80,8 +80,8 @@ const handleSOSActivate = async () => {
       category: "sos",
       description: "Emergency SOS activated",
       severity: "high",
-      latitude: location.latitude,
-      longitude: location.longitude,
+     latitude: location.latitude,
+longitude: location.longitude,
       address: location.address || "Unknown location",
       userId: user.uid,
     });
@@ -94,7 +94,7 @@ const handleSOSActivate = async () => {
       status: "active",
 
       latitude: location.latitude,
-      longitude: location.longitude,
+longitude: location.longitude,
       address: location.address || "Unknown location",
 
       contactCount: contacts.length,
