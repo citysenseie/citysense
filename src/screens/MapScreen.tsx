@@ -1,6 +1,10 @@
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import { heatPoints } from "../data/SafetyHeatmap";
+import SafetyScore from "../components/SafetyScore";
+import { calculateSafetyScore } from "../services/safetyScore";
 import L from "leaflet";
+import { useHeatmap } from "@/hooks/useHeatmap";
+import { useHistoricalHeatmap } from "@/hooks/useHistoricalHeatmap";
+import { useSafetyAnalysis } from "@/hooks/useSafetyAnalysis";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
@@ -15,7 +19,13 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
-
+const safetyScore = calculateSafetyScore({
+  suspiciousReports: 0,
+  sosReports: 0,
+  policeNearby: 2,
+  safePlacesNearby: 3,
+});
+<SafetyScore score={safetyScore} />
 function RecenterMap({
   latitude,
   longitude,
@@ -183,6 +193,7 @@ return `${Math.ceil(remainingMinutes / 60)}h`;
 };
 
 const nearbyReports = reports.filter((report) => {
+
   const reportTime =
     report.timestamp instanceof Date
       ? report.timestamp.getTime()
@@ -193,6 +204,12 @@ const nearbyReports = reports.filter((report) => {
   return Date.now() - reportTime <
     expiryHours * 60 * 60 * 1000;
 });
+const historicalHeatmap = useHistoricalHeatmap(reports);
+const heatmap = useHeatmap(nearbyReports);
+const getHeatPointColor = (point: any) =>
+  typeof point?.color === "string" && point.color
+    ? point.color
+    : "#F97316";
 
 const filteredReports = (
   
@@ -205,29 +222,15 @@ const filteredReports = (
   return distA - distB;
 });
 
-  const safeCount = nearbyReports.filter((r) => r.type === "safe").length;
-  const unsafeCount = nearbyReports.filter((r) => r.type === "unsafe").length;
-const highReports = nearbyReports.filter((r) => r.severity === "high").length;
-const mediumReports = nearbyReports.filter((r) => r.severity === "medium").length;
-const lowReports = nearbyReports.filter((r) => r.severity === "low").length;
-const sosReports = nearbyReports.filter((r) => r.category === "sos").length;
-  const unsafeImpact = nearbyReports.reduce((total, r) => {
-    if (r.type !== "unsafe") return total;
-    if (r.severity === "high") return total + 15;
-    if (r.severity === "medium") return total + 8;
-    return total + 4;
-  }, 0);
-
-  const safetyScore = Math.max(
-  0,
-  Math.min(
-    100,
-    100 +
-      safeCount * 2 -
-      unsafeImpact * 0.5 -
-      sosReports * 30
-  )
-);
+  const {
+  safeCount,
+  unsafeCount,
+  highReports,
+  mediumReports,
+  lowReports,
+  sosReports,
+  safetyScore,
+} = useSafetyAnalysis(nearbyReports);
 
   const scoreColor =
     safetyScore >= 85 ? "#4ADE80" : safetyScore >= 70 ? "#E8A838" : "#EF4444";
@@ -441,34 +444,51 @@ const aiSummary =
     fillOpacity: 0.1,
   }}
 />
-<Circle
-  center={[heatPoints[0].latitude, heatPoints[0].longitude]}
-  radius={120}
-  pathOptions={{
-    color: "red",
-    fillColor: "red",
-    fillOpacity: 0.5,
-  }}
-/>
-<Circle
-  center={[heatPoints[1].latitude, heatPoints[1].longitude]}
-  radius={120}
-  pathOptions={{
-    color: "orange",
-    fillColor: "orange",
-    fillOpacity: 0.5,
-  }}
-/>
-<Circle
-  center={[heatPoints[2].latitude, heatPoints[2].longitude]}
-  radius={120}
-  pathOptions={{
-    color: "yellow",
-    fillColor: "yellow",
-    fillOpacity: 0.5,
-  }}
-/>
-console.log("📍 REPORT", report.latitude, report.longitude, report.type, report.category);
+{/* Permanent hotspots */}
+{historicalHeatmap.map((point, index) => {
+  let color = "#FACC15"; // Yellow
+  let radius = 80;
+
+  if (point.intensity >= 0.5) {
+    color = "#F97316"; // Orange
+    radius = 120;
+  }
+
+  if (point.intensity >= 0.8) {
+    color = "#EF4444"; // Red
+    radius = 180;
+  }
+
+  return (
+    <Circle
+      key={`static-${index}`}
+      center={[point.latitude, point.longitude]}
+      radius={radius}
+      pathOptions={{
+        color,
+        fillColor: color,
+        fillOpacity: 0.25,
+      }}
+    />
+  );
+})}
+{/* Live hotspots */}
+{heatmap.map((point, index) => {
+  const pointColor = getHeatPointColor(point);
+  return (
+    <Circle
+      key={`live-${index}`}
+      center={[point.latitude, point.longitude]}
+      radius={point.radius}
+      pathOptions={{
+        color: pointColor,
+        fillColor: pointColor,
+        fillOpacity: 0.35,
+      }}
+    />
+  );
+})}
+
   {filteredReports.map((report) => (
 
     <Marker
