@@ -10,31 +10,56 @@ export interface HistoricalHeatPoint {
   intensity: number;
 }
 
+function getDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371000;
+
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
 export function useHistoricalHeatmap(
   reports: Report[]
 ): HistoricalHeatPoint[] {
-  const clusters = new Map<string, HistoricalHeatPoint>();
+  const hotspots: HistoricalHeatPoint[] = [];
 
   reports
     .filter((report) => report.type === "unsafe")
     .forEach((report) => {
-      // Round coordinates to group nearby reports
-      const lat = Number(report.latitude.toFixed(3));
-      const lng = Number(report.longitude.toFixed(3));
+      const existing = hotspots.find(
+        (hotspot) =>
+          getDistanceMeters(
+            report.latitude,
+            report.longitude,
+            hotspot.latitude,
+            hotspot.longitude
+          ) <= 100
+      );
 
-      const key = `${lat},${lng}`;
-
-      if (!clusters.has(key)) {
-        clusters.set(key, {
-          latitude: lat,
-          longitude: lng,
+      if (existing) {
+        existing.latitude = (existing.latitude + report.latitude) / 2;
+        existing.longitude = (existing.longitude + report.longitude) / 2;
+        existing.intensity = Math.min(existing.intensity + 0.2, 1);
+      } else {
+        hotspots.push({
+          latitude: report.latitude,
+          longitude: report.longitude,
           intensity: 0.2,
         });
       }
-
-      const hotspot = clusters.get(key)!;
-      hotspot.intensity = Math.min(hotspot.intensity + 0.2, 1);
     });
 
-  return Array.from(clusters.values());
+  return hotspots;
 }
