@@ -4,6 +4,7 @@ import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { AlertTriangle, ShieldCheck, Camera, MapPin, Send, CheckCircle } from "lucide-react";
 import LocationPickerMap from "@/components/LocationPickerMap";
+import LocationSearch from "@/components/LocationSearch";
 const CATEGORIES = [
   { id: "crime", label: "🚔 Crime" },
   { id: "traffic", label: "🚗 Traffic" },
@@ -82,29 +83,32 @@ const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
 const [timeOfIncident, setTimeOfIncident] = useState("Just now");
 const [useCurrentLocation, setUseCurrentLocation] = useState(true);
 const [showLocationPicker, setShowLocationPicker] = useState(false);
-const [selectedIncidentLocation, setSelectedIncidentLocation] = useState<
-  [number, number] | null
->(null);
+const [selectedIncidentLocation, setSelectedIncidentLocation] = useState<{
+  latitude: number;
+  longitude: number;
+  address: string;
+} | null>(null);
 const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!category) return;
+    if (!category || !incidentType || !user?.uid) return;
     setSubmitting(true);
     const ok = await submitReport({
       type: reportType,
       category,
       description,
       severity,
+      userId: user?.uid ?? "",
       latitude: useCurrentLocation
-  ? (location?.latitude ?? 40.7128)
-  : (selectedIncidentLocation?.[0] ?? location?.latitude ?? 40.7128),
-
-longitude: useCurrentLocation
-  ? (location?.longitude ?? -74.006)
-  : (selectedIncidentLocation?.[1] ?? location?.longitude ?? -74.006),
-      address: location?.address ?? "Unknown location",
-      userId: user?.uid ?? "anonymous",
+        ? (location?.latitude ?? 40.7128)
+        : (selectedIncidentLocation?.latitude ?? location?.latitude ?? 40.7128),
+      longitude: useCurrentLocation
+        ? (location?.longitude ?? -74.006)
+        : (selectedIncidentLocation?.longitude ?? location?.longitude ?? -74.006),
+      address: useCurrentLocation
+        ? (location?.address ?? "Unknown location")
+        : (selectedIncidentLocation?.address ?? "Unknown location"),
     });
     if (ok) {
       setSubmitted(true);
@@ -290,12 +294,11 @@ longitude: useCurrentLocation
   </div>
 )}
 {!useCurrentLocation && (
-  <button
-   onClick={() => setShowLocationPicker(true)}
-    className="mt-2 w-full py-3 rounded-xl border-2 border-dashed border-[#E8A838] text-[#E8A838] font-semibold hover:bg-[#E8A83820] transition-all"
-  >
-    🗺️ Open Map & Drop Pin
-  </button>
+  <div className="mt-3">
+    <LocationSearch
+      onLocationSelect={setSelectedIncidentLocation}
+    />
+  </div>
 )}
 {showLocationPicker && (
   <div className="fixed inset-0 z-50 bg-[#0F1E1E] flex flex-col">
@@ -313,27 +316,33 @@ longitude: useCurrentLocation
     </div>
 
     <div className="flex-1">
-  <LocationPickerMap
-  onLocationSelect={setSelectedIncidentLocation}
-/>
-{selectedIncidentLocation && (
-  <div className="p-3 space-y-3">
-    <div className="text-center text-sm text-white">
-      Selected location:
-      <br />
-      {selectedIncidentLocation[0].toFixed(6)},{" "}
-      {selectedIncidentLocation[1].toFixed(6)}
-    </div>
+      <LocationPickerMap
+        onLocationSelect={(position) =>
+          setSelectedIncidentLocation({
+            latitude: position[0],
+            longitude: position[1],
+            address: "",
+          })
+        }
+      />
+      {selectedIncidentLocation && (
+        <div className="p-3 space-y-3">
+          <div className="text-center text-sm text-white">
+            Selected location:
+            <br />
+            {selectedIncidentLocation.latitude.toFixed(6)},{" "}
+            {selectedIncidentLocation.longitude.toFixed(6)}
+          </div>
 
-    <button
-      onClick={() => setShowLocationPicker(false)}
-      className="w-full rounded-lg bg-[#38B2AC] py-3 font-medium text-white"
-    >
-      Use this location
-    </button>
-  </div>
-)}
-</div>
+          <button
+            onClick={() => setShowLocationPicker(false)}
+            className="w-full rounded-lg bg-[#38B2AC] py-3 font-medium text-white"
+          >
+            Use this location
+          </button>
+        </div>
+      )}
+    </div>
   </div>
 )}
         {/* Description */}
