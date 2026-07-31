@@ -86,6 +86,7 @@ const journeyDestinationIcon = L.divIcon({
 export default function WalkMeHomeScreen({
   onBack,
 }: WalkMeHomeScreenProps) {
+  
   const [destination, setDestination] = useState("");
   const [walkStarted, setWalkStarted] = useState(false);
   const [emergencyTriggered, setEmergencyTriggered] = useState(false);
@@ -137,7 +138,7 @@ export default function WalkMeHomeScreen({
   const addressSearchTimerRef = useRef<number | null>(null);
   const [journeyId, setJourneyId] = useState<string | null>(null);
   const [riskLevel, setRiskLevel] = useState<"Low" | "Medium" | "High">("Low");
-
+const [showJourneyDetails, setShowJourneyDetails] = useState(false);
 const [guardianMessage, setGuardianMessage] = useState(
   "Journey looks normal."
 );
@@ -1138,6 +1139,28 @@ if (user && userLocation) {
               </div>
             </div>
           )}
+         <button
+  onClick={() => setShowJourneyDetails((prev) => !prev)}
+  className="w-full bg-[#0F1E1E] border border-[#2D5A58] rounded-2xl px-4 py-3 flex items-center justify-between"
+>
+  <div className="text-left">
+    <p className="font-bold text-white">
+      Journey Details
+    </p>
+
+    <p className="text-xs text-[#7BA3A1] mt-1">
+
+    {movementLabel} • {remainingDistance !== null ? `${remainingDistance.toFixed(2)} km remaining` : "Distance unknown"}
+    </p>
+  </div>
+
+  <span className="text-[#E8A838] text-xl">
+    {showJourneyDetails ? "▼" : "▲"}
+  </span>
+</button>
+
+{showJourneyDetails && (
+  <div className="space-y-4">
           <div className="bg-[#1A2E2D] rounded-2xl p-5 border border-[#22C55E40]">
   <h3 className="text-lg font-bold mb-4">
     🛡 Guardian AI
@@ -1221,6 +1244,8 @@ if (user && userLocation) {
     </div>
   )}
 </div>
+  </div>
+)}
           <div className="bg-[#0F1E1E] border border-[#22C55E60] rounded-2xl p-4 text-center">
             <p className="text-sm text-[#7BA3A1] mb-2">Safety check-in</p>
 
