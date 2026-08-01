@@ -711,14 +711,7 @@ useEffect(() => {
           minute: "2-digit",
         })
       : null;
-const journeyProgress =
-  routeDistanceKm && routeDistanceKm > 0
-    ? Math.min(
-        100,
-        (distanceTravelled / routeDistanceKm) * 100
-      )
-    : 0;
-    
+
  const currentSpeed =
   journeyPoints.length > 0
     ? journeyPoints[journeyPoints.length - 1].speed
@@ -742,7 +735,7 @@ const movementLabel =
     ? "🚆 On a Train"
     : "⏸️ Stopped";
 
-const [journeyStatus, setJourneyStatus] = useState("Waiting");
+const [, setJourneyStatus] = useState("Waiting");
 
 useEffect(() => {
   if (!walkStarted) return;
@@ -1051,92 +1044,33 @@ if (user && userLocation) {
                 </div>
               </div>
 
-              <div className="absolute bottom-3 left-3 right-3 z-[500] pointer-events-none">
-                <div className="bg-[#0F1E1E]/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg">
-                  <p className="text-[10px] text-[#7BA3A1]">SAFE JOURNEY TO</p>
-                  <p className="font-bold text-white truncate">📍 {destination}</p>
-                  <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-                    <div>
-                      <p className="text-[#7BA3A1]">TRAVELLED</p>
-                      <p className="text-[#E8A838] font-bold">
-                        {distanceTravelled.toFixed(2)} km
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#7BA3A1]">REMAINING</p>
-                      <p className="text-[#4ADE80] font-bold">
-                        {remainingDistance !== null
-                          ? `${remainingDistance.toFixed(2)} km`
-                          : "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#7BA3A1]">ARRIVE AT</p>
-                      <p className="text-white font-bold">{arrivalTime ?? "—"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-  <div className="flex justify-between text-xs text-[#7BA3A1] mb-1">
-    <span>Journey Progress</span>
-    <span>{journeyProgress.toFixed(0)}%</span>
-  </div>
-<div className="mt-3 flex justify-between items-center">
-  <div>
-    <p className="text-[10px] text-[#7BA3A1]">CURRENT SPEED</p>
-    <p className="text-white font-bold">
-      {currentSpeedKmh.toFixed(1)} km/h
-    </p>
-  </div>
-<div className="mt-3 rounded-xl bg-[#163232] p-3">
-  <p className="text-[10px] text-[#7BA3A1]">
-    JOURNEY STATUS
-  </p>
-<div className="mt-3 rounded-xl bg-[#163232] p-3">
-  <p className="text-[10px] text-[#7BA3A1]">
-    LAST GPS UPDATE
-  </p>
+             <div className="absolute bottom-3 left-3 right-3 z-[500] pointer-events-none">
+  <div className="flex items-center justify-between bg-[#0F1E1E]/90 backdrop-blur-md rounded-xl px-3 py-2 shadow-lg">
+    
+    <div className="min-w-0">
+      <p className="text-[9px] text-[#7BA3A1]">
+        SAFE JOURNEY
+      </p>
 
-  <p
-  className={`font-semibold ${
-    lastGpsUpdate.includes("min")
-      ? "text-yellow-400"
-      : "text-green-400"
-  }`}
->
-  {lastGpsUpdate}
-</p>
-</div>
-  <p className="text-[#4ADE80] font-semibold">
-    {journeyStatus}
-  </p>
-</div>
-  <div className="text-right">
-    <p className="text-[10px] text-[#7BA3A1]">MOVEMENT</p>
-    <p className="text-[#4ADE80] font-bold">
-      {movementLabel}
-    </p>
+      <p className="text-xs font-bold text-white truncate">
+        📍 {destination}
+      </p>
+    </div>
+
+    <div className="text-right ml-3 shrink-0">
+      <p className="text-[#E8A838] text-sm font-bold">
+        {remainingDistance !== null
+          ? `${remainingDistance.toFixed(2)} km`
+          : "—"}
+      </p>
+
+      <p className="text-[9px] text-[#7BA3A1]">
+        {arrivalTime ? `ETA ${arrivalTime}` : "Calculating..."}
+      </p>
+    </div>
+
   </div>
 </div>
-  <div className="w-full h-2 bg-[#2D5A58] rounded-full overflow-hidden">
-    <div
-      className="h-full bg-[#22C55E] transition-all duration-500"
-      style={{ width: `${journeyProgress}%` }}
-    />
-  </div>
-</div>
-                 <p className="text-xs text-[#4ADE80] mt-2">
-  🟢 Guardian Live
-
-  {liveEtaSeconds !== null
-    ? ` • ETA ${Math.ceil(liveEtaSeconds / 60)} min`
-    : ""}
-
-  {remainingDistance !== null
-    ? ` • ${remainingDistance.toFixed(2)} km left`
-    : ""}
-</p>
-                </div>
-              </div>
             </div>
           )}
          <button
@@ -1210,6 +1144,11 @@ if (user && userLocation) {
     <div className="flex justify-between">
       <span>Route Deviation</span>
       <span>{routeDeviation.toFixed(0)} m</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>GPS Update</span>
+      <span>{lastGpsUpdate}</span>
     </div>
 
     <div className="flex justify-between">
