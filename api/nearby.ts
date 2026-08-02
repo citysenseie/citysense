@@ -15,7 +15,7 @@ export default async function handler(
     });
   }
 
-  const { lat, lng, osmFilter, radius = 5000 } = req.body ?? {};
+  const { lat, lng, osmFilter, radius = 10000 } = req.body ?? {};
 
   if (
     typeof lat !== "number" ||
@@ -27,11 +27,12 @@ export default async function handler(
     });
   }
 
-  const query = `[out:json][timeout:10];
+ const searchRadius = Math.min(radius, 3000);
+
+const query = `[out:json][timeout:5];
 (
-  node[${osmFilter}](around:${radius},${lat},${lng});
-  way[${osmFilter}](around:${radius},${lat},${lng});
-  relation[${osmFilter}](around:${radius},${lat},${lng});
+  node[${osmFilter}](around:${searchRadius},${lat},${lng});
+  way[${osmFilter}](around:${searchRadius},${lat},${lng});
 );
 out center;`;
 
