@@ -8,9 +8,7 @@ import {
   Flame,
   Zap,
   Fuel,
-  PlugZap,
-  Wrench,
-  CircleParking,
+  
   ShoppingCart,
   Landmark,
   Wifi,
@@ -361,20 +359,7 @@ const onDriverMode = () => {
   },
 ],
     },
-    {
-      title: "Driver",
-       subtitle: "Fuel, charging, parking & repairs",
-    icon: Car,
-    accent: "#60A5FA",
-    iconBg: "bg-[#60A5FA]/10",
-      items: [
-        { label: "Gas Station", icon: Fuel },
-        { label: "EV Charger", icon: PlugZap },
-        { label: "Car Repair", icon: Wrench },
-        { label: "Parking", icon: CircleParking },
-        { label: "Tire Shop", icon: Wrench },
-      ],
-    },
+    
     {
       title: "Daily Essentials",
        subtitle: "Useful everyday services around you",
