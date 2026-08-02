@@ -162,27 +162,18 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     setActiveNearbyType(label);
 
     try {
-      const query = `[out:json][timeout:10];
-(
-  node[${osmFilter}](around:${radius},${lat},${lng});
-  way[${osmFilter}](around:${radius},${lat},${lng});
-  relation[${osmFilter}](around:${radius},${lat},${lng});
-);
-out center;`;
-const controller = new AbortController();
-const timeoutId = window.setTimeout(() => controller.abort(), 12000);
-      const response = await fetch(
-  "https://overpass.kumi.systems/api/interpreter",
-        {
-          method: "POST",
-          body: query,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          signal: controller.signal,
-        }
-      );
-window.clearTimeout(timeoutId);
+    const response = await fetch("/api/nearby", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    lat,
+    lng,
+    osmFilter,
+    radius,
+  }),
+});
       if (!response.ok) {
         throw new Error(`Overpass API error: ${response.status}`);
       }
