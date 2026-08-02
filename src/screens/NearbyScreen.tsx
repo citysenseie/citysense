@@ -154,7 +154,7 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     label: string,
     osmFilter: string,
     fallbackName: string,
-    radius = 10000
+    radius = 5000
   ) => {
     setNearbyLoading(true);
     setNearbyError(null);
@@ -162,14 +162,15 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     setActiveNearbyType(label);
 
     try {
-      const query = `[out:json][timeout:25];
+      const query = `[out:json][timeout:10];
 (
   node[${osmFilter}](around:${radius},${lat},${lng});
   way[${osmFilter}](around:${radius},${lat},${lng});
   relation[${osmFilter}](around:${radius},${lat},${lng});
 );
 out center;`;
-
+const controller = new AbortController();
+const timeoutId = window.setTimeout(() => controller.abort(), 12000);
       const response = await fetch(
   "https://overpass.kumi.systems/api/interpreter",
         {
@@ -178,9 +179,10 @@ out center;`;
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
+          signal: controller.signal,
         }
       );
-
+window.clearTimeout(timeoutId);
       if (!response.ok) {
         throw new Error(`Overpass API error: ${response.status}`);
       }
@@ -241,15 +243,15 @@ out center;`;
         .sort((a, b) => a.distance - b.distance);
 
       setNearbyResults(results);
-    } catch (err) {
-      setNearbyError(
-        err instanceof Error
-          ? err.message
-          : `Failed to find nearby ${label.toLowerCase()}`
-      );
-    } finally {
-      setNearbyLoading(false);
-    }
+   } catch (err) {
+  setNearbyError(
+    err instanceof Error
+      ? err.message
+      : `Failed to find nearby ${label.toLowerCase()}`
+  );
+} finally {
+  setNearbyLoading(false);
+}
   },
   [lat, lng]
 );
