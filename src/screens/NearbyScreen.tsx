@@ -276,7 +276,141 @@ const searchAEDs = () =>
     "healthcare",
     "AED Defibrillator"
   );
- 
+ const searchGroceryStores = () =>
+  searchNearbyPlaces(
+    "Grocery Stores",
+    "commercial.supermarket",
+    "Grocery Store"
+  );
+
+const searchATMs = () =>
+  searchNearbyPlaces(
+    "ATMs",
+    "service.financial.atm",
+    "ATM"
+  );
+
+const searchPublicToilets = () =>
+  searchNearbyPlaces(
+    "Public Toilets",
+    "amenity.toilet",
+    "Public Toilet"
+  );
+
+const searchHotels = () =>
+  searchNearbyPlaces(
+    "Hotels",
+    "accommodation.hotel",
+    "Hotel"
+  );
+  const searchPlaygrounds = () =>
+  searchNearbyPlaces(
+    "Playgrounds",
+    "leisure.playground",
+    "Playground"
+  );
+
+const searchParks = () =>
+  searchNearbyPlaces(
+    "Parks",
+    "leisure.park",
+    "Park"
+  );
+
+const searchSchools = () =>
+  searchNearbyPlaces(
+    "Schools",
+    "education.school",
+    "School"
+  );
+
+const searchSwimmingPools = () =>
+  searchNearbyPlaces(
+    "Swimming Pools",
+    "sport.swimming",
+    "Swimming Pool"
+  );
+
+const searchSportsCenters = () =>
+  searchNearbyPlaces(
+    "Sports Centers",
+    "sport",
+    "Sports Center"
+  );
+
+const searchFamilyRestaurants = () =>
+  searchNearbyPlaces(
+    "Family Restaurants",
+    "catering.restaurant",
+    "Family Restaurant"
+  );
+  const searchOpenPharmacies = () =>
+  searchNearbyPlaces(
+    "Open Pharmacies",
+    "healthcare.pharmacy",
+    "Open Pharmacy"
+  );
+
+const searchOpenGasStations = () =>
+  searchNearbyPlaces(
+    "Open Gas Stations",
+    "commercial.gas",
+    "Open Gas Station"
+  );
+
+const searchOpenHotels = () =>
+  searchNearbyPlaces(
+    "Open Hotels",
+    "accommodation.hotel",
+    "Open Hotel"
+  );
+
+const searchOpenRestaurants = () =>
+  searchNearbyPlaces(
+    "Open Restaurants",
+    "catering.restaurant",
+    "Open Restaurant"
+  );
+  const searchFreeWiFis = () =>
+  searchNearbyPlaces(
+    "Free Wi-Fi",
+    "internet_access",
+    "Free Wi-Fi"
+  );
+
+const searchPhoneRepairs = () =>
+  searchNearbyPlaces(
+    "Phone Repair",
+    "commercial.elektronics",
+    "Phone Repair"
+  );
+  const searchMosques = () =>
+  searchNearbyPlaces(
+    "Mosques",
+    "religion.muslim",
+    "Mosque"
+  );
+
+const searchIslamicCenters = () =>
+  searchNearbyPlaces(
+    "Islamic Centers",
+    "religion",
+    "Islamic Center"
+  );
+
+const searchQiblaDirections = () =>
+  searchNearbyPlaces(
+    "Qibla Direction",
+    "religion.muslim",
+    "Qibla Direction"
+  );
+
+const searchPrayerSpaces = () =>
+  searchNearbyPlaces(
+    "Prayer Spaces",
+    "religion",
+    "Prayer Space"
+  );
 const onSafeHaven = () => {
   _onSafeHaven();
 };
@@ -361,35 +495,83 @@ const onDriverMode = () => {
     },
     
     {
-      title: "Daily Essentials",
-       subtitle: "Useful everyday services around you",
-    icon: ShoppingCart,
-    accent: "#E8A838",
-    iconBg: "bg-[#E8A838]/10",
-      items: [
-        { label: "Grocery Store", icon: ShoppingCart },
-        { label: "ATM", icon: Landmark },
-        { label: "Public Toilet", icon: MapPin },
-        { label: "Free Wi-Fi", icon: Wifi },
-        { label: "Phone Repair", icon: Smartphone },
-        { label: "Hotel", icon: Hotel },
-      ],
+  title: "Daily Essentials",
+  subtitle: "Useful everyday services around you",
+  icon: ShoppingCart,
+  accent: "#E8A838",
+  iconBg: "bg-[#E8A838]/10",
+  items: [
+    {
+      label: "Grocery Store",
+      icon: ShoppingCart,
+      onClick: searchGroceryStores,
     },
     {
-      title: "Family",
-       subtitle: "Places and services for families",
-    icon: Users,
-    accent: "#A78BFA",
-    iconBg: "bg-[#A78BFA]/10",
-      items: [
-        { label: "Playground", icon: Baby },
-        { label: "Park", icon: TreePine },
-        { label: "School", icon: School },
-        { label: "Swimming Pool", icon: Waves },
-        { label: "Sports Center", icon: Dumbbell },
-        { label: "Family Restaurant", icon: UtensilsCrossed },
-      ],
+      label: "ATM",
+      icon: Landmark,
+      onClick: searchATMs,
     },
+    {
+      label: "Public Toilet",
+      icon: MapPin,
+      onClick: searchPublicToilets,
+    },
+    {
+      label: "Free Wi-Fi",
+      icon: Wifi,
+      onClick: searchFreeWiFis,
+    },
+    {
+      label: "Phone Repair",
+      icon: Smartphone,
+      onClick: searchPhoneRepairs,
+    },
+    {
+      label: "Hotel",
+      icon: Hotel,
+      onClick: searchHotels,
+    },
+  ],
+},
+   {
+  title: "Family",
+  subtitle: "Places and services for families",
+  icon: Users,
+  accent: "#A78BFA",
+  iconBg: "bg-[#A78BFA]/10",
+  items: [
+    {
+      label: "Playground",
+      icon: Baby,
+      onClick: searchPlaygrounds,
+    },
+    {
+      label: "Park",
+      icon: TreePine,
+      onClick: searchParks,
+    },
+    {
+      label: "School",
+      icon: School,
+      onClick: searchSchools,
+    },
+    {
+      label: "Swimming Pool",
+      icon: Waves,
+      onClick: searchSwimmingPools,
+    },
+    {
+      label: "Sports Center",
+      icon: Dumbbell,
+      onClick: searchSportsCenters,
+    },
+    {
+      label: "Family Restaurant",
+      icon: UtensilsCrossed,
+      onClick: searchFamilyRestaurants,
+    },
+  ],
+},
     {
       title: "Night",
        subtitle: "Essential places available after dark",
@@ -397,10 +579,10 @@ const onDriverMode = () => {
     accent: "#818CF8",
     iconBg: "bg-[#818CF8]/10",
       items: [
-        { label: "Open Pharmacy", icon: Pill },
-        { label: "Open Gas Station", icon: Fuel },
-        { label: "Open Hotel", icon: Hotel },
-        { label: "Open Restaurant", icon: UtensilsCrossed },
+       { label: "Open Pharmacy", icon: Pill, onClick: searchOpenPharmacies },
+        { label: "Open Gas Station", icon: Fuel, onClick: searchOpenGasStations },
+        { label: "Open Hotel", icon: Hotel, onClick: searchOpenHotels },
+        { label: "Open Restaurant", icon: UtensilsCrossed, onClick: searchOpenRestaurants },
         { label: "Police Station", icon: Siren, onClick: searchPoliceStations },
       ],
     },
@@ -411,10 +593,10 @@ const onDriverMode = () => {
     accent: "#34D399",
     iconBg: "bg-[#34D399]/10",
       items: [
-        { label: "Mosque", icon: Drum },
-        { label: "Islamic Center", icon: Building2 },
-        { label: "Qibla Direction", icon: Compass },
-        { label: "Prayer Space", icon: Hand },
+        { label: "Mosque", icon: Drum, onClick: searchMosques },
+        { label: "Islamic Center", icon: Building2, onClick: searchIslamicCenters },
+        { label: "Qibla Direction", icon: Compass, onClick: searchQiblaDirections },
+        { label: "Prayer Space", icon: Hand, onClick: searchPrayerSpaces },
       ],
     },
   ];
