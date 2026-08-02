@@ -35,6 +35,7 @@ ArrowLeft,
   AlertCircle,
   MapPin as MapPinIcon,
   Users,
+  Phone,
   
 } from "lucide-react";
 import { useState, useCallback } from "react";
@@ -56,12 +57,15 @@ interface NearbyScreenProps {
 }
 
 interface NearbyResult {
-  id: number;
+ id: string;
   name: string;
   lat: number;
   lon: number;
   distance: number;
   address: string;
+  placeId?: string;
+  phone?: string;
+  openingHours?: any;
 }
 
 function haversineDistance(
@@ -89,7 +93,60 @@ function formatDistance(km: number): string {
   }
   return `${km.toFixed(1)} km`;
 }
+type OpeningStatus = {
+  available: boolean;
+  isOpen: boolean | null;
+  statusText: string;
+  hoursText: string | null;
+};
 
+function getOpeningStatus(openingHours: any): OpeningStatus {
+  if (!openingHours) {
+    return {
+      available: false,
+      isOpen: null,
+      statusText: "Hours unavailable",
+      hoursText: null,
+    };
+  }
+
+  const currentStatus =
+    openingHours.open_now ??
+    openingHours.is_open ??
+    openingHours.openNow;
+
+  const hoursText =
+    openingHours.weekday_text?.join(" • ") ??
+    openingHours.weekdayText?.join(" • ") ??
+    openingHours.text ??
+    openingHours.display ??
+    null;
+
+  if (currentStatus === true) {
+    return {
+      available: true,
+      isOpen: true,
+      statusText: "Open now",
+      hoursText,
+    };
+  }
+
+  if (currentStatus === false) {
+    return {
+      available: true,
+      isOpen: false,
+      statusText: "Closed",
+      hoursText,
+    };
+  }
+
+  return {
+    available: true,
+    isOpen: null,
+    statusText: "Opening hours available",
+    hoursText,
+  };
+}
 export default function NearbyScreen({
   onSafeHaven: _onSafeHaven,
   onDriverMode: _onDriverMode,
@@ -135,7 +192,40 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     const url = `https://www.google.com/maps/dir/?api=1&destination=${result.lat},${result.lon}&travelmode=driving`;
     window.open(url, "_blank");
   }, []);
+const loadPlaceDetails = useCallback(
+  async (result: NearbyResult): Promise<NearbyResult> => {
+    if (!result.placeId) {
+      return result;
+    }
 
+    try {
+      const response = await fetch("/api/place-details", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          placeId: result.placeId,
+        }),
+      });
+
+      if (!response.ok) {
+        return result;
+      }
+
+      const details = await response.json();
+
+      return {
+        ...result,
+        phone: details.phone ?? result.phone,
+        openingHours: details.openingHours ?? result.openingHours,
+      };
+    } catch {
+      return result;
+    }
+  },
+  []
+);
   const searchNearbyPlaces = useCallback(
   async (
     label: string,
@@ -173,6 +263,7 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
       }
 
       const data = await response.json();
+      
 
       const features = Array.isArray(data.features) ? data.features : [];
 
@@ -206,13 +297,16 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
             "Address unavailable";
 
           return {
-            id: props.place_id || `${itemLat}-${itemLon}`,
-            name,
-            lat: itemLat,
-            lon: itemLon,
-            distance,
-            address,
-          };
+  id: props.place_id || `${itemLat}-${itemLon}`,
+  placeId: props.place_id,
+  name,
+  lat: itemLat,
+  lon: itemLon,
+  distance,
+  address,
+  phone: props.contact?.phone || props.phone,
+  openingHours: props.opening_hours,
+};
         })
         .filter(
           (result: NearbyResult | null): result is NearbyResult =>
@@ -223,7 +317,15 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
             a.distance - b.distance
         );
 
-      setNearbyResults(results);
+     setNearbyResults(results);
+
+Promise.all(results.map((result) => loadPlaceDetails(result)))
+  .then((detailedResults) => {
+    setNearbyResults(detailedResults);
+  })
+  .catch(() => {
+    // Keep the original nearby results if place details fail.
+  });
     } catch (err) {
       setNearbyError(
         err instanceof Error
@@ -739,7 +841,10 @@ const onDriverMode = () => {
         ) : (
           /* Place cards */
           <div className="flex flex-col gap-3">
-            {nearbyResults.map((result, index) => (
+            {nearbyResults.map((result, index) => {
+  const openingStatus = getOpeningStatus(result.openingHours);
+
+  return (
               <div
                 key={`${result.id}-${index}`}
                 className="relative overflow-hidden bg-[#1A2E2D] border border-[#2D5A5840] rounded-[22px] p-4"
@@ -777,22 +882,81 @@ const onDriverMode = () => {
                       <p className="text-xs text-[#7BA3A1] leading-relaxed">
                         {result.address}
                       </p>
+                      {/* Opening status */}
+<div className="flex items-center gap-2 mt-3">
+  <span
+    className={`w-2 h-2 rounded-full ${
+      openingStatus.isOpen === true
+        ? "bg-green-500"
+        : openingStatus.isOpen === false
+        ? "bg-red-500"
+        : "bg-[#7BA3A1]"
+    }`}
+  />
+
+  <span
+    className={`text-xs font-semibold ${
+      openingStatus.isOpen === true
+        ? "text-green-400"
+        : openingStatus.isOpen === false
+        ? "text-red-400"
+        : "text-[#7BA3A1]"
+    }`}
+  >
+    {openingStatus.statusText}
+  </span>
+</div>
+{openingStatus.hoursText && (
+  <p className="text-[11px] text-[#7BA3A1] mt-1 ml-4">
+    {openingStatus.hoursText}
+  </p>
+)}
+{/* Phone number */}
+{result.phone && (
+  <div className="flex items-center gap-2 mt-2">
+    <span className="text-xs text-[#7BA3A1]">
+      📞 {result.phone}
+    </span>
+  </div>
+)}
                     </div>
+                    {result.phone && (
+  <div className="flex items-center gap-1.5 mt-2">
+    <Phone className="w-3.5 h-3.5 text-[#527573] shrink-0" />
+
+    <p className="text-xs text-[#F5F3EF]">
+      {result.phone}
+    </p>
+  </div>
+)}
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-4 pt-3 border-t border-[#2D5A58]/30">
-                  <button
-                    onClick={() => handleNavigate(result)}
-                    className="w-full flex items-center justify-center gap-2 bg-[#E8A838] text-[#0F1E1E] rounded-xl px-4 py-2.5 text-sm font-bold active:scale-[0.98] transition-transform"
-                  >
-                    <NavigateIcon className="w-4 h-4" />
-                    Navigate
-                  </button>
-                </div>
+               {/* Actions */}
+<div className="mt-4 pt-3 border-t border-[#2D5A58]/30">
+  <div className={`grid gap-2 ${result.phone ? "grid-cols-2" : "grid-cols-1"}`}>
+    {result.phone && (
+      <button
+        onClick={() => window.location.href = `tel:${result.phone}`}
+        className="flex items-center justify-center gap-2 bg-[#1A2E2D] border border-[#355B58] text-[#F5F3EF] rounded-xl px-4 py-2.5 text-sm font-bold active:scale-[0.98] transition-transform"
+      >
+        <Phone className="w-4 h-4 text-[#E8A838]" />
+        Call
+      </button>
+    )}
+
+    <button
+      onClick={() => handleNavigate(result)}
+      className="flex items-center justify-center gap-2 bg-[#E8A838] text-[#0F1E1E] rounded-xl px-4 py-2.5 text-sm font-bold active:scale-[0.98] transition-transform"
+    >
+      <NavigateIcon className="w-4 h-4" />
+      Navigate
+    </button>
+  </div>
+</div>
               </div>
-            ))}
+                      );
+          })}
           </div>
         )}
       </>
