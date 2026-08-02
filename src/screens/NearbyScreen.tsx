@@ -247,7 +247,7 @@ const searchPoliceStations = () =>
 const searchHospitals = () =>
   searchNearbyPlaces(
     "Hospitals",
-    "service.hospital",
+    "healthcare.hospital",
     "Hospital"
   );
 
@@ -261,7 +261,7 @@ const searchPharmacies = () =>
 const searchEmergencyRooms = () =>
   searchNearbyPlaces(
     "Emergency Rooms",
-    "service.emergency",
+    "healthcare.emergency",
     "Emergency Room"
   );
 
