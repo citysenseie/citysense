@@ -29,13 +29,15 @@ import {
   Hand,
   HeartPulse,
   Cross,
-  ChevronDown,
-  ChevronUp,
-  ArrowLeft,
+  ChevronRight,
+Moon,
+ArrowLeft,
   Navigation as NavigateIcon,
   Loader2,
   AlertCircle,
   MapPin as MapPinIcon,
+  Users,
+  
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useLocation } from "@/hooks/useLocation";
@@ -55,7 +57,7 @@ interface NearbyScreenProps {
   onTrustedContacts: () => void;
 }
 
-interface PoliceResult {
+interface NearbyResult {
   id: number;
   name: string;
   lat: number;
@@ -121,10 +123,10 @@ export default function NearbyScreen({
     "Safety & Emergency": true,
   });
 
-  const [policeResults, setPoliceResults] = useState<PoliceResult[] | null>(null);
-  const [policeLoading, setPoliceLoading] = useState(false);
-  const [policeError, setPoliceError] = useState<string | null>(null);
-
+ const [nearbyResults, setNearbyResults] = useState<NearbyResult[] | null>(null);
+const [nearbyLoading, setNearbyLoading] = useState(false);
+const [nearbyError, setNearbyError] = useState<string | null>(null);
+const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
   const lat = location?.latitude ?? 51.1857;
   const lng = location?.longitude ?? 3.5701;
 
@@ -142,54 +144,86 @@ export default function NearbyScreen({
     );
   };
 
-  const handleNavigate = useCallback((result: PoliceResult) => {
+  const handleNavigate = useCallback((result: NearbyResult) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${result.lat},${result.lon}&travelmode=driving`;
     window.open(url, "_blank");
   }, []);
 
-  const searchPoliceStations = useCallback(async () => {
-    setPoliceLoading(true);
-    setPoliceError(null);
-    setPoliceResults(null);
+  const searchNearbyPlaces = useCallback(
+  async (
+    label: string,
+    osmFilter: string,
+    fallbackName: string,
+    radius = 10000
+  ) => {
+    setNearbyLoading(true);
+    setNearbyError(null);
+    setNearbyResults(null);
+    setActiveNearbyType(label);
 
     try {
       const query = `[out:json][timeout:25];
 (
-  node["amenity"="police"](around:10000,${lat},${lng});
-  way["amenity"="police"](around:10000,${lat},${lng});
-  relation["amenity"="police"](around:10000,${lat},${lng});
+  node[${osmFilter}](around:${radius},${lat},${lng});
+  way[${osmFilter}](around:${radius},${lat},${lng});
+  relation[${osmFilter}](around:${radius},${lat},${lng});
 );
 out center;`;
 
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        body: query,
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const response = await fetch(
+        "https://overpass-api.de/api/interpreter",
+        {
+          method: "POST",
+          body: query,
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Overpass API error: ${response.status}`);
       }
 
       const data = await response.json();
+
       const elements = data.elements as Array<{
         type: string;
         id: number;
         lat?: number;
         lon?: number;
-        center?: { lat: number; lon: number };
+        center?: {
+          lat: number;
+          lon: number;
+        };
         tags?: Record<string, string>;
       }>;
 
-      const results: PoliceResult[] = elements
+      const results: NearbyResult[] = elements
         .map((el) => {
           const itemLat = el.lat ?? el.center?.lat;
           const itemLon = el.lon ?? el.center?.lon;
-          if (itemLat == null || itemLon == null) return null;
 
-          const distance = haversineDistance(lat, lng, itemLat, itemLon);
-          const name = el.tags?.name || el.tags?.["name:en"] || "Police Station";
-          const address = buildAddress(el.tags || {});
+          if (itemLat == null || itemLon == null) {
+            return null;
+          }
+
+          const distance = haversineDistance(
+            lat,
+            lng,
+            itemLat,
+            itemLon
+          );
+
+          const name =
+            el.tags?.name ||
+            el.tags?.["name:en"] ||
+            fallbackName;
+
+          const address =
+            buildAddress(el.tags || {}) ||
+            el.tags?.["addr:full"] ||
+            "Address unavailable";
 
           return {
             id: el.id,
@@ -200,22 +234,67 @@ out center;`;
             address,
           };
         })
-        .filter((r): r is PoliceResult => r !== null && r.address !== undefined)
+        .filter(
+          (result): result is NearbyResult =>
+            result !== null
+        )
         .sort((a, b) => a.distance - b.distance);
 
-      setPoliceResults(results);
+      setNearbyResults(results);
     } catch (err) {
-      setPoliceError(err instanceof Error ? err.message : "Failed to fetch police stations");
+      setNearbyError(
+        err instanceof Error
+          ? err.message
+          : `Failed to find nearby ${label.toLowerCase()}`
+      );
     } finally {
-      setPoliceLoading(false);
+      setNearbyLoading(false);
     }
-  }, [lat, lng]);
+  },
+  [lat, lng]
+);
+const searchPoliceStations = () =>
+  searchNearbyPlaces(
+    "Police Stations",
+    '"amenity"="police"',
+    "Police Station"
+  );
 
-  const closePoliceResults = () => {
-    setPoliceResults(null);
-    setPoliceError(null);
-    setPoliceLoading(false);
-  };
+const searchHospitals = () =>
+  searchNearbyPlaces(
+    "Hospitals",
+    '"amenity"="hospital"',
+    "Hospital"
+  );
+
+const searchPharmacies = () =>
+  searchNearbyPlaces(
+    "Pharmacies",
+    '"amenity"="pharmacy"',
+    "Pharmacy"
+  );
+
+const searchEmergencyRooms = () =>
+  searchNearbyPlaces(
+    "Emergency Rooms",
+    '"emergency"="yes"',
+    "Emergency Room"
+  );
+
+const searchFireStations = () =>
+  searchNearbyPlaces(
+    "Fire Stations",
+    '"amenity"="fire_station"',
+    "Fire Station"
+  );
+
+const searchAEDs = () =>
+  searchNearbyPlaces(
+    "AED Defibrillators",
+    '"emergency"="defibrillator"',
+    "AED Defibrillator"
+  );
+ 
 const onSafeHaven = () => {
   _onSafeHaven();
 };
@@ -261,17 +340,49 @@ const onDriverMode = () => {
   const categories = [
     {
       title: "Safety & Emergency",
+       subtitle: "Police, medical care & urgent help",
+    icon: Shield,
+    accent: "#EF6464",
+    iconBg: "bg-[#EF6464]/10",
       items: [
-        { label: "Police Station", icon: Siren, onClick: searchPoliceStations },
-        { label: "Hospital", icon: HeartPulse },
-        { label: "Pharmacy", icon: Pill },
-        { label: "Emergency Room", icon: Cross },
-        { label: "Fire Station", icon: Flame },
-        { label: "AED Defibrillator", icon: Zap },
-      ],
+  {
+    label: "Police Station",
+    icon: Siren,
+    onClick: searchPoliceStations,
+  },
+  {
+    label: "Hospital",
+    icon: HeartPulse,
+    onClick: searchHospitals,
+  },
+  {
+    label: "Pharmacy",
+    icon: Pill,
+    onClick: searchPharmacies,
+  },
+  {
+    label: "Emergency Room",
+    icon: Cross,
+    onClick: searchEmergencyRooms,
+  },
+  {
+    label: "Fire Station",
+    icon: Flame,
+    onClick: searchFireStations,
+  },
+  {
+    label: "AED Defibrillator",
+    icon: Zap,
+    onClick: searchAEDs,
+  },
+],
     },
     {
       title: "Driver",
+       subtitle: "Fuel, charging, parking & repairs",
+    icon: Car,
+    accent: "#60A5FA",
+    iconBg: "bg-[#60A5FA]/10",
       items: [
         { label: "Gas Station", icon: Fuel },
         { label: "EV Charger", icon: PlugZap },
@@ -282,6 +393,10 @@ const onDriverMode = () => {
     },
     {
       title: "Daily Essentials",
+       subtitle: "Useful everyday services around you",
+    icon: ShoppingCart,
+    accent: "#E8A838",
+    iconBg: "bg-[#E8A838]/10",
       items: [
         { label: "Grocery Store", icon: ShoppingCart },
         { label: "ATM", icon: Landmark },
@@ -293,6 +408,10 @@ const onDriverMode = () => {
     },
     {
       title: "Family",
+       subtitle: "Places and services for families",
+    icon: Users,
+    accent: "#A78BFA",
+    iconBg: "bg-[#A78BFA]/10",
       items: [
         { label: "Playground", icon: Baby },
         { label: "Park", icon: TreePine },
@@ -304,6 +423,10 @@ const onDriverMode = () => {
     },
     {
       title: "Night",
+       subtitle: "Essential places available after dark",
+    icon: Moon,
+    accent: "#818CF8",
+    iconBg: "bg-[#818CF8]/10",
       items: [
         { label: "Open Pharmacy", icon: Pill },
         { label: "Open Gas Station", icon: Fuel },
@@ -314,6 +437,10 @@ const onDriverMode = () => {
     },
     {
       title: "Faith & Prayer",
+       subtitle: "Prayer spaces & faith services nearby",
+    icon: Hand,
+    accent: "#34D399",
+    iconBg: "bg-[#34D399]/10",
       items: [
         { label: "Mosque", icon: Drum },
         { label: "Islamic Center", icon: Building2 },
@@ -357,142 +484,322 @@ const onDriverMode = () => {
         </div>
       </div>
 
-      {/* Police Station Results */}
-      {(policeLoading || policeError || policeResults) && (
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold">
-              Police Stations
-            </p>
-            <button
-              onClick={closePoliceResults}
-              className="flex items-center gap-1 text-xs text-[#7BA3A1] hover:text-[#F5F3EF] transition-colors"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              Back
-            </button>
+      {/* Nearby Results */}
+{(nearbyLoading || nearbyError || nearbyResults) && (
+  <div className="mb-5">
+    {/* Results Header */}
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#7BA3A1] font-bold">
+          Nearby
+        </p>
+
+        <h2 className="text-lg font-bold text-[#F5F3EF] mt-1">
+          {activeNearbyType || "Nearby Places"}
+        </h2>
+      </div>
+
+      <button
+        onClick={() => {
+          setNearbyResults(null);
+          setNearbyError(null);
+          setNearbyLoading(false);
+          setActiveNearbyType(null);
+        }}
+        className="flex items-center gap-1.5 bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-3 py-2 text-xs font-medium text-[#F5F3EF] active:scale-95 transition-transform"
+      >
+        <ArrowLeft className="w-3.5 h-3.5 text-[#E8A838]" />
+        Back
+      </button>
+    </div>
+
+    {/* Loading */}
+    {nearbyLoading && (
+      <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-[22px] p-8 flex flex-col items-center justify-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-[#E8A838]/10 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-[#E8A838] animate-spin" />
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm font-semibold text-[#F5F3EF]">
+            Finding {activeNearbyType?.toLowerCase()}...
+          </p>
+
+          <p className="text-xs text-[#7BA3A1] mt-1">
+            Searching around your current location
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* Error */}
+    {nearbyError && !nearbyLoading && (
+      <div className="bg-[#1A2E2D] border border-[#EF4444]/20 rounded-[22px] p-6 flex flex-col items-center justify-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/10 flex items-center justify-center">
+          <AlertCircle className="w-6 h-6 text-[#EF4444]" />
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm font-semibold text-[#F5F3EF]">
+            Search unavailable
+          </p>
+
+          <p className="text-xs text-[#7BA3A1] mt-1">
+            {nearbyError}
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* Results */}
+    {nearbyResults && !nearbyLoading && !nearbyError && (
+      <>
+        {/* Result summary */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-[#7BA3A1]">
+            {nearbyResults.length === 1
+              ? "1 place found"
+              : `${nearbyResults.length} places found`}
+          </p>
+
+          <div className="flex items-center gap-1.5 text-xs text-[#7BA3A1]">
+            <LocateFixed className="w-3.5 h-3.5 text-[#E8A838]" />
+            Within 10 km
           </div>
+        </div>
 
-          {policeLoading && (
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-6 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-6 h-6 text-[#E8A838] animate-spin" />
-              <p className="text-sm text-[#7BA3A1]">Searching nearby police stations...</p>
+        {nearbyResults.length === 0 ? (
+          /* Empty state */
+          <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-[22px] p-8 flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#7BA3A1]/10 flex items-center justify-center">
+              <MapPinIcon className="w-6 h-6 text-[#7BA3A1]" />
             </div>
-          )}
 
-          {policeError && !policeLoading && (
-            <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-6 flex flex-col items-center justify-center gap-3">
-              <AlertCircle className="w-6 h-6 text-[#EF4444]" />
-              <p className="text-sm text-[#F5F3EF] text-center">{policeError}</p>
-              <button
-                onClick={searchPoliceStations}
-                className="text-sm text-[#E8A838] font-medium hover:underline"
+            <div className="text-center">
+              <p className="text-sm font-semibold text-[#F5F3EF]">
+                Nothing nearby
+              </p>
+
+              <p className="text-xs text-[#7BA3A1] mt-1">
+                No {activeNearbyType?.toLowerCase()} found within 10 km.
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Place cards */
+          <div className="flex flex-col gap-3">
+            {nearbyResults.map((result, index) => (
+              <div
+                key={`${result.id}-${index}`}
+                className="relative overflow-hidden bg-[#1A2E2D] border border-[#2D5A5840] rounded-[22px] p-4"
               >
-                Try again
-              </button>
-            </div>
-          )}
+                {/* subtle top highlight */}
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#E8A838]/30 to-transparent" />
 
-          {policeResults && !policeLoading && !policeError && (
-            <div className="flex flex-col gap-2">
-              {policeResults.length === 0 ? (
-                <div className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-6 flex flex-col items-center justify-center gap-3">
-                  <MapPinIcon className="w-6 h-6 text-[#7BA3A1]" />
-                  <p className="text-sm text-[#7BA3A1] text-center">
-                    No police stations found within 10 km.
-                  </p>
-                </div>
-              ) : (
-                policeResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-[#F5F3EF] truncate">
-                          {result.name}
-                        </h3>
-                        <p className="text-xs text-[#E8A838] mt-0.5">
-                          {formatDistance(result.distance)}
-                        </p>
-                        {result.address && (
-                          <p className="text-xs text-[#7BA3A1] mt-1 truncate">
-                            {result.address}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleNavigate(result)}
-                        className="shrink-0 flex items-center gap-1.5 bg-[#0F1E1E] border border-[#2D5A5840] rounded-xl px-3 py-2 text-xs font-medium text-[#F5F3EF] active:scale-95 transition-transform"
-                      >
-                        <NavigateIcon className="w-3.5 h-3.5 text-[#E8A838]" />
-                        Navigate
-                      </button>
+                <div className="flex items-start gap-3">
+                  {/* Place icon */}
+                  <div className="w-11 h-11 rounded-2xl bg-[#E8A838]/10 flex items-center justify-center shrink-0">
+                    <MapPinIcon className="w-5 h-5 text-[#E8A838]" />
+                  </div>
+
+                  {/* Information */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[15px] font-semibold text-[#F5F3EF] leading-tight">
+                      {result.name}
+                    </h3>
+
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-xs font-semibold text-[#E8A838]">
+                        {formatDistance(result.distance)}
+                      </span>
+
+                      <span className="w-1 h-1 rounded-full bg-[#527573]" />
+
+                      <span className="text-[11px] text-[#7BA3A1]">
+                        Nearby
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-1.5 mt-2">
+                      <MapPinIcon className="w-3.5 h-3.5 text-[#527573] shrink-0 mt-0.5" />
+
+                      <p className="text-xs text-[#7BA3A1] leading-relaxed">
+                        {result.address}
+                      </p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Nearby Categories */}
-      {!policeLoading && !policeResults && !policeError && (
-        <div className="mb-3">
-          <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold mb-3">
-            Nearby Categories
-          </p>
-          <div className="flex flex-col gap-3">
-            {categories.map((category) => {
-              const isOpen = openSections[category.title] ?? false;
-              return (
-                <div
-                  key={category.title}
-                  className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4"
-                >
-                  <button
-                    onClick={() => toggleSection(category.title)}
-                    className="w-full flex items-center justify-between text-left"
-                  >
-                    <h2 className="font-bold text-[#F5F3EF] text-sm">
-                      {category.title}
-                    </h2>
-                    {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-[#7BA3A1] shrink-0 transition-transform duration-200" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-[#7BA3A1] shrink-0 transition-transform duration-200" />
-                    )}
-                  </button>
-                  <div
-                    className={`grid grid-cols-2 gap-2 overflow-hidden transition-all duration-200 ease-in-out ${
-                      isOpen ? "max-h-[1000px] opacity-100 mt-3" : "max-h-0 opacity-0 mt-0"
-                    }`}
-                  >
-                    {category.items.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.label}
-                          onClick={() =>
-                            item.onClick ? item.onClick() : openNearby(item.label)
-                          }
-                          className="flex items-center gap-2 bg-[#0F1E1E] border border-[#2D5A5840] rounded-xl px-3 min-h-[48px] text-left text-sm text-[#F5F3EF] active:scale-95 transition-transform"
-                        >
-                          <Icon className="w-4 h-4 text-[#7BA3A1] shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
+                {/* Actions */}
+                <div className="mt-4 pt-3 border-t border-[#2D5A58]/30">
+                  <button
+                    onClick={() => handleNavigate(result)}
+                    className="w-full flex items-center justify-center gap-2 bg-[#E8A838] text-[#0F1E1E] rounded-xl px-4 py-2.5 text-sm font-bold active:scale-[0.98] transition-transform"
+                  >
+                    <NavigateIcon className="w-4 h-4" />
+                    Navigate
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )}
+  </div>
+)}
+
+    {/* Nearby Categories */}
+{!nearbyLoading && !nearbyResults && !nearbyError && (
+  <div className="mb-3">
+    <div className="flex items-end justify-between mb-4">
+      <div>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#7BA3A1] font-bold">
+          Nearby Categories
+        </p>
+        <p className="text-xs text-[#5F8583] mt-1">
+          Find what you need around you
+        </p>
+      </div>
+
+      <MapPin className="w-4 h-4 text-[#E8A838]" />
+    </div>
+
+    <div className="flex flex-col gap-3">
+      {categories.map((category) => {
+        const isOpen = openSections[category.title] ?? false;
+        const CategoryIcon = category.icon;
+
+        return (
+          <div
+            key={category.title}
+            className={`
+              relative overflow-hidden rounded-[22px]
+              border transition-all duration-300
+              ${
+                isOpen
+                  ? "bg-[#1A2E2D] border-[#355B58]"
+                  : "bg-[#162827] border-[#294745]/70"
+              }
+            `}
+          >
+            {/* subtle accent glow */}
+            <div
+              className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-3xl opacity-10 pointer-events-none"
+              style={{ backgroundColor: category.accent }}
+            />
+
+            {/* Category header */}
+            <button
+              onClick={() => toggleSection(category.title)}
+              className="relative w-full flex items-center gap-3.5 px-4 py-4 text-left active:scale-[0.99] transition-transform"
+            >
+              {/* Icon */}
+              <div
+                className={`w-11 h-11 rounded-2xl ${category.iconBg} flex items-center justify-center shrink-0`}
+              >
+                <CategoryIcon
+                  className="w-5 h-5"
+                  style={{ color: category.accent }}
+                />
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-[#F5F3EF] text-[15px]">
+                    {category.title}
+                  </h2>
+                </div>
+
+                <p className="text-xs text-[#7BA3A1] mt-0.5 truncate">
+                  {category.subtitle}
+                </p>
+
+                <p
+                  className="text-[11px] font-medium mt-1"
+                  style={{ color: category.accent }}
+                >
+                  {category.items.length} services nearby
+                </p>
+              </div>
+
+              {/* Arrow */}
+              <div className="w-8 h-8 rounded-full bg-[#0F1E1E]/70 flex items-center justify-center shrink-0">
+                <ChevronRight
+                  className={`w-4 h-4 text-[#7BA3A1] transition-transform duration-300 ${
+                    isOpen ? "rotate-90" : ""
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Services */}
+            <div
+              className={`
+                overflow-hidden transition-all duration-300 ease-in-out
+                ${
+                  isOpen
+                    ? "max-h-[1000px] opacity-100"
+                    : "max-h-0 opacity-0"
+                }
+              `}
+            >
+              <div className="px-3 pb-3">
+                <div className="h-px bg-[#2D5A58]/40 mb-3" />
+
+                <div className="grid grid-cols-2 gap-2">
+                  {category.items.map((item) => {
+                    const ItemIcon = item.icon;
+
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() =>
+                          item.onClick
+                            ? item.onClick()
+                            : openNearby(item.label)
+                        }
+                        className="
+                          group flex flex-col items-start
+                          min-h-[88px] p-3
+                          bg-[#0F1E1E]/80
+                          border border-[#2D5A58]/40
+                          rounded-2xl
+                          text-left
+                          active:scale-[0.97]
+                          transition-all duration-200
+                          hover:border-[#47706D]
+                        "
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div
+                            className={`w-8 h-8 rounded-xl ${category.iconBg} flex items-center justify-center`}
+                          >
+                            <ItemIcon
+                              className="w-4 h-4"
+                              style={{ color: category.accent }}
+                            />
+                          </div>
+
+                          <ChevronRight className="w-3.5 h-3.5 text-[#527573]" />
+                        </div>
+
+                        <span className="text-[13px] font-medium text-[#F5F3EF] mt-2.5 leading-tight">
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
       {/* Bottom spacer for fixed navigation */}
       <div className="h-20" />
     </div>
