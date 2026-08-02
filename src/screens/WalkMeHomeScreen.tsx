@@ -693,7 +693,17 @@ useEffect(() => {
         )
       : null;
 
-  const liveEtaSeconds =
+ 
+const directDistanceToDestination =
+  userLocation && destinationLat !== null && destinationLng !== null
+    ? getDistanceKm(
+        userLocation.latitude,
+        userLocation.longitude,
+        destinationLat,
+        destinationLng
+      )
+    : null;
+     const liveEtaSeconds =
     routeDurationSeconds !== null && routeDistanceKm !== null && routeDistanceKm > 0
       ? Math.max(
           60,
@@ -703,7 +713,6 @@ useEffect(() => {
           )
         )
       : null;
-
   const arrivalTime =
     liveEtaSeconds !== null
       ? new Date(Date.now() + liveEtaSeconds * 1000).toLocaleTimeString([], {
@@ -784,10 +793,26 @@ addJourneyEvent(`🏁 Arrived safely at ${destination}`);
 setJourneyStatus("✅ Arrived Safely");
       alert(`🎉 Arrived safely at ${destination}.`);
     };
+const directDistanceToDestination =
+  userLocation &&
+  destinationLat !== null &&
+  destinationLng !== null
+    ? getDistanceKm(
+        userLocation.latitude,
+        userLocation.longitude,
+        destinationLat,
+        destinationLng
+      )
+    : null;
+   if (
+  !walkStarted ||
+  arrived ||
+  directDistanceToDestination === null
+) {
+  return;
+}
 
-    if (!walkStarted || arrived || remainingDistance === null) return;
-
-    if (remainingDistance <= 0.06) {
+if (directDistanceToDestination <= 0.006) {
       arrivalSamplesRef.current += 1;
     } else {
       arrivalSamplesRef.current = 0;
@@ -796,7 +821,13 @@ setJourneyStatus("✅ Arrived Safely");
     if (arrivalSamplesRef.current >= 3) {
       void handleArrival();
     }
-  }, [walkStarted, arrived, remainingDistance, destination, journeyId]);
+  }, [
+  walkStarted,
+  arrived,
+  directDistanceToDestination,
+  destination,
+  journeyId,
+]);
 
   return (
     <div className="h-full overflow-y-auto bg-[#0F1E1E] text-[#F5F3EF] px-4 py-5">
