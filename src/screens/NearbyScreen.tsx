@@ -92,17 +92,6 @@ function formatDistance(km: number): string {
   return `${km.toFixed(1)} km`;
 }
 
-function buildAddress(tags: Record<string, string>): string | undefined {
-  const parts: string[] = [];
-  if (tags["addr:street"]) {
-    const houseNumber = tags["addr:housenumber"];
-    parts.push(houseNumber ? `${tags["addr:street"]} ${houseNumber}` : tags["addr:street"]);
-  }
-  if (tags["addr:postcode"]) parts.push(tags["addr:postcode"]);
-  if (tags["addr:city"]) parts.push(tags["addr:city"]);
-  return parts.length > 0 ? parts.join(", ") : undefined;
-}
-
 export default function NearbyScreen({
   onSafeHaven: _onSafeHaven,
   onDriverMode: _onDriverMode,
@@ -152,7 +141,7 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
   const searchNearbyPlaces = useCallback(
   async (
     label: string,
-    osmFilter: string,
+    geoapifyCategory: string,
     fallbackName: string,
     radius = 5000
   ) => {
@@ -162,69 +151,64 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     setActiveNearbyType(label);
 
     try {
-    const response = await fetch("/api/nearby", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    lat,
-    lng,
-    osmFilter,
-    radius,
-  }),
-});
-     if (!response.ok) {
-  const errorData = await response.json().catch(() => null);
+      const response = await fetch("/api/nearby", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lat,
+          lng,
+          categories: geoapifyCategory,
+          radius,
+          limit: 20,
+        }),
+      });
 
-  throw new Error(
-    errorData?.error ||
-      `Nearby search unavailable (${response.status})`
-  );
-}
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+          errorData?.error ||
+            `Nearby search unavailable (${response.status})`
+        );
+      }
 
       const data = await response.json();
 
-      const elements = data.elements as Array<{
-        type: string;
-        id: number;
-        lat?: number;
-        lon?: number;
-        center?: {
-          lat: number;
-          lon: number;
-        };
-        tags?: Record<string, string>;
-      }>;
+      const features = Array.isArray(data.features) ? data.features : [];
 
-      const results: NearbyResult[] = elements
-        .map((el) => {
-          const itemLat = el.lat ?? el.center?.lat;
-          const itemLon = el.lon ?? el.center?.lon;
+      const results: NearbyResult[] = features
+        .map((feature: any) => {
+          const props = feature.properties ?? {};
 
-          if (itemLat == null || itemLon == null) {
+          const itemLat = props.lat;
+          const itemLon = props.lon;
+
+          if (
+            typeof itemLat !== "number" ||
+            typeof itemLon !== "number"
+          ) {
             return null;
           }
 
-          const distance = haversineDistance(
-            lat,
-            lng,
-            itemLat,
-            itemLon
-          );
+          const distance =
+            typeof props.distance === "number"
+              ? props.distance
+              : haversineDistance(lat, lng, itemLat, itemLon);
 
           const name =
-            el.tags?.name ||
-            el.tags?.["name:en"] ||
+            props.name ||
+            props.address_line1 ||
             fallbackName;
 
           const address =
-            buildAddress(el.tags || {}) ||
-            el.tags?.["addr:full"] ||
+            props.formatted ||
+            props.address_line2 ||
             "Address unavailable";
 
           return {
-            id: el.id,
+            id: props.place_id || `${itemLat}-${itemLon}`,
             name,
             lat: itemLat,
             lon: itemLon,
@@ -233,63 +217,65 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
           };
         })
         .filter(
-          (result): result is NearbyResult =>
+          (result: NearbyResult | null): result is NearbyResult =>
             result !== null
         )
-        .sort((a, b) => a.distance - b.distance);
+        .sort(
+          (a: NearbyResult, b: NearbyResult) =>
+            a.distance - b.distance
+        );
 
       setNearbyResults(results);
-   } catch (err) {
-  setNearbyError(
-    err instanceof Error
-      ? err.message
-      : `Failed to find nearby ${label.toLowerCase()}`
-  );
-} finally {
-  setNearbyLoading(false);
-}
+    } catch (err) {
+      setNearbyError(
+        err instanceof Error
+          ? err.message
+          : `Failed to find nearby ${label.toLowerCase()}`
+      );
+    } finally {
+      setNearbyLoading(false);
+    }
   },
   [lat, lng]
 );
 const searchPoliceStations = () =>
   searchNearbyPlaces(
     "Police Stations",
-    '"amenity"="police"',
+    "service.police",
     "Police Station"
   );
-
 const searchHospitals = () =>
   searchNearbyPlaces(
     "Hospitals",
-    '"amenity"="hospital"',
+    "service.hospital",
     "Hospital"
   );
 
 const searchPharmacies = () =>
   searchNearbyPlaces(
     "Pharmacies",
-    '"amenity"="pharmacy"',
+    "service.pharmacy",
     "Pharmacy"
   );
 
 const searchEmergencyRooms = () =>
   searchNearbyPlaces(
     "Emergency Rooms",
-    '"emergency"="yes"',
+    "service.emergency",
     "Emergency Room"
   );
 
 const searchFireStations = () =>
   searchNearbyPlaces(
     "Fire Stations",
-    '"amenity"="fire_station"',
+    "service.fire_station",
     "Fire Station"
   );
 
 const searchAEDs = () =>
   searchNearbyPlaces(
     "AED Defibrillators",
-    '"emergency"="defibrillator"',
+    'service.defibrillator',
     "AED Defibrillator"
   );
  

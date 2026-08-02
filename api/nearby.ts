@@ -1,10 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const OVERPASS_ENDPOINTS = [
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-];
-
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -15,72 +10,62 @@ export default async function handler(
     });
   }
 
-  const { lat, lng, osmFilter, radius = 10000 } = req.body ?? {};
+  const apiKey = process.env.GEOAPIFY_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({
+      error: "Geoapify API key is not configured",
+    });
+  }
+
+  const { lat, lng, categories, radius = 5000, limit = 20 } = req.body ?? {};
 
   if (
     typeof lat !== "number" ||
     typeof lng !== "number" ||
-    typeof osmFilter !== "string"
+    typeof categories !== "string"
   ) {
     return res.status(400).json({
       error: "Invalid nearby search request",
     });
   }
 
- const searchRadius = Math.min(radius, 3000);
+  try {
+    const params = new URLSearchParams({
+      categories,
+      filter: `circle:${lng},${lat},${radius}`,
+      bias: `proximity:${lng},${lat}`,
+      limit: String(limit),
+      apiKey,
+    });
 
-const query = `[out:json][timeout:5];
-(
-  node[${osmFilter}](around:${searchRadius},${lat},${lng});
-  way[${osmFilter}](around:${searchRadius},${lat},${lng});
-);
-out center;`;
+    const response = await fetch(
+      `https://api.geoapify.com/v2/places?${params.toString()}`
+    );
 
-  const failures: string[] = [];
+    if (!response.ok) {
+      const details = await response.text();
 
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const body = new URLSearchParams();
-      body.set("data", query);
+      console.error("Geoapify error:", response.status, details);
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "Accept": "application/json",
-          "User-Agent": "CitySense/1.0",
-        },
-        body: body.toString(),
+      return res.status(response.status).json({
+        error: `Geoapify API error: ${response.status}`,
       });
-
-      if (!response.ok) {
-        failures.push(
-          `${endpoint}: HTTP ${response.status}`
-        );
-        continue;
-      }
-
-      const data = await response.json();
-
-      res.setHeader(
-        "Cache-Control",
-        "s-maxage=60, stale-while-revalidate=300"
-      );
-
-      return res.status(200).json(data);
-    } catch (error) {
-      failures.push(
-        `${endpoint}: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
     }
+
+    const data = await response.json();
+
+    res.setHeader(
+      "Cache-Control",
+      "s-maxage=60, stale-while-revalidate=300"
+    );
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error("Nearby search error:", error);
+
+    return res.status(500).json({
+      error: "Nearby search failed",
+    });
   }
-
-  console.error("Nearby search failed:", failures);
-
-  return res.status(503).json({
-    error: "Nearby search is temporarily unavailable",
-    details: failures,
-  });
 }
