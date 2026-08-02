@@ -174,9 +174,14 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
     radius,
   }),
 });
-      if (!response.ok) {
-        throw new Error(`Overpass API error: ${response.status}`);
-      }
+     if (!response.ok) {
+  const errorData = await response.json().catch(() => null);
+
+  throw new Error(
+    errorData?.error ||
+      `Nearby search unavailable (${response.status})`
+  );
+}
 
       const data = await response.json();
 
