@@ -38,7 +38,7 @@ ArrowLeft,
   Phone,
   
 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "@/hooks/useLocation";
 
 interface NearbyScreenProps {
@@ -145,6 +145,16 @@ const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
 const [showQiblaCompass, setShowQiblaCompass] = useState(false);
 const [qiblaBearing, setQiblaBearing] = useState<number | null>(null);
 const [deviceHeading, setDeviceHeading] = useState<number>(0);
+const qiblaDifference =
+  qiblaBearing === null
+    ? null
+    : Math.abs(
+        ((qiblaBearing - deviceHeading + 540) % 360) - 180
+      );
+
+const isQiblaAligned =
+  qiblaDifference !== null && qiblaDifference <= 3;
+const qiblaCompassRef = useRef<HTMLDivElement | null>(null);
 useEffect(() => {
   const handleOrientation = (event: DeviceOrientationEvent) => {
     const compassEvent = event as DeviceOrientationEvent & {
@@ -163,8 +173,28 @@ useEffect(() => {
     }
 
     if (heading !== null) {
-      setDeviceHeading((heading + 360) % 360);
+  const normalizedHeading = (heading + 360) % 360;
+
+  setDeviceHeading((previousHeading) => {
+    let difference = normalizedHeading - previousHeading;
+
+    // Always take the shortest route around the compass
+    if (difference > 180) difference -= 360;
+    if (difference < -180) difference += 360;
+
+    // Ignore tiny sensor movements
+    if (Math.abs(difference) < 1.5) {
+      return previousHeading;
     }
+
+    // Smooth larger movements instead of jumping immediately
+    const smoothingFactor = 0.18;
+    const smoothed =
+      previousHeading + difference * smoothingFactor;
+
+    return (smoothed + 360) % 360;
+  });
+}
   };
 
   window.addEventListener("deviceorientation", handleOrientation, true);
@@ -992,7 +1022,10 @@ const onDriverMode = () => {
 )}
 {/* Qibla Compass */}
 {showQiblaCompass && qiblaBearing !== null && (
-  <div className="mb-5 bg-[#1A2E2D] border border-[#355B58] rounded-[24px] p-5">
+  <div
+  ref={qiblaCompassRef}
+  className="mb-5 bg-[#1A2E2D] border border-[#355B58] rounded-[24px] p-5"
+>
     {/* Header */}
     <div className="flex items-center justify-between mb-5">
       <div>
@@ -1061,13 +1094,25 @@ const onDriverMode = () => {
           {Math.round(qiblaBearing)}°
         </p>
 
-        <p className="text-sm font-semibold text-[#E8A838] mt-1">
-          Qibla direction
-        </p>
+        <p
+  className={`text-sm font-semibold mt-1 ${
+    isQiblaAligned
+      ? "text-emerald-400"
+      : "text-[#E8A838]"
+  }`}
+>
+  {isQiblaAligned
+    ? "✓ Aligned with Qibla"
+    : "Turn toward Qibla"}
+</p>
 
-        <p className="text-xs text-[#7BA3A1] mt-2">
-          Turn your phone until the arrow points straight ahead
-        </p>
+       <p className="text-xs text-[#7BA3A1] mt-2">
+  {qiblaDifference !== null && qiblaDifference <= 3
+    ? "You are facing the Qibla"
+    : qiblaDifference !== null
+      ? `Turn ${Math.round(qiblaDifference)}° toward the arrow`
+      : "Finding Qibla direction..."}
+</p>
       </div>
     </div>
   </div>
