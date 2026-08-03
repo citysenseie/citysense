@@ -553,8 +553,15 @@ const searchQiblaDirections = () => {
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   const qiblaDirection = (bearing + 360) % 360;
 
- setQiblaBearing(qiblaDirection);
+setQiblaBearing(qiblaDirection);
 setShowQiblaCompass(true);
+
+setTimeout(() => {
+  qiblaCompassRef.current?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}, 100);
 };
 
 const searchPrayerSpaces = () =>
