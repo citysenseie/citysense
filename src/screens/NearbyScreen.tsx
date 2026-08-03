@@ -101,7 +101,7 @@ type OpeningStatus = {
 };
 
 function getOpeningStatus(openingHours: any): OpeningStatus {
-  if (!openingHours) {
+  if (!openingHours || typeof openingHours !== "string") {
     return {
       available: false,
       isOpen: null,
@@ -110,43 +110,14 @@ function getOpeningStatus(openingHours: any): OpeningStatus {
     };
   }
 
-  const currentStatus =
-    openingHours.open_now ??
-    openingHours.is_open ??
-    openingHours.openNow;
-
-  const hoursText =
-    openingHours.weekday_text?.join(" • ") ??
-    openingHours.weekdayText?.join(" • ") ??
-    openingHours.text ??
-    openingHours.display ??
-    null;
-
-  if (currentStatus === true) {
-    return {
-      available: true,
-      isOpen: true,
-      statusText: "Open now",
-      hoursText,
-    };
-  }
-
-  if (currentStatus === false) {
-    return {
-      available: true,
-      isOpen: false,
-      statusText: "Closed",
-      hoursText,
-    };
-  }
-
   return {
     available: true,
     isOpen: null,
-    statusText: "Opening hours available",
-    hoursText,
+    statusText: "Opening hours",
+    hoursText: openingHours,
   };
 }
+
 export default function NearbyScreen({
   onSafeHaven: _onSafeHaven,
   onDriverMode: _onDriverMode,
