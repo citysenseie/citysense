@@ -613,6 +613,16 @@ const onDriverMode = () => {
       icon: Smartphone,
       onClick: searchPhoneRepairs,
     },
+    
+  ],
+},
+{
+  title: "Travel & Transport",
+  subtitle: "Useful services when you're on the move",
+  icon: Car,
+  accent: "#38BDF8",
+  iconBg: "bg-[#38BDF8]/10",
+  items: [
     {
       label: "Hotel",
       icon: Hotel,
