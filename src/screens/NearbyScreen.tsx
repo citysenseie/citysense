@@ -202,8 +202,10 @@ const loadPlaceDetails = useCallback(
     label: string,
     geoapifyCategory: string,
     fallbackName: string,
-    radius = 5000
+    radius = 5000,
+    conditions?: string
   ) => {
+
     setNearbyLoading(true);
     setNearbyError(null);
     setNearbyResults(null);
@@ -219,6 +221,7 @@ const loadPlaceDetails = useCallback(
           lat,
           lng,
           categories: geoapifyCategory,
+          conditions,
           radius,
           limit: 20,
         }),
@@ -400,14 +403,14 @@ const searchSchools = () =>
 const searchSwimmingPools = () =>
   searchNearbyPlaces(
     "Swimming Pools",
-    "sport.swimming",
+    "sport.swimming_pool",
     "Swimming Pool"
   );
 
 const searchSportsCenters = () =>
   searchNearbyPlaces(
     "Sports Centers",
-    "sport",
+    "sport.sports_centre",
     "Sports Center"
   );
 
@@ -427,7 +430,7 @@ const searchFamilyRestaurants = () =>
 const searchOpenGasStations = () =>
   searchNearbyPlaces(
     "Open Gas Stations",
-    "commercial.gas",
+    "service.vehicle.fuel",
     "Open Gas Station"
   );
 
@@ -447,8 +450,10 @@ const searchOpenRestaurants = () =>
   const searchFreeWiFis = () =>
   searchNearbyPlaces(
     "Free Wi-Fi",
-    "internet_access",
-    "Free Wi-Fi"
+    "catering",
+    "Free Wi-Fi",
+    5000,
+    "internet_access.free"
   );
 
 const searchPhoneRepairs = () =>
@@ -460,28 +465,40 @@ const searchPhoneRepairs = () =>
   const searchMosques = () =>
   searchNearbyPlaces(
     "Mosques",
-    "religion.muslim",
+    "religion.place_of_worship.islam",
     "Mosque"
   );
 
 const searchIslamicCenters = () =>
   searchNearbyPlaces(
     "Islamic Centers",
-    "religion",
+    "religion.place_of_worship.islam",
     "Islamic Center"
   );
 
-const searchQiblaDirections = () =>
-  searchNearbyPlaces(
-    "Qibla Direction",
-    "religion.muslim",
-    "Qibla Direction"
-  );
+const searchQiblaDirections = () => {
+  const kaabaLat = 21.4225;
+  const kaabaLng = 39.8262;
+
+  const userLatRad = (lat * Math.PI) / 180;
+  const kaabaLatRad = (kaabaLat * Math.PI) / 180;
+  const deltaLngRad = ((kaabaLng - lng) * Math.PI) / 180;
+
+  const y = Math.sin(deltaLngRad);
+  const x =
+    Math.cos(userLatRad) * Math.tan(kaabaLatRad) -
+    Math.sin(userLatRad) * Math.cos(deltaLngRad);
+
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+  const qiblaDirection = (bearing + 360) % 360;
+
+  alert(`Qibla direction: ${Math.round(qiblaDirection)}° from north`);
+};
 
 const searchPrayerSpaces = () =>
   searchNearbyPlaces(
     "Prayer Spaces",
-    "religion",
+    "religion.place_of_worship.islam",
     "Prayer Space"
   );
 const onSafeHaven = () => {
@@ -544,11 +561,7 @@ const onDriverMode = () => {
     icon: HeartPulse,
     onClick: searchHospitals,
   },
-  {
-    label: "Pharmacy",
-    icon: Pill,
-    onClick: searchPharmacies,
-  },
+  
   {
     label: "Emergency Room",
     icon: Cross,
@@ -579,6 +592,7 @@ const onDriverMode = () => {
       icon: ShoppingCart,
       onClick: searchGroceryStores,
     },
+    { label: "Pharmacy", icon: Pill, onClick: searchPharmacies },
     {
       label: "ATM",
       icon: Landmark,

@@ -18,7 +18,14 @@ export default async function handler(
     });
   }
 
-  const { lat, lng, categories, radius = 5000, limit = 20 } = req.body ?? {};
+  const {
+  lat,
+  lng,
+  categories,
+  conditions,
+  radius = 5000,
+  limit = 20,
+} = req.body ?? {};
 
   if (
     typeof lat !== "number" ||
@@ -38,7 +45,9 @@ export default async function handler(
       limit: String(limit),
       apiKey,
     });
-
+if (typeof conditions === "string" && conditions.trim()) {
+  params.set("conditions", conditions);
+}
     const response = await fetch(
       `https://api.geoapify.com/v2/places?${params.toString()}`
     );
