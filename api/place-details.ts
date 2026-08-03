@@ -61,7 +61,7 @@ export default async function handler(
       : null;
 
     const props = detailsFeature?.properties ?? {};
-
+console.log("PLACE OPENING HOURS:", props.opening_hours);
     return res.status(200).json({
       placeId,
       phone: props.contact?.phone ?? null,
