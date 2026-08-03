@@ -38,7 +38,7 @@ ArrowLeft,
   Phone,
   
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "@/hooks/useLocation";
 
 interface NearbyScreenProps {
@@ -142,6 +142,37 @@ export default function NearbyScreen({
 const [nearbyLoading, setNearbyLoading] = useState(false);
 const [nearbyError, setNearbyError] = useState<string | null>(null);
 const [activeNearbyType, setActiveNearbyType] = useState<string | null>(null);
+const [showQiblaCompass, setShowQiblaCompass] = useState(false);
+const [qiblaBearing, setQiblaBearing] = useState<number | null>(null);
+const [deviceHeading, setDeviceHeading] = useState<number>(0);
+useEffect(() => {
+  const handleOrientation = (event: DeviceOrientationEvent) => {
+    const compassEvent = event as DeviceOrientationEvent & {
+      webkitCompassHeading?: number;
+    };
+
+    let heading: number | null = null;
+
+    // iPhone / Safari
+    if (typeof compassEvent.webkitCompassHeading === "number") {
+      heading = compassEvent.webkitCompassHeading;
+    }
+    // Android / other supported browsers
+    else if (typeof event.alpha === "number") {
+      heading = 360 - event.alpha;
+    }
+
+    if (heading !== null) {
+      setDeviceHeading((heading + 360) % 360);
+    }
+  };
+
+  window.addEventListener("deviceorientation", handleOrientation, true);
+
+  return () => {
+    window.removeEventListener("deviceorientation", handleOrientation, true);
+  };
+}, []);
   const lat = location?.latitude ?? 51.1857;
   const lng = location?.longitude ?? 3.5701;
 
@@ -492,7 +523,8 @@ const searchQiblaDirections = () => {
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   const qiblaDirection = (bearing + 360) % 360;
 
-  alert(`Qibla direction: ${Math.round(qiblaDirection)}° from north`);
+ setQiblaBearing(qiblaDirection);
+setShowQiblaCompass(true);
 };
 
 const searchPrayerSpaces = () =>
@@ -958,7 +990,88 @@ const onDriverMode = () => {
     )}
   </div>
 )}
+{/* Qibla Compass */}
+{showQiblaCompass && qiblaBearing !== null && (
+  <div className="mb-5 bg-[#1A2E2D] border border-[#355B58] rounded-[24px] p-5">
+    {/* Header */}
+    <div className="flex items-center justify-between mb-5">
+      <div>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#E8A838] font-bold">
+          Qibla Compass
+        </p>
+        <p className="text-xs text-[#7BA3A1] mt-1">
+          Direction to the Kaaba in Makkah
+        </p>
+      </div>
 
+      <button
+        onClick={() => setShowQiblaCompass(false)}
+        className="w-9 h-9 rounded-full bg-[#0F1E1E] text-[#F5F3EF] flex items-center justify-center text-lg"
+      >
+        ×
+      </button>
+    </div>
+
+    {/* Compass */}
+    <div className="flex flex-col items-center">
+      <div className="relative w-64 h-64 rounded-full border-2 border-[#527573] bg-[#0F1E1E] shadow-inner">
+
+        {/* Cardinal directions */}
+        <span className="absolute top-3 left-1/2 -translate-x-1/2 text-sm font-bold text-[#F5F3EF]">
+          N
+        </span>
+
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[#7BA3A1]">
+          E
+        </span>
+
+        <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-sm font-bold text-[#7BA3A1]">
+          S
+        </span>
+
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[#7BA3A1]">
+          W
+        </span>
+
+        {/* Qibla arrow */}
+        <div
+          className="absolute inset-0 transition-transform duration-500"
+          style={{
+            transform: `rotate(${qiblaBearing - deviceHeading}deg)`,
+          }}
+        >
+          <div className="absolute left-1/2 top-8 -translate-x-1/2 flex flex-col items-center">
+            <div className="text-[#E8A838] text-3xl leading-none">
+              ▲
+            </div>
+
+            <div className="w-1 h-20 bg-[#E8A838] rounded-full" />
+          </div>
+        </div>
+
+        {/* Center */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-[#E8A838] border-4 border-[#162827] flex items-center justify-center">
+          <span className="text-[#0F1E1E] text-xl">🕋</span>
+        </div>
+      </div>
+
+      {/* Bearing */}
+      <div className="text-center mt-5">
+        <p className="text-3xl font-bold text-[#F5F3EF]">
+          {Math.round(qiblaBearing)}°
+        </p>
+
+        <p className="text-sm font-semibold text-[#E8A838] mt-1">
+          Qibla direction
+        </p>
+
+        <p className="text-xs text-[#7BA3A1] mt-2">
+          Turn your phone until the arrow points straight ahead
+        </p>
+      </div>
+    </div>
+  </div>
+)}
     {/* Nearby Categories */}
 {!nearbyLoading && !nearbyResults && !nearbyError && (
   <div className="mb-3">
