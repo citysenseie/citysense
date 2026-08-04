@@ -109,7 +109,7 @@ import {
   ArrowLeft,
   Check,
   ChevronRight,
-  Clock3,
+  
   MapPin,
   Radio,
   ShieldCheck,
@@ -502,70 +502,6 @@ export default function LiveLocationScreen({
     </div>
   </section>
 )}
-        {/* Current Location */}
-        <section className="rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#D8AD4B]/10">
-              <MapPin className="h-5 w-5 text-[#E7BA52]" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#708986]">
-                Current location
-              </p>
-
-              <p className="mt-1.5 font-semibold leading-snug text-white">
-                {location?.address || "Finding your location..."}
-              </p>
-
-              {location ? (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-
-                  <span className="text-xs text-[#7F9996]">
-                    Location available
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-[#7F9996]">
-                  Waiting for location permission
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Information Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <section className="rounded-[22px] border border-white/[0.05] bg-[#102220] p-4">
-            <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[#60A5FA]/10">
-              <Users className="h-4 w-4 text-[#60A5FA]" />
-            </div>
-
-            <p className="text-2xl font-bold text-white">
-              {contacts.length}
-            </p>
-
-            <p className="mt-1 text-xs text-[#718A87]">
-              Trusted contacts
-            </p>
-          </section>
-
-          <section className="rounded-[22px] border border-white/[0.05] bg-[#102220] p-4">
-            <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[#D8AD4B]/10">
-              <Clock3 className="h-4 w-4 text-[#E7BA52]" />
-            </div>
-
-            <p className="text-lg font-bold text-white">
-              {lastUpdated}
-            </p>
-
-            <p className="mt-1 text-xs text-[#718A87]">
-              Last updated
-            </p>
-          </section>
-        </div>
-
         {/* Trusted Circle */}
         <section className="rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
           <div className="flex items-center justify-between gap-3">
@@ -632,47 +568,8 @@ export default function LiveLocationScreen({
           )}
         </section>
 
-        {/* Main Sharing Button */}
-        {!sharing ? (
-          <button
-            onClick={startSharing}
-            className="flex w-full items-center justify-center gap-2 rounded-[20px] bg-[#D8AD4B] px-4 py-4 font-bold text-[#081514] shadow-[0_12px_35px_rgba(216,173,75,0.16)] transition active:scale-[0.98]"
-          >
-            <Radio className="h-5 w-5" />
-            Start Live Sharing
-          </button>
-        ) : (
-          <section className="overflow-hidden rounded-[24px] border border-[#2DD4BF]/25 bg-[#0D2926]">
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#2DD4BF]/10">
-                  <span className="absolute h-4 w-4 animate-ping rounded-full bg-[#2DD4BF]/30" />
-
-                  <Radio className="relative h-5 w-5 text-[#5EEAD4]" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-white">
-                    Live sharing is active
-                  </h3>
-
-                  <p className="mt-0.5 text-xs text-[#83AAA5]">
-                    Sharing with {contacts.length} trusted{" "}
-                    {contacts.length === 1 ? "contact" : "contacts"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setSharing(false)}
-              className="w-full border-t border-white/[0.06] bg-black/10 py-3.5 text-sm font-bold text-[#F28B82]"
-            >
-              Stop sharing
-            </button>
-          </section>
-        )}
-
+       
+       
         <div className="flex items-center justify-center gap-2 px-4 pt-1">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#59736F]" />
 
