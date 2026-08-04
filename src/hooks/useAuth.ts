@@ -4,10 +4,26 @@ import {
   auth,
   db,
   doc,
+  getDoc,
   setDoc,
   serverTimestamp,
 } from "@/lib/firebase";
 
+
+const createConnectionCode = () => {
+  const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let code = "CS-";
+
+  for (let i = 0; i < 6; i += 1) {
+    code += characters.charAt(
+      Math.floor(Math.random() * characters.length)
+    );
+  }
+
+  return code;
+};
+ 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,24 +35,41 @@ useEffect(() => {
     setUser(u);
 
     if (u) {
-      try {
-        await setDoc(
-          doc(db, "users", u.uid),
-          {
-            uid: u.uid,
-            displayName: u.displayName || "",
-            email: u.email?.trim().toLowerCase() || "",
-          },
-          { merge: true }
-        );
-      } catch (error) {
-        console.error(
-          "Unable to sync CitySense user profile:",
-          error
-        );
-      }
-    }
+  try {
+    const userRef = doc(db, "users", u.uid);
+    const userSnapshot = await getDoc(userRef);
 
+    const existingData = userSnapshot.exists()
+      ? userSnapshot.data()
+      : null;
+
+    const connectionCode =
+      existingData?.connectionCode || createConnectionCode();
+
+    await setDoc(
+      userRef,
+      {
+        uid: u.uid,
+        displayName: u.displayName || "",
+        email: u.email?.trim().toLowerCase() || "",
+        connectionCode,
+      },
+      { merge: true }
+    );
+    await setDoc(
+  doc(db, "connectionCodes", connectionCode),
+  {
+    userId: u.uid,
+  },
+  { merge: true }
+);
+  } catch (error) {
+    console.error(
+      "Unable to sync CitySense user profile:",
+      error
+    );
+  }
+}
     setLoading(false);
   });
 
