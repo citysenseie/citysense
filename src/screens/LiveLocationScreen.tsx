@@ -644,7 +644,7 @@ const confirmSharing = () => {
         </button>
       </div>
 
-      <div className="max-h-[68vh] overflow-y-auto px-4 pb-6">
+      <div className="max-h-[65dvh] overflow-y-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))]">
         {/* People */}
         <section className="rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -777,10 +777,9 @@ const confirmSharing = () => {
 )}
 
 {/* Avatar Picker */}
-    
       {showAvatarPicker && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm">
-          <div className="max-h-[85vh] w-full overflow-hidden rounded-t-[32px] border-t border-white/[0.08] bg-[#0D1D1B] shadow-2xl">
+       <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/75 backdrop-blur-sm">
+  <div className="max-h-[85dvh] w-full max-w-[430px] overflow-hidden rounded-t-[32px] border-t border-white/[0.08] bg-[#0D1D1B] shadow-2xl">
             {/* Picker Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] px-5 py-5">
               <div>
