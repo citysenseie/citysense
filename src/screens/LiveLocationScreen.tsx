@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  createLiveLocationSession,
+  stopLiveLocationSession,
+} from "../services/liveLocationServices";
 function RecenterMap({
   latitude,
   longitude,
@@ -135,6 +139,9 @@ interface TrustedContact {
   name: string;
   phone: string;
   relationship: string;
+
+  // Filled when this contact is linked to a CitySense account
+  userId?: string | null;
 }
 
 const AVATAR_STORAGE_KEY = "citysense-avatar";
@@ -143,14 +150,13 @@ export default function LiveLocationScreen({
   onBack,
 }: LiveLocationScreenProps) {
   const { location } = useLocation();
-
-  const [contacts, setContacts] = useState<TrustedContact[]>([]);
+ const [contacts, setContacts] = useState<TrustedContact[]>([]);
   const [sharing, setSharing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
-
 const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
-
+const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+const [sharingLoading, setSharingLoading] = useState(false);
 const [shareDuration, setShareDuration] = useState<
   "15m" | "1h" | "8h" | "untilStopped"
 >("1h");
@@ -233,16 +239,70 @@ const toggleShareContact = (contactId: string) => {
       : [...current, contactId]
   );
 };
-const confirmSharing = () => {
+const confirmSharing = async () => {
+  if (!location) {
+    alert("Your location is not available yet.");
+    return;
+  }
+
   if (selectedContactIds.length === 0) {
     alert("Choose at least one person to share with.");
     return;
   }
 
-  setSharing(true);
-  setShowShareSheet(false);
-};
+  try {
+    setSharingLoading(true);
 
+    const session = await createLiveLocationSession({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address: location.address,
+      avatarId: selectedAvatarId,
+      recipientIds: selectedContactIds,
+      duration: shareDuration,
+    });
+
+    setActiveSessionId(session.id);
+    setSharing(true);
+    setShowShareSheet(false);
+  } catch (error) {
+    console.error("Failed to start live sharing:", error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Could not start live sharing."
+    );
+  } finally {
+    setSharingLoading(false);
+  }
+};
+const handleStopSharing = async () => {
+  if (!activeSessionId) {
+    setSharing(false);
+    return;
+  }
+
+  try {
+    setSharingLoading(true);
+
+    await stopLiveLocationSession(activeSessionId);
+
+    setSharing(false);
+    setActiveSessionId(null);
+    setSelectedContactIds([]);
+  } catch (error) {
+    console.error("Failed to stop live sharing:", error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Could not stop live sharing."
+    );
+  } finally {
+    setSharingLoading(false);
+  }
+};
   const lastUpdated = new Date().toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -503,7 +563,7 @@ const confirmSharing = () => {
       </button>
     ) : (
       <button
-        onClick={() => setSharing(false)}
+       onClick={handleStopSharing}
         className="w-full border-t border-white/[0.06] bg-[#102220]/95 py-3.5 text-sm font-bold text-[#F28B82]"
       >
         Stop sharing
@@ -765,11 +825,14 @@ const confirmSharing = () => {
         {/* Confirm */}
         <button
           onClick={confirmSharing}
-          disabled={selectedContactIds.length === 0}
+         disabled={selectedContactIds.length === 0 || sharingLoading}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-[20px] bg-[#D8AD4B] px-4 py-4 font-bold text-[#081514] shadow-[0_12px_35px_rgba(216,173,75,0.16)] transition disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]"
         >
-          <Radio className="h-5 w-5" />
-          Start Live Sharing
+         <Radio
+  className={`h-5 w-5 ${sharingLoading ? "animate-pulse" : ""}`}
+/>
+
+{sharingLoading ? "Starting..." : "Start Live Sharing"}
         </button>
       </div>
     </div>
