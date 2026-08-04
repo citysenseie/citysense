@@ -18,21 +18,91 @@ function RecenterMap({
 
   return null;
 }
-const locationMarkerIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width: 24px;
-      height: 24px;
-      background: #22C55E;
-      border: 4px solid white;
-      border-radius: 50%;
-      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.25);
-    "></div>
-  `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+const createLocationMarkerIcon = (avatarImage?: string) => {
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        position: relative;
+        width: 64px;
+        height: 72px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      ">
+        <div style="
+          position: absolute;
+          top: 0;
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          background: #102725;
+          border: 3px solid #2DD4BF;
+          box-shadow:
+            0 0 0 5px rgba(45, 212, 191, 0.18),
+            0 8px 24px rgba(0, 0, 0, 0.35);
+          overflow: hidden;
+        ">
+          ${
+            avatarImage
+              ? `
+                <img
+                  src="${avatarImage}"
+                  alt=""
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                  "
+                />
+              `
+              : `
+                <div style="
+                  width: 100%;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: #17302D;
+                  color: white;
+                  font-size: 12px;
+                  font-weight: 800;
+                ">
+                  YOU
+                </div>
+              `
+          }
+        </div>
+
+        <div style="
+          position: absolute;
+          top: 49px;
+          width: 15px;
+          height: 15px;
+          background: #2DD4BF;
+          transform: rotate(45deg);
+          border-right: 3px solid #2DD4BF;
+          border-bottom: 3px solid #2DD4BF;
+        "></div>
+
+        <div style="
+          position: absolute;
+          top: 43px;
+          right: 3px;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #22C55E;
+          border: 3px solid #102725;
+          box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+        "></div>
+      </div>
+    `,
+    iconSize: [64, 72],
+    iconAnchor: [32, 65],
+  });
+};
 
  
 import {
@@ -291,10 +361,10 @@ export default function LiveLocationScreen({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      <Marker
-        position={[location.latitude, location.longitude]}
-        icon={locationMarkerIcon}
-      />
+     <Marker
+  position={[location.latitude, location.longitude]}
+  icon={createLocationMarkerIcon(selectedAvatar?.image)}
+/>
 
       <RecenterMap
         latitude={location.latitude}
