@@ -18,6 +18,7 @@ import {
   Navigation,
   AlertTriangle,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react";
 const safetyScore = calculateSafetyScore({
   suspiciousReports: 0,
@@ -63,11 +64,11 @@ export default function MapScreen() {
   const { location } = useLocation();
  const { reports, fetchReports, submitReport } = useReports();
   const { user } = useAuth();
-  const [showSafetyCard, setShowSafetyCard] = useState(true);
-
+ const [showSafetyCard, setShowSafetyCard] = useState(false);
+const [showNearbyReports, setShowNearbyReports] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
-
+const [showReportActions, setShowReportActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 const [quickDescription, setQuickDescription] = useState("");
 const [reportPhoto, setReportPhoto] = useState<File | null>(null);
@@ -389,27 +390,57 @@ const aiSummary =
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
       <div className="relative overflow-hidden h-full">
-       <div
-  className={`absolute top-0 left-0 right-0 z-40 text-center py-2 text-xs font-bold tracking-wider shadow-lg ${
-    threatLevel === "HIGH" ? "animate-pulse" : ""
-  } ${
-    threatLevel === "HIGH"
-      ? "bg-[#EF4444] text-white"
-      : threatLevel === "ELEVATED"
-      ? "bg-[#F97316] text-white"
-      : threatLevel === "GUARDED"
-      ? "bg-[#E8A838] text-[#0F1E1E]"
-      : "bg-[#4ADE80] text-[#0F1E1E]"
-  }`}
+       {/* CitySense status */}
+<button
+  type="button"
+  onClick={() => setShowSafetyCard((current) => !current)}
+  className="absolute left-4 right-4 top-4 z-40 flex items-center justify-between rounded-[20px] border border-white/[0.07] bg-[#0B1515]/90 px-4 py-3 text-left shadow-xl backdrop-blur-xl"
 >
-  {threatLevel === "HIGH"
-    ? "🚨 HIGH THREAT"
-    : threatLevel === "ELEVATED"
-    ? "⚠️ ELEVATED THREAT"
-    : threatLevel === "GUARDED"
-    ? "🟡 GUARDED"
-    : "🟢 LOW THREAT"}
-</div>
+  <div className="flex min-w-0 items-center gap-3">
+    <div
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+      style={{ backgroundColor: `${scoreColor}16` }}
+    >
+      <ShieldCheck
+        className="h-[18px] w-[18px]"
+        style={{ color: scoreColor }}
+      />
+    </div>
+
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        <p className="text-[13px] font-semibold text-[#F5F3EF]">
+          {scoreLabel}
+        </p>
+
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: scoreColor }}
+        />
+      </div>
+
+      <p className="mt-0.5 truncate text-[11px] text-[#607D79]">
+        {riskMessage}
+      </p>
+    </div>
+  </div>
+
+  <div className="ml-3 flex shrink-0 items-center gap-3">
+    <span
+      className="text-lg font-bold tracking-[-0.04em]"
+      style={{ color: scoreColor }}
+    >
+      {safetyScore}
+    </span>
+
+    <ChevronDown
+      className={`h-4 w-4 text-[#607D79] transition-transform ${
+        showSafetyCard ? "rotate-180" : ""
+      }`}
+    />
+  </div>
+</button>
+  
 
 {sosReports > 0 && (
  <div className="absolute bottom-[95px] left-1/2 -translate-x-1/2 z-50 bg-[#EF4444] text-white px-4 py-2 rounded-full text-xs font-bold animate-pulse shadow-xl">
@@ -517,25 +548,23 @@ const aiSummary =
   ))}
 </MapContainer>
 
-       {!showSafetyCard && (
-  <button
-    onClick={() => setShowSafetyCard(true)}
-    className="absolute top-12 left-4 z-50 bg-[#0F1E1E] text-[#E8A838] rounded-full px-4 py-2 text-xs font-bold shadow-lg"
-  >
-    🛡️ Show Safety
-  </button>
-)}
+      
 
   {showSafetyCard && (
-    <div className="absolute top-20 left-4 z-30 w-60 bg-[#111827]/95 rounded-2xl p-3 shadow-xl border border-[#2D5A5840]">
-
+   <div className="absolute left-4 right-4 top-[82px] z-30 rounded-[24px] border border-white/[0.07] bg-[#0B1515]/95 p-5 shadow-2xl backdrop-blur-xl">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-green-400">🛡️</span>
-          <h3 className="text-white font-bold">
-            AREA SAFETY
-          </h3>
+          
+          <div>
+  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#607D79]">
+    CitySense Intelligence
+  </p>
+
+  <h3 className="mt-1 text-[17px] font-semibold text-[#F5F3EF]">
+    What&apos;s happening around you
+  </h3>
+</div>
         </div>
 
         <button
@@ -678,49 +707,81 @@ const aiSummary =
       
 
       
-      <div className="absolute bottom-72 right-4 flex flex-col gap-2 z-40">
-  <button
-    onClick={() => setSelectedQuickType("suspicious_activity")}
-    className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
-      selectedQuickType === "suspicious_activity"
-        ? "bg-[#EF4444] text-white"
-        : "bg-[#0F1E1EE8] text-[#7BA3A1]"
-    }`}
-  >
-    Suspicious
-  </button>
+     {/* Report action */}
+<div className="absolute bottom-12 right-20 z-50 flex flex-col items-end gap-2">
+  {showReportActions && (
+    <div className="mb-1 flex flex-col items-end gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedQuickType("suspicious_activity");
+          setShowReportModal(true);
+          setShowReportActions(false);
+        }}
+        className="rounded-full border border-white/[0.07] bg-[#0B1515]/95 px-4 py-2 text-xs font-medium text-[#F5F3EF] shadow-xl backdrop-blur-xl"
+      >
+        Suspicious activity
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedQuickType("police_presence");
+          setShowReportModal(true);
+          setShowReportActions(false);
+        }}
+        className="rounded-full border border-white/[0.07] bg-[#0B1515]/95 px-4 py-2 text-xs font-medium text-[#F5F3EF] shadow-xl backdrop-blur-xl"
+      >
+        Police presence
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedQuickType("safe_area");
+          setShowReportModal(true);
+          setShowReportActions(false);
+        }}
+        className="rounded-full border border-white/[0.07] bg-[#0B1515]/95 px-4 py-2 text-xs font-medium text-[#5EEAD4] shadow-xl backdrop-blur-xl"
+      >
+        Mark area safe
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedQuickType("sos");
+          setShowReportModal(true);
+          setShowReportActions(false);
+        }}
+        className="rounded-full border border-[#E86A6A]/20 bg-[#241515]/95 px-4 py-2 text-xs font-semibold text-[#E86A6A] shadow-xl backdrop-blur-xl"
+      >
+        Emergency SOS
+      </button>
+    </div>
+  )}
 
   <button
-    onClick={() => setSelectedQuickType("police_presence")}
-    className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
-      selectedQuickType === "police_presence"
-        ? "bg-[#E8A838] text-[#0F1E1E]"
-        : "bg-[#0F1E1EE8] text-[#7BA3A1]"
+    type="button"
+    onClick={() => setShowReportActions((current) => !current)}
+    className={`flex h-12 items-center gap-2 rounded-full border px-4 shadow-xl backdrop-blur-xl transition active:scale-95 ${
+      showReportActions
+        ? "border-white/[0.09] bg-[#F5F3EF] text-[#0B1515]"
+        : "border-white/[0.07] bg-[#0B1515]/95 text-[#F5F3EF]"
     }`}
   >
-    Police
-  </button>
+    <span
+      className={`text-xl leading-none transition-transform ${
+        showReportActions ? "rotate-45" : ""
+      }`}
+    >
+      +
+    </span>
 
-  <button
-    onClick={() => setSelectedQuickType("safe_area")}
-    className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
-      selectedQuickType === "safe_area"
-        ? "bg-[#4ADE80] text-[#0F1E1E]"
-        : "bg-[#0F1E1EE8] text-[#7BA3A1]"
-    }`}
-  >
-    Safe
+    <span className="text-xs font-semibold">
+      Report
+    </span>
   </button>
-  <button
-  onClick={() => setSelectedQuickType("sos")}
-  className={`px-3 py-1 rounded-full text-[10px] font-semibold ${
-    selectedQuickType === "sos"
-      ? "bg-[#EF4444] text-white animate-pulse"
-      : "bg-[#0F1E1EE8] text-[#7BA3A1]"
-  }`}
->
-  🚨 SOS
-</button>
 </div>
 {location && (
   <div className="absolute bottom-52 left-4 bg-[#0F1E1E] rounded-xl px-3 py-2 border border-[#2D5A5840] max-w-[45%] z-50">
@@ -879,128 +940,135 @@ const aiSummary =
     </div>
   )}
 
-  <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#0F1E1E] via-[#0F1E1E80] to-transparent pointer-events-none z-30" />
+ {/* Nearby activity */}
+<div className="absolute bottom-20 left-4 right-4 z-40">
+  <div className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-[#0B1515]/92 shadow-2xl backdrop-blur-xl">
+    <button
+      type="button"
+      onClick={() => setShowNearbyReports((current) => !current)}
+      className="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left"
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-[13px] font-semibold text-[#F5F3EF]">
+            Nearby activity
+          </p>
 
-  <div className="absolute bottom-20 left-0 right-0 max-h-48 overflow-y-auto z-40 px-4 pt-2">
-    <div className="bg-[#0F1E1E80] backdrop-blur rounded-xl p-3 border border-[#2D5A5820]">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-[#F5F3EF]">Nearby Reports</h3>
-        <span className="text-xs text-[#7BA3A1]">{filteredReports.length} reports</span>
+          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-[#A8B8B5]">
+            {filteredReports.length}
+          </span>
+        </div>
+
+        <p className="mt-1 truncate text-[11px] text-[#607D79]">
+          {filteredReports.length === 0
+            ? "No recent community signals nearby"
+            : unsafeCount > 0
+            ? `${unsafeCount} alert${unsafeCount === 1 ? "" : "s"} nearby · tap for details`
+            : "Community signals look calm nearby"}
+        </p>
       </div>
 
-      <div className="space-y-2">
-        {filteredReports.slice(0, 4).map((report: any) => (
-          <div
-            key={report.id}
-            className="flex items-start gap-3 bg-[#0F1E1E60] rounded-xl px-3 py-2.5 border border-[#2D5A5820]"
-          >
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                report.type === "safe"
-                  ? "bg-[#4ADE8020]"
-                  : report.severity === "high"
-                  ? "bg-[#7F1D1D]"
-                  : report.severity === "medium"
-                  ? "bg-[#EF444420]"
-                  : "bg-[#F9731620]"
-              }`}
-            >
-              {report.type === "safe" ? (
-                <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-              )}
-            </div>
+      <ChevronDown
+        className={`h-4 w-4 shrink-0 text-[#607D79] transition-transform ${
+          showNearbyReports ? "rotate-180" : ""
+        }`}
+      />
+    </button>
 
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-[#F5F3EF] truncate">
-                {getReportLabel(report.category)}
-              </p>
+    {showNearbyReports && (
+      <div className="max-h-64 overflow-y-auto border-t border-white/[0.055] px-4 pb-4">
+        {filteredReports.length === 0 ? (
+          <div className="py-5 text-center">
+            <ShieldCheck className="mx-auto h-5 w-5 text-[#5EEAD4]" />
 
-              <p className="text-[11px] text-[#7BA3A1] truncate">
-                {report.address}
-              </p>
+            <p className="mt-2 text-xs font-medium text-[#D9E2E0]">
+              Nothing recent nearby
+            </p>
 
-              <p className="text-[10px] text-[#E8A838]">
-                {getDistanceKm(
-                  lat,
-                  lng,
-                  report.latitude,
-                  report.longitude
-                ).toFixed(1)}{" "}
-                km away
-              </p>
-              <p className="text-[10px] text-[#7BA3A1]">
-                Fresh • {getTimeAgo(report.timestamp)}
-              </p>
-              {getTimeRemaining(report) !== "0 min" && (
-                <p className="text-[9px] text-[#E8A838]">
-                  Expires in {getTimeRemaining(report)}
-                </p>
-              )}
-
-              <p
-                className={`text-[10px] font-bold ${
-                  report.severity === "high"
-                    ? "text-[#EF4444]"
-                    : report.severity === "medium"
-                    ? "text-[#F97316]"
-                    : "text-[#E8A838]"
-                }`}
-              >
-                Severity: {report.severity?.toUpperCase()}
-              </p>
-              <p className="text-[9px] text-[#7BA3A1]">
-                {report.type === "safe" ? "Community safe signal" : "Community alert signal"}
-              </p>
-              <div>
-                <p className="text-[9px] text-[#E8A838]">
-                  Source: CitySense user
-                </p>
-
-                <p className="text-[9px] text-[#E8A838] mt-1">
-                  📷 Photo available
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 mr-2">
-              <button
-                onClick={() => handleVote(report.id!, "upvotes")}
-                className="text-[10px] text-[#4ADE80] font-semibold"
-              >
-                👍 {report.upvotes || 0}
-              </button>
-              <button
-                onClick={() => handleVote(report.id!, "downvotes")}
-                className="text-[10px] text-[#EF4444] font-semibold"
-              >
-                👎 {report.downvotes || 0}
-              </button>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                report.type === "safe"
-                  ? "bg-[#4ADE8020] text-[#4ADE80]"
-                  : report.severity === "high"
-                  ? "bg-[#7F1D1D] text-[#FCA5A5]"
-                  : report.severity === "medium"
-                  ? "bg-[#EF444420] text-[#EF4444]"
-                  : "bg-[#F9731620] text-[#FDBA74]"
-              }`}
-            >
-              {report.severity ? `${report.type} • ${report.severity}` : report.type}
-            </span>
+            <p className="mt-1 text-[10px] text-[#607D79]">
+              CitySense will surface new community activity here.
+            </p>
           </div>
-        ))}
+        ) : (
+          <div className="divide-y divide-white/[0.045]">
+            {filteredReports.slice(0, 6).map((report: any) => (
+              <div
+                key={report.id}
+                className="flex items-start gap-3 py-3"
+              >
+                <div
+                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    report.type === "safe"
+                      ? "bg-[#5EEAD4]/10"
+                      : "bg-[#E86A6A]/10"
+                  }`}
+                >
+                  {report.type === "safe" ? (
+                    <ShieldCheck className="h-4 w-4 text-[#5EEAD4]" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-[#E86A6A]" />
+                  )}
+                </div>
 
-        {filteredReports.length === 0 && (
-          <div className="text-center py-4">
-            <p className="text-xs text-[#7BA3A1]">No reports in this area</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="truncate text-xs font-medium text-[#E4E9E7]">
+                      {getReportLabel(report.category)}
+                    </p>
+
+                    <span className="shrink-0 text-[9px] text-[#607D79]">
+                      {getTimeAgo(report.timestamp)}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 truncate text-[10px] text-[#607D79]">
+                    {report.address}
+                  </p>
+
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <span className="text-[10px] text-[#A8B8B5]">
+                      {getDistanceKm(
+                        lat,
+                        lng,
+                        report.latitude,
+                        report.longitude
+                      ).toFixed(1)}{" "}
+                      km
+                    </span>
+
+                    {getTimeRemaining(report) !== "0 min" && (
+                      <span className="text-[10px] text-[#607D79]">
+                        {getTimeRemaining(report)} remaining
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => handleVote(report.id!, "upvotes")}
+                      className="text-[10px] font-medium text-[#5EEAD4]"
+                    >
+                      Helpful {report.upvotes || 0}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleVote(report.id!, "downvotes")}
+                      className="text-[10px] font-medium text-[#8A706F]"
+                    >
+                      Not useful {report.downvotes || 0}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
-    </div>
+    )}
   </div>
+</div>
 </div>
 </div>
   );
