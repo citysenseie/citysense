@@ -147,6 +147,13 @@ export default function LiveLocationScreen({
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
   const [sharing, setSharing] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+
+const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+
+const [shareDuration, setShareDuration] = useState<
+  "15m" | "1h" | "8h" | "untilStopped"
+>("1h");
 
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(
     () => localStorage.getItem(AVATAR_STORAGE_KEY)
@@ -202,18 +209,39 @@ export default function LiveLocationScreen({
   };
 
   const startSharing = () => {
-    if (!location) {
-      alert("Your location is not available yet.");
-      return;
-    }
+  if (!location) {
+    alert("Your location is not available yet.");
+    return;
+  }
 
-    if (contacts.length === 0) {
-      alert("Add at least one trusted contact before sharing.");
-      return;
-    }
+  if (contacts.length === 0) {
+    alert("Add at least one trusted contact before sharing.");
+    return;
+  }
 
-    setSharing(true);
-  };
+  const availableContactIds = contacts
+    .map((contact) => contact.id)
+    .filter((id): id is string => Boolean(id));
+
+  setSelectedContactIds(availableContactIds);
+  setShowShareSheet(true);
+};
+const toggleShareContact = (contactId: string) => {
+  setSelectedContactIds((current) =>
+    current.includes(contactId)
+      ? current.filter((id) => id !== contactId)
+      : [...current, contactId]
+  );
+};
+const confirmSharing = () => {
+  if (selectedContactIds.length === 0) {
+    alert("Choose at least one person to share with.");
+    return;
+  }
+
+  setSharing(true);
+  setShowShareSheet(false);
+};
 
   const lastUpdated = new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -578,8 +606,178 @@ export default function LiveLocationScreen({
           </p>
         </div>
       </div>
+{/* Live Location Share Sheet */}
+{showShareSheet && (
+  <div className="fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm">
+    <div className="max-h-[88vh] w-full overflow-hidden rounded-t-[32px] border-t border-white/[0.08] bg-[#0D1D1B] shadow-2xl">
+      {/* Handle */}
+      <div className="flex justify-center pt-3">
+        <div className="h-1 w-10 rounded-full bg-white/15" />
+      </div>
 
-      {/* Avatar Picker */}
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-4">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Radio className="h-4 w-4 text-[#D8AD4B]" />
+
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D8AD4B]">
+              Live Location
+            </span>
+          </div>
+
+          <h2 className="text-xl font-bold text-white">
+            Share your location
+          </h2>
+
+          <p className="mt-1 text-xs leading-relaxed text-[#78908E]">
+            Choose who can follow your live position.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowShareSheet(false)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05]"
+          aria-label="Close sharing options"
+        >
+          <X className="h-4 w-4 text-white" />
+        </button>
+      </div>
+
+      <div className="max-h-[68vh] overflow-y-auto px-4 pb-6">
+        {/* People */}
+        <section className="rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#78908E]">
+                Share with
+              </p>
+
+              <p className="mt-1 text-sm font-semibold text-white">
+                Your trusted circle
+              </p>
+            </div>
+
+            <span className="rounded-full bg-[#2DD4BF]/10 px-2.5 py-1 text-xs font-bold text-[#5EEAD4]">
+              {selectedContactIds.length} selected
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {contacts.map((contact, index) => {
+              const contactId =
+                contact.id || `${contact.phone}-${index}`;
+
+              const isSelected =
+                selectedContactIds.includes(contactId);
+
+              return (
+                <button
+                  key={contactId}
+                  onClick={() => toggleShareContact(contactId)}
+                  className={`flex w-full items-center gap-3 rounded-[18px] border p-3 text-left transition ${
+                    isSelected
+                      ? "border-[#2DD4BF]/30 bg-[#2DD4BF]/10"
+                      : "border-white/[0.05] bg-[#0B1918]"
+                  }`}
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#31514E] bg-[#17302D] text-sm font-bold text-white">
+                    {contact.name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-white">
+                      {contact.name}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs text-[#78908E]">
+                      {contact.relationship || "Trusted contact"}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                      isSelected
+                        ? "border-[#2DD4BF] bg-[#2DD4BF]"
+                        : "border-[#49625F] bg-transparent"
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="h-4 w-4 text-[#081514]" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Duration */}
+        <section className="mt-3 rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#78908E]">
+            Share for
+          </p>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {[
+              { id: "15m", label: "15 minutes" },
+              { id: "1h", label: "1 hour" },
+              { id: "8h", label: "8 hours" },
+              { id: "untilStopped", label: "Until I stop" },
+            ].map((option) => {
+              const isSelected = shareDuration === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  onClick={() =>
+                    setShareDuration(
+                      option.id as
+                        | "15m"
+                        | "1h"
+                        | "8h"
+                        | "untilStopped"
+                    )
+                  }
+                  className={`rounded-[16px] border px-3 py-3 text-sm font-bold transition ${
+                    isSelected
+                      ? "border-[#D8AD4B] bg-[#D8AD4B]/15 text-[#F1C968]"
+                      : "border-white/[0.06] bg-[#0B1918] text-[#91A6A3]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Privacy */}
+        <div className="mt-3 flex items-start gap-3 rounded-[20px] border border-[#2DD4BF]/10 bg-[#2DD4BF]/[0.05] p-3.5">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#5EEAD4]" />
+
+          <p className="text-xs leading-relaxed text-[#83A19D]">
+            Only the people you select can access this live location.
+            You can stop sharing at any time.
+          </p>
+        </div>
+
+        {/* Confirm */}
+        <button
+          onClick={confirmSharing}
+          disabled={selectedContactIds.length === 0}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-[20px] bg-[#D8AD4B] px-4 py-4 font-bold text-[#081514] shadow-[0_12px_35px_rgba(216,173,75,0.16)] transition disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]"
+        >
+          <Radio className="h-5 w-5" />
+          Start Live Sharing
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Avatar Picker */}
+    
       {showAvatarPicker && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm">
           <div className="max-h-[85vh] w-full overflow-hidden rounded-t-[32px] border-t border-white/[0.08] bg-[#0D1D1B] shadow-2xl">
