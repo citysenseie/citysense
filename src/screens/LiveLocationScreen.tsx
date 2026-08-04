@@ -1,4 +1,40 @@
+
 import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+function RecenterMap({
+  latitude,
+  longitude,
+}: {
+  latitude: number;
+  longitude: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([latitude, longitude], map.getZoom());
+  }, [latitude, longitude, map]);
+
+  return null;
+}
+const locationMarkerIcon = L.divIcon({
+  className: "",
+  html: `
+    <div style="
+      width: 24px;
+      height: 24px;
+      background: #22C55E;
+      border: 4px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.25);
+    "></div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+ 
 import {
   ArrowLeft,
   Check,
@@ -18,6 +54,7 @@ import {
   citySenseAvatars,
   getCitySenseAvatar,
 } from "@/assets/avatars";
+
 
 interface LiveLocationScreenProps {
   onBack: () => void;
@@ -239,7 +276,61 @@ export default function LiveLocationScreen({
             </button>
           </div>
         </section>
+{/* Live Location Map */}
+{location && (
+  <section className="relative h-[420px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0B1716] shadow-2xl">
+    <MapContainer
+      center={[location.latitude, location.longitude]}
+      zoom={16}
+      scrollWheelZoom={true}
+      zoomControl={false}
+      className="h-full w-full"
+    >
+      <TileLayer
+        attribution="&copy; OpenStreetMap contributors"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
 
+      <Marker
+        position={[location.latitude, location.longitude]}
+        icon={locationMarkerIcon}
+      />
+
+      <RecenterMap
+        latitude={location.latitude}
+        longitude={location.longitude}
+      />
+    </MapContainer>
+
+    {/* Map status */}
+    <div className="pointer-events-none absolute left-4 top-4 z-[1000]">
+      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#0B1716]/90 px-3 py-2 shadow-lg backdrop-blur-md">
+        <span className="h-2 w-2 rounded-full bg-[#22C55E]" />
+
+        <span className="text-xs font-bold text-white">
+          Live location
+        </span>
+      </div>
+    </div>
+  </section>
+)}
+
+{/* Map loading state */}
+{!location && (
+  <section className="flex h-[420px] items-center justify-center rounded-[28px] border border-white/[0.08] bg-[#0B1716]">
+    <div className="text-center">
+      <MapPin className="mx-auto mb-3 h-7 w-7 text-[#E7BA52]" />
+
+      <p className="text-sm font-semibold text-white">
+        Finding your location
+      </p>
+
+      <p className="mt-1 text-xs text-[#7F9996]">
+        Preparing your live map...
+      </p>
+    </div>
+  </section>
+)}
         {/* Current Location */}
         <section className="rounded-[24px] border border-white/[0.06] bg-[#102220] p-4">
           <div className="flex gap-3">
