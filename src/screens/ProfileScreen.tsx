@@ -1,6 +1,12 @@
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 import { useReports } from "@/hooks/useReports";
+import {
+  db,
+  doc,
+  getDoc,
+} from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
+
 import {
   User,
   LogOut,
@@ -9,26 +15,96 @@ import {
   Moon,
   HelpCircle,
   ChevronRight,
+  Copy,
+  Share2,
 } from "lucide-react";
-
 interface ProfileScreenProps {
   onLogin: () => void;
 }
 
 export default function ProfileScreen({ onLogin }: ProfileScreenProps) {
   const { user, logout } = useAuth();
- const { reports, fetchReports } = useReports();
-useEffect(() => {
-  fetchReports();
-}, [fetchReports]);
- const userReports = reports;
+  const { reports, fetchReports } = useReports();
+const [connectionCode, setConnectionCode] =
+  useState<string | null>(null);
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+  useEffect(() => {
+  const loadConnectionCode = async () => {
+    if (!user) {
+      setConnectionCode(null);
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnapshot = await getDoc(userRef);
+
+      if (!userSnapshot.exists()) {
+        setConnectionCode(null);
+        return;
+      }
+
+      const data = userSnapshot.data();
+
+      setConnectionCode(
+        typeof data.connectionCode === "string"
+          ? data.connectionCode
+          : null
+      );
+    } catch (error) {
+      console.error(
+        "Unable to load CitySense connection code:",
+        error
+      );
+
+      setConnectionCode(null);
+    }
+  };
+
+  void loadConnectionCode();
+}, [user]);
+const handleCopyConnectionCode = async () => {
+  if (!connectionCode) return;
+
+  try {
+    await navigator.clipboard.writeText(connectionCode);
+    alert("CitySense code copied.");
+  } catch (error) {
+    console.error("Unable to copy CitySense code:", error);
+    alert("Could not copy the code.");
+  }
+};
+
+const handleShareConnectionCode = async () => {
+  if (!connectionCode) return;
+
+  const shareText = `Connect with me on CitySense using my code: ${connectionCode}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "Connect with me on CitySense",
+        text: shareText,
+      });
+
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareText);
+    alert("Connection code copied. You can now share it.");
+  } catch (error) {
+    console.error("Unable to share CitySense code:", error);
+  }
+};
+  const userReports = reports;
   const safeReports = userReports.filter((r) => r.type === "safe").length;
   const unsafeReports = userReports.filter((r) => r.type === "unsafe").length;
 const totalUpvotes = userReports.reduce(
   (total, report) => total + (report.upvotes || 0),
   0
 );
-
 const totalDownvotes = userReports.reduce(
   (total, report) => total + (report.downvotes || 0),
   0
@@ -173,6 +249,49 @@ const leaderboard = Object.values(
             </div>
           </div>
         </div>
+        {/* CitySense Connection Code */}
+<div className="mx-4 mb-4 rounded-2xl border border-[#E8A838]/20 bg-[#1A2E2D] p-4">
+  <div className="flex items-start justify-between gap-3">
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
+        Your CitySense Code
+      </p>
+
+      <p className="mt-1 text-xs leading-relaxed text-[#7BA3A1]">
+        Share this code with people you trust so they can securely
+        connect your CitySense account.
+      </p>
+    </div>
+
+    <Shield className="h-5 w-5 shrink-0 text-[#E8A838]" />
+  </div>
+
+  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-[#0F1E1E] px-4 py-3">
+    <span className="font-mono text-lg font-bold tracking-[0.12em] text-[#F5F3EF]">
+      {connectionCode || "Loading..."}
+    </span>
+
+    <button
+      type="button"
+      onClick={handleCopyConnectionCode}
+      disabled={!connectionCode}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[#E8A838] transition active:scale-95 disabled:opacity-40"
+      aria-label="Copy CitySense connection code"
+    >
+      <Copy className="h-4 w-4" />
+    </button>
+  </div>
+
+  <button
+    type="button"
+    onClick={handleShareConnectionCode}
+    disabled={!connectionCode}
+    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E8A838] px-4 py-3 text-sm font-bold text-[#0F1E1E] transition active:scale-[0.98] disabled:opacity-40"
+  >
+    <Share2 className="h-4 w-4" />
+    Share My Code
+  </button>
+</div>
 <div className="bg-[#1A2A2A] rounded-2xl p-4 mx-4 mb-4 border border-[#2A3A3A]">
   <div className="flex justify-between items-center mb-2">
     <h3 className="text-[#F5E3E1] font-bold">Trust Score</h3>
