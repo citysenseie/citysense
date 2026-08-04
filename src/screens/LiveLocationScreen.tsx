@@ -348,7 +348,7 @@ export default function LiveLocationScreen({
         </section>
 {/* Live Location Map */}
 {location && (
-  <section className="relative h-[420px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0B1716] shadow-2xl">
+ <section className="relative h-[620px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0B1716] shadow-2xl">
     <MapContainer
       center={[location.latitude, location.longitude]}
       zoom={16}
@@ -372,22 +372,123 @@ export default function LiveLocationScreen({
       />
     </MapContainer>
 
-    {/* Map status */}
-    <div className="pointer-events-none absolute left-4 top-4 z-[1000]">
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#0B1716]/90 px-3 py-2 shadow-lg backdrop-blur-md">
-        <span className="h-2 w-2 rounded-full bg-[#22C55E]" />
+    {/* Map status + location */}
+<div className="pointer-events-none absolute left-4 right-4 top-4 z-[1000]">
+  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#081514]/90 px-3 py-2 shadow-lg backdrop-blur-xl">
+    <span
+      className={`h-2 w-2 rounded-full ${
+        sharing ? "animate-pulse bg-[#2DD4BF]" : "bg-[#D8AD4B]"
+      }`}
+    />
 
-        <span className="text-xs font-bold text-white">
-          Live location
-        </span>
+    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white">
+      {sharing ? "Sharing live" : "Location ready"}
+    </span>
+  </div>
+
+  <div className="mt-3 max-w-[290px] rounded-[18px] border border-white/10 bg-[#081514]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#D8AD4B]/15">
+        <MapPin className="h-4 w-4 text-[#E7BA52]" />
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#78908E]">
+          Current location
+        </p>
+
+        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white">
+          {location.address || "Current position"}
+        </p>
+
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+
+          <span className="text-[10px] text-[#8CA19E]">
+            Updated {lastUpdated}
+          </span>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+{/* Floating sharing panel */}
+<div className="absolute bottom-4 left-4 right-4 z-[1000]">
+  <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#081514]/95 shadow-2xl backdrop-blur-xl">
+    <div className="p-4">
+      <div className="flex items-center gap-3">
+        <div
+          className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+            sharing ? "bg-[#2DD4BF]/15" : "bg-[#D8AD4B]/15"
+          }`}
+        >
+          {sharing && (
+            <span className="absolute h-5 w-5 animate-ping rounded-full bg-[#2DD4BF]/20" />
+          )}
+
+          <Radio
+            className={`relative h-5 w-5 ${
+              sharing ? "text-[#5EEAD4]" : "text-[#E7BA52]"
+            }`}
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-white">
+            {sharing ? "Live sharing active" : "Share your live location"}
+          </p>
+
+          <p className="mt-0.5 text-xs text-[#839A97]">
+            {sharing
+              ? `Sharing with ${contacts.length} trusted ${
+                  contacts.length === 1 ? "contact" : "contacts"
+                }`
+              : contacts.length > 0
+                ? `${contacts.length} trusted ${
+                    contacts.length === 1 ? "contact" : "contacts"
+                  } available`
+                : "Add a trusted contact to start sharing"}
+          </p>
+        </div>
+
+        <div className="flex -space-x-2">
+          {contacts.slice(0, 3).map((contact, index) => (
+            <div
+              key={contact.id || `${contact.phone}-${index}`}
+              className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#081514] bg-[#17302D] text-xs font-bold text-white"
+              title={contact.name}
+            >
+              {contact.name?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {!sharing ? (
+      <button
+        onClick={startSharing}
+        className="flex w-full items-center justify-center gap-2 border-t border-white/[0.06] bg-[#D8AD4B] px-4 py-3.5 text-sm font-bold text-[#081514] transition active:scale-[0.99]"
+      >
+        <Radio className="h-4 w-4" />
+        Start Live Sharing
+      </button>
+    ) : (
+      <button
+        onClick={() => setSharing(false)}
+        className="w-full border-t border-white/[0.06] bg-[#102220]/95 py-3.5 text-sm font-bold text-[#F28B82]"
+      >
+        Stop sharing
+      </button>
+    )}
+  </div>
+</div>
   </section>
 )}
 
 {/* Map loading state */}
 {!location && (
-  <section className="flex h-[420px] items-center justify-center rounded-[28px] border border-white/[0.08] bg-[#0B1716]">
+  <section className="flex h-[620px] items-center justify-center rounded-[28px] border border-white/[0.08] bg-[#0B1716]">
     <div className="text-center">
       <MapPin className="mx-auto mb-3 h-7 w-7 text-[#E7BA52]" />
 
