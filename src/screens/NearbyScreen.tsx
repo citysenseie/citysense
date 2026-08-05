@@ -28,6 +28,7 @@ import {
   HeartPulse,
   Cross,
   ChevronRight,
+  ChevronLeft,
 Moon,
 ArrowLeft,
   Navigation as NavigateIcon,
@@ -134,10 +135,8 @@ export default function NearbyScreen({
 }: NearbyScreenProps) {
   const { location } = useLocation();
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    "Safety & Emergency": true,
-  });
-
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+const [searchQuery, setSearchQuery] = useState("");
  const [nearbyResults, setNearbyResults] = useState<NearbyResult[] | null>(null);
 const [nearbyLoading, setNearbyLoading] = useState(false);
 const [nearbyError, setNearbyError] = useState<string | null>(null);
@@ -206,13 +205,7 @@ useEffect(() => {
   const lat = location?.latitude ?? 51.1857;
   const lng = location?.longitude ?? 3.5701;
 
-  const toggleSection = (title: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
-  };
-
+  
   const openNearby = (query: string) => {
     window.open(
       `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${lat},${lng},15z`,
@@ -1141,137 +1134,142 @@ const onDriverMode = () => {
     </div>
 
     <div className="flex flex-col gap-3">
+     {/* Clean category navigation */}
+{selectedCategory === null ? (
+  <div className="mt-7">
+    <div className="flex items-end justify-between mb-3">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#607D79]">
+          Explore
+        </p>
+
+        <h2 className="mt-1 text-[17px] font-semibold text-[#F5F3EF]">
+          What do you need nearby?
+        </h2>
+      </div>
+
+      <span className="text-[11px] text-[#607D79]">
+        {categories.length} categories
+      </span>
+    </div>
+
+    <div className="border-t border-white/[0.055]">
       {categories.map((category) => {
-        const isOpen = openSections[category.title] ?? false;
         const CategoryIcon = category.icon;
 
         return (
-          <div
+          <button
             key={category.title}
-            className={`
-              relative overflow-hidden rounded-[22px]
-              border transition-all duration-300
-              ${
-                isOpen
-                  ? "bg-[#1A2E2D] border-[#355B58]"
-                  : "bg-[#162827] border-[#294745]/70"
-              }
-            `}
+            type="button"
+            onClick={() => setSelectedCategory(category.title)}
+            className="group flex w-full items-center gap-3.5 border-b border-white/[0.045] py-4 text-left"
           >
-            {/* subtle accent glow */}
             <div
-              className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-3xl opacity-10 pointer-events-none"
-              style={{ backgroundColor: category.accent }}
-            />
-
-            {/* Category header */}
-            <button
-              onClick={() => toggleSection(category.title)}
-              className="relative w-full flex items-center gap-3.5 px-4 py-4 text-left active:scale-[0.99] transition-transform"
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${category.iconBg}`}
             >
-              {/* Icon */}
-              <div
-                className={`w-11 h-11 rounded-2xl ${category.iconBg} flex items-center justify-center shrink-0`}
-              >
-                <CategoryIcon
-                  className="w-5 h-5"
-                  style={{ color: category.accent }}
-                />
-              </div>
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-[#F5F3EF] text-[15px]">
-                    {category.title}
-                  </h2>
-                </div>
-
-                <p className="text-xs text-[#7BA3A1] mt-0.5 truncate">
-                  {category.subtitle}
-                </p>
-
-                <p
-                  className="text-[11px] font-medium mt-1"
-                  style={{ color: category.accent }}
-                >
-                  {category.items.length} services nearby
-                </p>
-              </div>
-
-              {/* Arrow */}
-              <div className="w-8 h-8 rounded-full bg-[#0F1E1E]/70 flex items-center justify-center shrink-0">
-                <ChevronRight
-                  className={`w-4 h-4 text-[#7BA3A1] transition-transform duration-300 ${
-                    isOpen ? "rotate-90" : ""
-                  }`}
-                />
-              </div>
-            </button>
-
-            {/* Services */}
-            <div
-              className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${
-                  isOpen
-                    ? "max-h-[1000px] opacity-100"
-                    : "max-h-0 opacity-0"
-                }
-              `}
-            >
-              <div className="px-3 pb-3">
-                <div className="h-px bg-[#2D5A58]/40 mb-3" />
-
-                <div className="grid grid-cols-2 gap-2">
-                  {category.items.map((item) => {
-                    const ItemIcon = item.icon;
-
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={() =>
-                          item.onClick
-                            ? item.onClick()
-                            : openNearby(item.label)
-                        }
-                        className="
-                          group flex flex-col items-start
-                          min-h-[88px] p-3
-                          bg-[#0F1E1E]/80
-                          border border-[#2D5A58]/40
-                          rounded-2xl
-                          text-left
-                          active:scale-[0.97]
-                          transition-all duration-200
-                          hover:border-[#47706D]
-                        "
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div
-                            className={`w-8 h-8 rounded-xl ${category.iconBg} flex items-center justify-center`}
-                          >
-                            <ItemIcon
-                              className="w-4 h-4"
-                              style={{ color: category.accent }}
-                            />
-                          </div>
-
-                          <ChevronRight className="w-3.5 h-3.5 text-[#527573]" />
-                        </div>
-
-                        <span className="text-[13px] font-medium text-[#F5F3EF] mt-2.5 leading-tight">
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <CategoryIcon
+                className="h-[18px] w-[18px]"
+                style={{ color: category.accent }}
+              />
             </div>
-          </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#E7ECEA]">
+                {category.title}
+              </p>
+
+              <p className="mt-0.5 truncate text-[11px] text-[#607D79]">
+                {category.subtitle}
+              </p>
+            </div>
+
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#4F6966] transition-transform group-active:translate-x-0.5" />
+          </button>
         );
       })}
+    </div>
+  </div>
+) : (
+  <div className="mt-7">
+    {(() => {
+      const category = categories.find(
+        (item) => item.title === selectedCategory
+      );
+
+      if (!category) return null;
+
+      return (
+        <>
+          {/* Category navigation */}
+          <button
+            type="button"
+            onClick={() => setSelectedCategory(null)}
+            className="mb-5 flex items-center gap-2 text-left"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04]">
+              <ChevronLeft className="h-4 w-4 text-[#8DA6A2]" />
+            </div>
+
+            <span className="text-xs font-medium text-[#8DA6A2]">
+              Explore
+            </span>
+          </button>
+
+          {/* Category identity */}
+          <div className="mb-5">
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.16em]"
+              style={{ color: category.accent }}
+            >
+              Nearby
+            </p>
+
+            <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-[#F5F3EF]">
+              {category.title}
+            </h2>
+
+            <p className="mt-1 text-xs leading-relaxed text-[#607D79]">
+              {category.subtitle}
+            </p>
+          </div>
+
+          {/* Services */}
+          <div className="border-t border-white/[0.055]">
+            {category.items.map((item) => {
+              const ItemIcon = item.icon;
+
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() =>
+                    item.onClick
+                      ? item.onClick()
+                      : openNearby(item.label)
+                  }
+                  className="group flex w-full items-center gap-3.5 border-b border-white/[0.045] py-4 text-left"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.035]">
+                    <ItemIcon
+                      className="h-4 w-4"
+                      style={{ color: category.accent }}
+                    />
+                  </div>
+
+                  <span className="min-w-0 flex-1 text-sm font-medium text-[#E4E9E7]">
+                    {item.label}
+                  </span>
+
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#4F6966] transition-transform group-active:translate-x-0.5" />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      );
+    })()}
+  </div>
+)}
     </div>
   </div>
 )}
