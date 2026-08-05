@@ -706,8 +706,8 @@ const aiSummary =
   )}
       
 
-    {/* Report action */}
-<div className="absolute bottom-28 right-4 z-50 flex flex-col items-end gap-2">
+   {/* Report action */}
+<div className="absolute bottom-12 left-28 z-50 flex flex-col items-start gap-2">
   {showReportActions && (
     <div className="mb-1 flex flex-col items-end gap-2">
       <button
@@ -792,7 +792,7 @@ const aiSummary =
 )}
 
 {/* Alert mode */}
-<div className="absolute left-4 bottom-28 z-40">
+<div className="absolute left-4 bottom-12 z-40">
   <div className="px-3 py-2 rounded-full text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
     ALERT MODE
   </div>
