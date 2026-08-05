@@ -136,7 +136,6 @@ export default function NearbyScreen({
   const { location } = useLocation();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-const [searchQuery, setSearchQuery] = useState("");
  const [nearbyResults, setNearbyResults] = useState<NearbyResult[] | null>(null);
 const [nearbyLoading, setNearbyLoading] = useState(false);
 const [nearbyError, setNearbyError] = useState<string | null>(null);
