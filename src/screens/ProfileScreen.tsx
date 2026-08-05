@@ -216,7 +216,7 @@ const leaderboard = Object.values(
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#0F1E1E]">
+  <div className="h-full overflow-y-auto bg-[#0F1E1E] pb-24">
      {/* Identity */}
 <header className="px-5 pb-7 pt-6">
   <div className="flex items-center justify-between">
