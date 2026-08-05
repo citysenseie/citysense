@@ -2,7 +2,7 @@ import {
   Shield,
   MapPin,
   Car,
-  Navigation,
+  
   LocateFixed,
   Siren,
   Flame,
@@ -128,7 +128,7 @@ export default function NearbyScreen({
   onRoadHazard: _onRoadHazard,
   onWomensSafety: _onWomensSafety,
   onChildSafety: _onChildSafety,
-  onLiveLocation,
+  onLiveLocation: _onLiveLocation,
   onNightMode: _onNightMode,
   onCrowdSense: _onCrowdSense,
   onTrustedContacts: _onTrustedContacts,
@@ -562,49 +562,7 @@ const searchPrayerSpaces = () =>
     "religion.place_of_worship.islam",
     "Prayer Space"
   );
-const onSafeHaven = () => {
-  _onSafeHaven();
-};
-
-const onWalkMeHome = () => {
-  _onWalkMeHome();
-};
-
-const onDriverMode = () => {
-  _onDriverMode();
-};
-  const quickActions = [
-    {
-      label: "Find Safe Place",
-      icon: Shield,
-      onClick: onSafeHaven,
-      accent: "border-[#EF4444]",
-      iconColor: "text-[#EF4444]",
-    },
-    {
-      label: "Safe Journey",
-      icon: Navigation,
-      onClick: onWalkMeHome,
-      accent: "border-[#10B981]",
-      iconColor: "text-[#10B981]",
-    },
-    {
-      label: "Driver Mode",
-      icon: Car,
-      onClick: onDriverMode,
-      accent: "border-[#3B82F6]",
-      iconColor: "text-[#3B82F6]",
-    },
-    {
-      label: "Live Location",
-      icon: LocateFixed,
-      onClick: onLiveLocation,
-      accent: "border-[#F59E0B]",
-      iconColor: "text-[#F59E0B]",
-    },
-  ];
-
-  const categories = [
+ const categories = [
     {
       title: "Safety & Emergency",
        subtitle: "Police, medical care & urgent help",
@@ -768,31 +726,6 @@ const onDriverMode = () => {
           Find useful places and safety support near you.
         </p>
       </div>
-
-      {/* Quick Actions */}
-      <div className="mb-5">
-        <p className="text-xs uppercase tracking-wider text-[#7BA3A1] font-bold mb-3">
-          Quick Actions
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.label}
-                onClick={action.onClick}
-                className={`flex items-center gap-2 bg-[#1A2E2D] border ${action.accent} rounded-xl px-3 py-3 text-left active:scale-95 transition-transform`}
-              >
-                <Icon className={`w-5 h-5 ${action.iconColor} shrink-0`} />
-                <span className="text-sm font-medium text-[#F5F3EF]">
-                  {action.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Nearby Results */}
 {(nearbyLoading || nearbyError || nearbyResults) && (
   <div className="mb-5">
@@ -1116,23 +1049,9 @@ const onDriverMode = () => {
     </div>
   </div>
 )}
-    {/* Nearby Categories */}
+    {/* Explore nearby */}
 {!nearbyLoading && !nearbyResults && !nearbyError && (
   <div className="mb-3">
-    <div className="flex items-end justify-between mb-4">
-      <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#7BA3A1] font-bold">
-          Nearby Categories
-        </p>
-        <p className="text-xs text-[#5F8583] mt-1">
-          Find what you need around you
-        </p>
-      </div>
-
-      <MapPin className="w-4 h-4 text-[#E8A838]" />
-    </div>
-
-    <div className="flex flex-col gap-3">
      {/* Clean category navigation */}
 {selectedCategory === null ? (
   <div className="mt-7">
@@ -1270,7 +1189,7 @@ const onDriverMode = () => {
   </div>
 )}
     </div>
-  </div>
+  
 )}
       {/* Bottom spacer for fixed navigation */}
       <div className="h-20" />
