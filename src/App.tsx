@@ -41,7 +41,33 @@ export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("login");
   const [activeTab, setActiveTab] = useState<Tab>("map");
- 
+ const [appearanceMode, setAppearanceMode] = useState<
+  "dark" | "light" | "system"
+>(() => {
+  const saved = localStorage.getItem("citysense-appearance");
+
+  if (saved === "light" || saved === "system" || saved === "dark") {
+    return saved;
+  }
+
+  return "dark";
+});
+useEffect(() => {
+  localStorage.setItem("citysense-appearance", appearanceMode);
+
+  const systemDark = window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  ).matches;
+
+  const resolvedTheme =
+    appearanceMode === "system"
+      ? systemDark
+        ? "dark"
+        : "light"
+      : appearanceMode;
+
+  document.documentElement.dataset.theme = resolvedTheme;
+}, [appearanceMode]);
   
 
   useEffect(() => {
@@ -129,8 +155,13 @@ export default function App() {
         return <SOSScreen />;
 
       case "profile":
-        return <ProfileScreen onLogin={() => setScreen("login")} />;
-
+  return (
+    <ProfileScreen
+      onLogin={() => setScreen("login")}
+      appearanceMode={appearanceMode}
+      onAppearanceChange={setAppearanceMode}
+    />
+  );
       default:
         return <MapScreen />;
     }

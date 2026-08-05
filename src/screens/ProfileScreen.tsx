@@ -21,9 +21,15 @@ import {
 } from "lucide-react";
 interface ProfileScreenProps {
   onLogin: () => void;
+  appearanceMode: "dark" | "light" | "system";
+  onAppearanceChange: (mode: "dark" | "light" | "system") => void;
 }
 
-export default function ProfileScreen({ onLogin }: ProfileScreenProps) {
+export default function ProfileScreen({
+  onLogin,
+  appearanceMode,
+  onAppearanceChange,
+}: ProfileScreenProps) {
   const { user, logout } = useAuth();
   const { reports, fetchReports } = useReports();
 const [connectionCode, setConnectionCode] =
@@ -40,8 +46,17 @@ const [alertSensitivity, setAlertSensitivity] = useState<
 >("balanced");
 
 const [sosAlertsEnabled, setSosAlertsEnabled] = useState(true);
+
+const [showNotifications, setShowNotifications] = useState(false);
+const [pushNotifications, setPushNotifications] = useState(true);
+const [smsNotifications, setSmsNotifications] = useState(false);
+const [communityNotifications, setCommunityNotifications] = useState(true);
+const [timerNotifications, setTimerNotifications] = useState(true);
 const [unsafeAlertsEnabled, setUnsafeAlertsEnabled] = useState(true);
 const [policeAlertsEnabled, setPoliceAlertsEnabled] = useState(true);
+const [showAppearance, setShowAppearance] = useState(false);
+
+
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
@@ -460,9 +475,19 @@ const leaderboard = Object.values(
           {menuItems.map((item, i) => (
             <button
               key={i}
-             onClick={() => {
+           onClick={() => {
   if (item.label === "Safety Preferences") {
     setShowSafetyPreferences((current) => !current);
+    return;
+  }
+
+  if (item.label === "Notifications") {
+    setShowNotifications((current) => !current);
+    return;
+  }
+
+  if (item.label === "Appearance") {
+    setShowAppearance((current) => !current);
     return;
   }
 
@@ -606,6 +631,125 @@ const leaderboard = Object.values(
         </div>
       ))}
     </div>
+  </div>
+)}
+{/* Notifications */}
+{showNotifications && (
+  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+    <div className="mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
+        Notifications
+      </p>
+
+      <h3 className="mt-1 text-sm font-bold text-[#F5F3EF]">
+        Choose what reaches you
+      </h3>
+
+      <p className="mt-1 text-[11px] text-[#7BA3A1]">
+        Control CitySense alerts and reminders.
+      </p>
+    </div>
+
+    {[
+      {
+        label: "Push notifications",
+        description: "Receive CitySense alerts on this device",
+        value: pushNotifications,
+        toggle: () => setPushNotifications((current) => !current),
+      },
+      {
+        label: "SMS notifications",
+        description: "Receive important alerts by text message",
+        value: smsNotifications,
+        toggle: () => setSmsNotifications((current) => !current),
+      },
+      {
+        label: "Community activity",
+        description: "Updates about reports and activity nearby",
+        value: communityNotifications,
+        toggle: () => setCommunityNotifications((current) => !current),
+      },
+      {
+        label: "Safety timer reminders",
+        description: "Reminders when an active safety timer needs attention",
+        value: timerNotifications,
+        toggle: () => setTimerNotifications((current) => !current),
+      },
+    ].map((setting) => (
+      <div
+        key={setting.label}
+        className="flex items-center justify-between gap-4 border-t border-white/[0.05] py-4 first:border-t-0"
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[#F5F3EF]">
+            {setting.label}
+          </p>
+
+          <p className="mt-1 text-[10px] leading-relaxed text-[#7BA3A1]">
+            {setting.description}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={setting.toggle}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+            setting.value ? "bg-[#5EEAD4]" : "bg-[#0F1E1E]"
+          }`}
+          aria-pressed={setting.value}
+        >
+          <span
+            className={`absolute top-1 h-4 w-4 rounded-full bg-[#F5F3EF] transition-all ${
+              setting.value ? "left-6" : "left-1"
+            }`}
+          />
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+{/* Appearance */}
+{showAppearance && (
+  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+    <div className="mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
+        Appearance
+      </p>
+
+      <h3 className="mt-1 text-sm font-bold text-[#F5F3EF]">
+        Choose your display mode
+      </h3>
+
+      <p className="mt-1 text-[11px] text-[#7BA3A1]">
+        Select how CitySense should look on your device.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-3 gap-2">
+      {(["dark", "light", "system"] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onAppearanceChange(mode)}
+          
+          className={`rounded-xl border px-2 py-3 text-[11px] font-semibold capitalize transition ${
+            appearanceMode === mode
+              ? "border-[#E8A838] bg-[#E8A838] text-[#0F1E1E]"
+              : "border-white/[0.05] bg-[#0F1E1E] text-[#7BA3A1]"
+          }`}
+        >
+          {mode}
+        </button>
+      ))}
+    </div>
+
+    <p className="mt-3 text-[10px] leading-relaxed text-[#607D79]">
+      {appearanceMode === "dark"
+        ? "CitySense will use its dark interface."
+        : appearanceMode === "light"
+        ? "CitySense will use its light interface."
+        : "CitySense will follow your device appearance setting."}
+    </p>
   </div>
 )}
         {/* Logout */}
