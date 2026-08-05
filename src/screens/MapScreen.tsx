@@ -792,22 +792,24 @@ const aiSummary =
   </div>
 )}
 
-<div className="absolute left-4 right-4 bottom-14 z-40">
-  <div className="px-2 py-1 rounded-lg text-[9px] font-bold shadow-xl border bg-[#2A0F0F] text-[#EF4444] border-[#EF444460]">
+{/* Alert mode - sits above action buttons */}
+<div className="absolute left-4 right-4 bottom-24 z-40">
+  <div className="px-3 py-2 rounded-xl text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
     ALERT MODE
   </div>
 </div>
 
+{/* Report button */}
 <button
   onClick={() => {
     console.log("PLUS CLICKED");
     setShowReportModal(true);
   }}
-  className="absolute bottom-12 right-20 w-12 h-12 bg-[#EF4444] rounded-full flex items-center justify-center shadow-lg shadow-[#EF444430] text-white text-2xl font-bold active:scale-95 transition-transform z-50"
+  className="absolute bottom-10 right-20 w-12 h-12 bg-[#EF4444] rounded-full flex items-center justify-center shadow-lg shadow-[#EF444430] text-white text-2xl font-bold active:scale-95 transition-transform z-50"
 >
   +
 </button>
-       <div className="absolute top-12 right-4 flex gap-2 z-40">
+       <div className="absolute top-24 right-4 flex gap-2 z-40">
           {(["all", "safe", "unsafe"] as const).map((filter) => (
             <button
               key={filter}
@@ -825,7 +827,7 @@ const aiSummary =
 
         <button
           onClick={() => window.location.reload()}
-          className="absolute bottom-4 right-4 w-11 h-11 bg-[#E8A838] rounded-full flex items-center justify-center shadow-lg shadow-[#E8A83830]"
+          className="absolute bottom-10 right-4 w-11 h-11 bg-[#E8A838] rounded-full flex items-center justify-center shadow-lg shadow-[#E8A83830]"
         >
           <Navigation className="w-5 h-5 text-[#0F1E1E]" />
         </button>
