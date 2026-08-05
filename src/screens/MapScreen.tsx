@@ -793,7 +793,7 @@ const aiSummary =
 
 {/* Alert mode */}
 <div className="absolute left-4 bottom-12 z-40">
-  <div className="px-3 py-2 rounded-full text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
+  <div className="h-12 px-4 rounded-full flex items-center justify-center text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
     ALERT MODE
   </div>
 </div>
