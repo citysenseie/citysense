@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import { AlertTriangle, ShieldCheck, Camera, MapPin, Send, CheckCircle } from "lucide-react";
 import LocationPickerMap from "@/components/LocationPickerMap";
 import LocationSearch from "@/components/LocationSearch";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 const CATEGORIES = [
   { id: "crime", label: "🚔 Crime" },
   { id: "traffic", label: "🚗 Traffic" },
@@ -90,16 +92,50 @@ const [selectedIncidentLocation, setSelectedIncidentLocation] = useState<{
 } | null>(null);
 const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+const [reportPhoto, setReportPhoto] = useState<File | null>(null);
+const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+useEffect(() => {
+  if (!reportPhoto) {
+    setPhotoPreview(null);
+    return;
+  }
+
+  const previewUrl = URL.createObjectURL(reportPhoto);
+  setPhotoPreview(previewUrl);
+
+  return () => {
+    URL.revokeObjectURL(previewUrl);
+  };
+}, [reportPhoto]);
   const handleSubmit = async () => {
-    if (!category || !incidentType || !user?.uid) return;
-    setSubmitting(true);
-    const ok = await submitReport({
+  if (!category || !incidentType || !user?.uid) return;
+
+  setSubmitting(true);
+
+  let photoUrl = "";
+
+  if (reportPhoto) {
+    try {
+      const photoRef = ref(
+        storage,
+        `reports/${user.uid}/${Date.now()}-${reportPhoto.name}`
+      );
+
+      await uploadBytes(photoRef, reportPhoto);
+      photoUrl = await getDownloadURL(photoRef);
+    } catch (error) {
+      console.error("Photo upload failed:", error);
+    }
+  }
+
+  const ok = await submitReport({
       type: reportType,
       category,
       description,
       severity,
       userId: user?.uid ?? "",
+      photoUrl,
       latitude: useCurrentLocation
         ? (location?.latitude ?? 40.7128)
         : (selectedIncidentLocation?.latitude ?? location?.latitude ?? 40.7128),
@@ -109,16 +145,19 @@ const [submitted, setSubmitted] = useState(false);
       address: useCurrentLocation
         ? (location?.address ?? "Unknown location")
         : (selectedIncidentLocation?.address ?? "Unknown location"),
+      
     });
     if (ok) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
-        setCategory("");
-        setDescription("");
-        setReportType("unsafe");
-      }, 3000);
-    }
+  setSubmitted(true);
+
+  setTimeout(() => {
+    setSubmitted(false);
+    setCategory("");
+    setDescription("");
+    setReportType("unsafe");
+    setReportPhoto(null);
+  }, 3000);
+}
     setSubmitting(false);
   };
 
@@ -353,12 +392,51 @@ const [submitted, setSubmitted] = useState(false);
           placeholder={DESCRIPTION_PLACEHOLDERS[incidentType] || `Describe why this area is ${reportType}...`}
           className="w-full h-24 bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl px-4 py-3 text-sm text-[#F5F3EF] placeholder:text-[#7BA3A160] focus:outline-none focus:border-[#E8A838] resize-none"
         />
+{/* Selected photo preview */}
+{photoPreview && (
+  <div className="relative mt-3 overflow-hidden rounded-xl border border-[#2D5A5860] bg-[#1A2E2D]">
+    <img
+      src={photoPreview}
+      alt="Report preview"
+      className="h-44 w-full object-cover"
+    />
 
-        {/* Photo Placeholder */}
-        <button className="w-full mt-3 py-3 bg-[#1A2E2D] border border-dashed border-[#2D5A5860] rounded-xl flex items-center justify-center gap-2 text-xs text-[#7BA3A1]">
-          <Camera className="w-4 h-4" />
-          Add Photo (Optional)
-        </button>
+    <button
+      type="button"
+      onClick={() => setReportPhoto(null)}
+      className="absolute right-2 top-2 rounded-full bg-[#0F1E1E]/90 px-3 py-1.5 text-[10px] font-semibold text-[#F5F3EF] shadow-lg backdrop-blur-md"
+    >
+      Remove
+    </button>
+
+    <div className="px-3 py-2">
+      <p className="truncate text-[10px] text-[#7BA3A1]">
+        {reportPhoto?.name}
+      </p>
+    </div>
+  </div>
+)}
+        {/* Photo */}
+<label className="w-full mt-3 py-3 bg-[#1A2E2D] border border-dashed border-[#2D5A5860] rounded-xl flex items-center justify-center gap-2 text-xs text-[#7BA3A1] cursor-pointer active:scale-[0.98] transition-transform">
+  <Camera className="w-4 h-4" />
+
+  <span>
+    {reportPhoto ? "Change Photo" : "Add Photo (Optional)"}
+  </span>
+
+  <input
+    type="file"
+    accept="image/*"
+    className="hidden"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+
+      if (file) {
+        setReportPhoto(file);
+      }
+    }}
+  />
+</label>
 
        {/* Submit */}
 <button
