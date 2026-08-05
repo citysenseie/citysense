@@ -67,3 +67,78 @@ html, body {
   overscroll-behavior: none;
   overflow: hidden;
 }
+/* =========================================
+   CitySense Appearance
+   ========================================= */
+
+:root {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Main application backgrounds */
+:root[data-theme="light"] body {
+  background: #eef3f1;
+  color: #132624;
+}
+
+/*
+ * CitySense currently uses hard-coded Tailwind colors.
+ * These overrides translate the core dark palette into
+ * the light palette without rewriting every screen yet.
+ */
+
+:root[data-theme="light"] .bg-\[\#0F1E1E\] {
+  background-color: #f4f7f6 !important;
+}
+
+:root[data-theme="light"] .bg-\[\#1A2E2D\] {
+  background-color: #ffffff !important;
+}
+
+:root[data-theme="light"] .bg-\[\#132624\] {
+  background-color: #ffffff !important;
+}
+
+:root[data-theme="light"] .bg-\[\#0B1515\] {
+  background-color: #ffffff !important;
+}
+
+/* Primary text */
+:root[data-theme="light"] .text-\[\#F5F3EF\] {
+  color: #132624 !important;
+}
+
+:root[data-theme="light"] .text-\[\#E4E9E7\] {
+  color: #1c3431 !important;
+}
+
+/* Secondary text */
+:root[data-theme="light"] .text-\[\#7BA3A1\] {
+  color: #617b78 !important;
+}
+
+:root[data-theme="light"] .text-\[\#607D79\] {
+  color: #718783 !important;
+}
+
+:root[data-theme="light"] .text-\[\#A8B8B5\] {
+  color: #536b67 !important;
+}
+
+/* Borders */
+:root[data-theme="light"] .border-\[\#2D5A5820\] {
+  border-color: rgba(45, 90, 88, 0.14) !important;
+}
+
+:root[data-theme="light"] .border-\[\#2D5A5840\] {
+  border-color: rgba(45, 90, 88, 0.2) !important;
+}
+
+/* Keep CitySense accent colours */
+:root[data-theme="light"] .text-\[\#E8A838\] {
+  color: #b77808 !important;
+}
