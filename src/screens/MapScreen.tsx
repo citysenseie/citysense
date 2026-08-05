@@ -1,4 +1,12 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Circle,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import SafetyScore from "../components/SafetyScore";
 import { calculateSafetyScore } from "../services/safetyScore";
 import L from "leaflet";
@@ -53,6 +61,81 @@ function FixMapSize() {
 
   return null;
 }
+function MapController({
+  latitude,
+  longitude,
+  recenterTrigger,
+}: {
+  latitude: number;
+  longitude: number;
+  recenterTrigger: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (recenterTrigger === 0) return;
+
+    map.flyTo([latitude, longitude], 18, {
+      animate: true,
+      duration: 0.8,
+    });
+  }, [recenterTrigger, latitude, longitude, map]);
+
+  return null;
+}
+function ReportFocusController({
+  report,
+}: {
+  report: {
+    latitude: number;
+    longitude: number;
+  } | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!report) return;
+
+    map.flyTo(
+      [report.latitude, report.longitude],
+      18,
+      {
+        animate: true,
+        duration: 0.8,
+      }
+    );
+  }, [report, map]);
+
+  return null;
+}
+function MapMovementDetector({
+  onMove,
+}: {
+  onMove: (latitude: number, longitude: number) => void;
+}) {
+  const [userInteracting, setUserInteracting] = useState(false);
+
+  useMapEvents({
+    dragstart: () => {
+      setUserInteracting(true);
+    },
+
+    zoomstart: () => {
+      setUserInteracting(true);
+    },
+
+    moveend: (event) => {
+      if (!userInteracting) return;
+
+      const center = event.target.getCenter();
+
+      onMove(center.lat, center.lng);
+      setUserInteracting(false);
+    },
+  });
+
+  return null;
+}
 const userIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
   shadowUrl:
@@ -64,12 +147,26 @@ export default function MapScreen() {
   const { location } = useLocation();
  const { reports, fetchReports, submitReport } = useReports();
   const { user } = useAuth();
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
  const [showSafetyCard, setShowSafetyCard] = useState(false);
 const [showNearbyReports, setShowNearbyReports] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<"all" | "safe" | "unsafe">("all");
   const [showDetails, setShowDetails] = useState(false);
 const [showReportActions, setShowReportActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [focusedReport, setFocusedReport] = useState<{
+  latitude: number;
+  longitude: number;
+} | null>(null);
+const [analysisCenter, setAnalysisCenter] = useState<{
+  latitude: number;
+  longitude: number;
+} | null>(null);
+
+const [movedMapCenter, setMovedMapCenter] = useState<{
+  latitude: number;
+  longitude: number;
+} | null>(null);
 const [quickDescription, setQuickDescription] = useState("");
 const [reportPhoto, setReportPhoto] = useState<File | null>(null);
     const [quickReportSent, setQuickReportSent] = useState(false);
@@ -88,7 +185,8 @@ const [selectedSeverity, setSelectedSeverity] = useState<
 
   const lat = location?.latitude ?? 51.1857;
   const lng = location?.longitude ?? 3.5701;
-
+const analysisLat = analysisCenter?.latitude ?? lat;
+const analysisLng = analysisCenter?.longitude ?? lng;
   const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -114,26 +212,25 @@ const [selectedSeverity, setSelectedSeverity] = useState<
     if (category === "other") return "📍 Other";
     return category.replace(/_/g, " ");
   };
-const getReportIcon = (type: string) => {
-
+const getReportIcon = (category: string, type: string) => {
   let color = "blue";
 
-  switch (type) {
-    case "suspicious":
-      color = "red";
-      break;
-
-    case "safe":
-      color = "green";
-      break;
-
-    case "police":
-      color = "violet";
-      break;
-
-    case "hazard":
-      color = "orange";
-      break;
+  if (category === "sos") {
+    color = "red";
+  } else if (category === "suspicious_activity") {
+    color = "red";
+  } else if (category === "police_presence") {
+    color = "violet";
+  } else if (
+    category === "construction" ||
+    category === "poor_lighting"
+  ) {
+    color = "orange";
+  } else if (
+    category === "safe_area" ||
+    type === "safe"
+  ) {
+    color = "green";
   }
 
   return new L.Icon({
@@ -142,6 +239,7 @@ const getReportIcon = (type: string) => {
       "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
   });
 };
   const getTimeAgo = (timestamp: any) => {
@@ -194,7 +292,6 @@ return `${Math.ceil(remainingMinutes / 60)}h`;
 };
 
 const nearbyReports = reports.filter((report) => {
-
   const reportTime =
     report.timestamp instanceof Date
       ? report.timestamp.getTime()
@@ -202,8 +299,20 @@ const nearbyReports = reports.filter((report) => {
 
   const expiryHours = getReportExpiryHours(report);
 
-  return Date.now() - reportTime <
+  const isActive =
+    Date.now() - reportTime <
     expiryHours * 60 * 60 * 1000;
+
+  const distanceFromAnalysisCenter = getDistanceKm(
+    analysisLat,
+    analysisLng,
+    report.latitude,
+    report.longitude
+  );
+
+  const isNearby = distanceFromAnalysisCenter <= 5;
+
+  return isActive && isNearby;
 });
 const historicalHeatmap = useHistoricalHeatmap(reports);
 const heatmap = useHeatmap(nearbyReports);
@@ -218,8 +327,8 @@ const filteredReports = (
     ? nearbyReports
     : nearbyReports.filter((r) => r.type === selectedFilter)
 ).sort((a, b) => {
-  const distA = getDistanceKm(lat, lng, a.latitude, a.longitude);
-  const distB = getDistanceKm(lat, lng, b.latitude, b.longitude);
+  const distA = getDistanceKm(analysisLat, analysisLng, a.latitude, a.longitude);
+  const distB = getDistanceKm(analysisLat, analysisLng, b.latitude, b.longitude);
   return distA - distB;
 });
 
@@ -453,11 +562,18 @@ const aiSummary =
   zoom={18}
   className="h-full w-full z-0"
 >
-          <FixMapSize />
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
+         <FixMapSize />
+
+<MapController
+  latitude={lat}
+  longitude={lng}
+  recenterTrigger={recenterTrigger}
+/>
+<ReportFocusController report={focusedReport} />
+<TileLayer
+  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution="&copy; OpenStreetMap contributors"
+/>
 <RecenterMap latitude={lat} longitude={lng} />
 <Marker position={[lat, lng]} icon={userIcon}>
   <Popup>
@@ -470,9 +586,20 @@ const aiSummary =
   center={[lat, lng]}
   radius={1000}
   pathOptions={{
-    color: "#22c55e",
-    fillColor: "#22c55e",
-    fillOpacity: 0.1,
+    color: "#5EEAD4",
+    weight: 1,
+    opacity: 0.22,
+    fillColor: "#5EEAD4",
+    fillOpacity: 0.025,
+    dashArray: "6 8",
+  }}
+/>
+<MapMovementDetector
+  onMove={(latitude, longitude) => {
+    setMovedMapCenter({
+      latitude,
+      longitude,
+    });
   }}
 />
 {/* Permanent hotspots */}
@@ -525,7 +652,7 @@ const aiSummary =
     <Marker
       key={report.id}
       position={[report.latitude, report.longitude]}
-      icon={getReportIcon(report.type)}
+      icon={getReportIcon(report.category, report.type)}
     >
       <Popup>
         <div className="text-sm">
@@ -706,7 +833,26 @@ const aiSummary =
   )}
       
 
-   {/* Report action */}
+   {/* Report{/* Search moved map area */}
+{movedMapCenter && (
+  <button
+    type="button"
+    onClick={() => {
+  if (!movedMapCenter) return;
+
+  setAnalysisCenter({
+    latitude: movedMapCenter.latitude,
+    longitude: movedMapCenter.longitude,
+  });
+
+  setMovedMapCenter(null);
+}}
+    className="absolute left-1/2 top-24 z-50 -translate-x-1/2 rounded-full border border-white/[0.08] bg-[#0B1515]/95 px-4 py-2.5 text-xs font-semibold text-[#F5F3EF] shadow-xl backdrop-blur-xl transition active:scale-95"
+  >
+    Search this area
+  </button>
+)} 
+
 <div className="absolute bottom-12 left-28 z-50 flex flex-col items-start gap-2">
   {showReportActions && (
     <div className="mb-1 flex flex-col items-end gap-2">
@@ -816,12 +962,18 @@ const aiSummary =
           ))}
         </div>
 
-        <button
-          onClick={() => window.location.reload()}
-          className="absolute bottom-10 right-4 w-11 h-11 bg-[#E8A838] rounded-full flex items-center justify-center shadow-lg shadow-[#E8A83830]"
-        >
-          <Navigation className="w-5 h-5 text-[#0F1E1E]" />
-        </button>
+       <button
+  type="button"
+ onClick={() => {
+  setAnalysisCenter(null);
+  setMovedMapCenter(null);
+  setRecenterTrigger((current) => current + 1);
+}}
+  aria-label="Recenter map on my location"
+  className="absolute bottom-10 right-4 z-50 w-11 h-11 bg-[#E8A838] rounded-full flex items-center justify-center shadow-lg shadow-[#E8A83830] active:scale-95 transition-transform"
+>
+  <Navigation className="w-5 h-5 text-[#0F1E1E]" />
+</button>
 {showReportModal && (
   <>
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-6">
@@ -986,9 +1138,17 @@ const aiSummary =
           <div className="divide-y divide-white/[0.045]">
             {filteredReports.slice(0, 6).map((report: any) => (
               <div
-                key={report.id}
-                className="flex items-start gap-3 py-3"
-              >
+  key={report.id}
+  onClick={() => {
+    setFocusedReport({
+      latitude: report.latitude,
+      longitude: report.longitude,
+    });
+
+    setShowNearbyReports(false);
+  }}
+  className="flex cursor-pointer items-start gap-3 py-3 transition-opacity active:opacity-70"
+>
                 <div
                   className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                     report.type === "safe"
@@ -1039,7 +1199,10 @@ const aiSummary =
                   <div className="mt-2 flex items-center gap-4">
                     <button
                       type="button"
-                      onClick={() => handleVote(report.id!, "upvotes")}
+                      onClick={(e) => {
+  e.stopPropagation();
+  handleVote(report.id!, "upvotes");
+}}
                       className="text-[10px] font-medium text-[#5EEAD4]"
                     >
                       Helpful {report.upvotes || 0}
@@ -1047,7 +1210,10 @@ const aiSummary =
 
                     <button
                       type="button"
-                      onClick={() => handleVote(report.id!, "downvotes")}
+                      onClick={(e) => {
+  e.stopPropagation();
+  handleVote(report.id!, "downvotes");
+}}
                       className="text-[10px] font-medium text-[#8A706F]"
                     >
                       Not useful {report.downvotes || 0}
