@@ -13,9 +13,6 @@ import {
   Shield,
   Bell,
   Moon,
-  Users,
-Award,
-ChevronDown,
   HelpCircle,
   ChevronRight,
   Copy,
@@ -31,9 +28,20 @@ export default function ProfileScreen({ onLogin }: ProfileScreenProps) {
   const { reports, fetchReports } = useReports();
 const [connectionCode, setConnectionCode] =
   useState<string | null>(null);
- const [showIdentity, setShowIdentity] = useState(false);
- const [showCommunity, setShowCommunity] = useState(false);
-const [showAchievements, setShowAchievements] = useState(false);
+
+const [, setShowIdentity] = useState(false);
+
+const [showSafetyPreferences, setShowSafetyPreferences] = useState(false);
+
+const [alertRadius, setAlertRadius] = useState(5);
+
+const [alertSensitivity, setAlertSensitivity] = useState<
+  "low" | "balanced" | "high"
+>("balanced");
+
+const [sosAlertsEnabled, setSosAlertsEnabled] = useState(true);
+const [unsafeAlertsEnabled, setUnsafeAlertsEnabled] = useState(true);
+const [policeAlertsEnabled, setPoliceAlertsEnabled] = useState(true);
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
@@ -121,7 +129,13 @@ const trustScore = Math.max(
   0,
   Math.min(100, 50 + totalUpvotes * 5 - totalDownvotes * 8)
 );
- 
+  const trustLevel =
+  userReports.length >= 15
+    ? "Trusted Reporter"
+    : userReports.length >= 5
+    ? "Active Reporter"
+    : "New Contributor";
+
 const rankBadge =
   userReports.length >= 50
     ? "👑 Community Hero"
@@ -202,7 +216,7 @@ const leaderboard = Object.values(
   }
 
   return (
-  <div className="h-full overflow-y-auto bg-[#0F1E1E] pb-8">
+    <div className="h-full flex flex-col bg-[#0F1E1E]">
      {/* Identity */}
 <header className="px-5 pb-7 pt-6">
   <div className="flex items-center justify-between">
@@ -291,318 +305,318 @@ const leaderboard = Object.values(
     </div>
   </div>
 </header>
-       {/* CitySense Identity — revealed only when requested */}
-{showIdentity && (
-  <section className="mx-5 mb-7 border-y border-white/[0.06] py-5">
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D8AD4B]/10">
-          <Fingerprint className="h-[17px] w-[17px] text-[#D8AD4B]" />
-        </div>
+        {/* CitySense Connection Code */}
+<div className="mx-4 mb-4 rounded-2xl border border-[#E8A838]/20 bg-[#1A2E2D] p-4">
+  <div className="flex items-start justify-between gap-3">
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
+        Your CitySense Code
+      </p>
 
-        <div>
-          <p className="text-sm font-semibold text-[#F5F3EF]">
-            CitySense Identity
-          </p>
-
-          <p className="mt-1 max-w-[250px] text-xs leading-relaxed text-[#6F8985]">
-            Your private connection identity for people you trust.
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setShowIdentity(false)}
-        className="text-[11px] font-semibold text-[#718C88] transition hover:text-[#F5F3EF]"
-      >
-        Close
-      </button>
+      <p className="mt-1 text-xs leading-relaxed text-[#7BA3A1]">
+        Share this code with people you trust so they can securely
+        connect your CitySense account.
+      </p>
     </div>
 
-    <div className="mt-5 flex items-center justify-between">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#607D79]">
-          Connection code
-        </p>
+    <Shield className="h-5 w-5 shrink-0 text-[#E8A838]" />
+  </div>
 
-        <p className="mt-1.5 font-mono text-[20px] font-bold tracking-[0.14em] text-[#F5F3EF]">
-          {connectionCode || "Loading..."}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleCopyConnectionCode}
-        disabled={!connectionCode}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-[#D8AD4B] transition active:scale-95 disabled:opacity-30"
-        aria-label="Copy CitySense connection code"
-      >
-        <Copy className="h-4 w-4" />
-      </button>
-    </div>
+  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-[#0F1E1E] px-4 py-3">
+    <span className="font-mono text-lg font-bold tracking-[0.12em] text-[#F5F3EF]">
+      {connectionCode || "Loading..."}
+    </span>
 
     <button
       type="button"
-      onClick={handleShareConnectionCode}
+      onClick={handleCopyConnectionCode}
       disabled={!connectionCode}
-      className="mt-5 flex items-center gap-2 text-sm font-semibold text-[#D8AD4B] transition active:scale-[0.98] disabled:opacity-30"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[#E8A838] transition active:scale-95 disabled:opacity-40"
+      aria-label="Copy CitySense connection code"
     >
-      <Share2 className="h-4 w-4" />
-      Share identity
+      <Copy className="h-4 w-4" />
     </button>
-  </section>
-)}
-{/* Your Impact */}
-<section className="px-5 pb-7">
-  <div className="flex items-end justify-between gap-4">
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#607D79]">
-        Your impact
-      </p>
+  </div>
 
-      <h3 className="mt-2 max-w-[260px] text-[18px] font-semibold leading-snug text-[#F5F3EF]">
-        You&apos;re building trust in your community.
-      </h3>
-    </div>
-
-    <span className="text-[28px] font-bold tracking-[-0.04em] text-[#5EEAD4]">
-      {trustScore}
+  <button
+    type="button"
+    onClick={handleShareConnectionCode}
+    disabled={!connectionCode}
+    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E8A838] px-4 py-3 text-sm font-bold text-[#0F1E1E] transition active:scale-[0.98] disabled:opacity-40"
+  >
+    <Share2 className="h-4 w-4" />
+    Share My Code
+  </button>
+</div>
+<div className="bg-[#1A2A2A] rounded-2xl p-4 mx-4 mb-4 border border-[#2A3A3A]">
+  <div className="flex justify-between items-center mb-2">
+    <h3 className="text-[#F5E3E1] font-bold">Trust Score</h3>
+    <span className="text-[#4ADE80] font-bold">
+      {trustScore}/100
     </span>
   </div>
 
-  {/* Trust progress */}
-  <div className="mt-5 h-[3px] overflow-hidden rounded-full bg-white/[0.06]">
+  <div className="w-full bg-[#0F1E1E] rounded-full h-3 overflow-hidden">
     <div
-      className="h-full rounded-full bg-[#5EEAD4] transition-all duration-500"
-      style={{ width: `${Math.min(trustScore, 100)}%` }}
+      className="bg-[#4ADE80] h-3 rounded-full transition-all"
+      style={{ width: `${trustScore}%` }}
     />
   </div>
 
-  <div className="mt-5 flex items-center gap-6">
-    <div>
-      <span className="text-sm font-semibold text-[#F5F3EF]">
-        {userReports.length}
-      </span>
-      <span className="ml-1.5 text-xs text-[#6F8985]">
-        reports
-      </span>
-    </div>
-
-    <div>
-      <span className="text-sm font-semibold text-[#5EEAD4]">
-        {safeReports}
-      </span>
-      <span className="ml-1.5 text-xs text-[#6F8985]">
-        helpful
-      </span>
-    </div>
-  </div>
-
-  <p className="mt-4 text-xs leading-relaxed text-[#607D79]">
-    Keep contributing useful local information to strengthen your
-    CitySense standing.
+  <p className="text-[#7BA3A1] text-xs mt-2">
+    {trustLevel}
   </p>
-</section>
-{/* Discover more */}
-<section className="border-t border-white/[0.055]">
-  {/* Achievements */}
-  <button
-    type="button"
-    onClick={() => setShowAchievements((current) => !current)}
-    className="flex w-full items-center gap-3 px-5 py-4 text-left"
-  >
-    <Award className="h-[18px] w-[18px] text-[#D8AD4B]" />
+</div>
+{/* Leaderboard */}
+<div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
+  <h3 className="text-sm font-bold text-[#F5F3EF] mb-3">
+    🏆 Community Leaders
+  </h3>
 
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold text-[#F5F3EF]">
-        Achievements
-      </p>
-
-      <p className="mt-0.5 text-[11px] text-[#607D79]">
-        Your progress in CitySense
-      </p>
-    </div>
-
-    <ChevronDown
-      className={`h-4 w-4 text-[#607D79] transition-transform ${
-        showAchievements ? "rotate-180" : ""
-      }`}
-    />
-  </button>
-
-  {showAchievements && (
-    <div className="px-5 pb-5 pl-[52px]">
-      <div className="space-y-4 border-l border-white/[0.06] pl-4">
+  <div className="space-y-3">
+    {leaderboard.map((leader, index) => (
+      <div
+        key={leader.userId}
+        className="flex items-center justify-between"
+      >
         <div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-[#D9E2E0]">
-              First Report
-            </p>
+          <p className="text-sm font-semibold text-[#F5F3EF]">
+            {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}{" "}
+            {leader.userName}
+          </p>
 
-            <span className="text-[11px] font-semibold text-[#5EEAD4]">
-              {userReports.length > 0 ? "Unlocked" : "Locked"}
-            </span>
-          </div>
-
-          <p className="mt-1 text-[11px] text-[#607D79]">
-            Submit your first safety report
+          <p className="text-[11px] text-[#7BA3A1]">
+            {leader.reports} reports • {leader.upvotes} upvotes
           </p>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-[#D9E2E0]">
-              Local Guardian
-            </p>
-
-            <span className="text-[11px] font-semibold text-[#D8AD4B]">
-              {userReports.length >= 10
-                ? "Completed"
-                : `${userReports.length}/10`}
-            </span>
-          </div>
-
-          <p className="mt-1 text-[11px] text-[#607D79]">
-            Contribute 10 community reports
-          </p>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-[#D9E2E0]">
-              Trusted Reporter
-            </p>
-
-            <span className="text-[11px] font-semibold text-[#D8AD4B]">
-              {userReports.length >= 25
-                ? "Completed"
-                : `${userReports.length}/25`}
-            </span>
-          </div>
-
-          <p className="mt-1 text-[11px] text-[#607D79]">
-            Reach 25 trusted reports
-          </p>
-        </div>
+        <span className="text-xs font-bold text-[#E8A838]">
+          #{index + 1}
+        </span>
       </div>
-    </div>
-  )}
+    ))}
+  </div>
+</div>
+        {/* Achievements */}
+        <div className="mt-5 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
+          <h3 className="text-sm font-bold text-[#F5F3EF] mb-3">
+            Achievements
+          </h3>
 
-  <div className="mx-5 h-px bg-white/[0.045]" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#F5F3EF]">
+                  🎯 First Report
+                </p>
+                <p className="text-[11px] text-[#7BA3A1]">
+                  Submit your first safety report
+                </p>
+              </div>
 
-  {/* Community */}
-  <button
-    type="button"
-    onClick={() => setShowCommunity((current) => !current)}
-    className="flex w-full items-center gap-3 px-5 py-4 text-left"
-  >
-    <Users className="h-[18px] w-[18px] text-[#D8AD4B]" />
-
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold text-[#F5F3EF]">
-        Community
-      </p>
-
-      <p className="mt-0.5 text-[11px] text-[#607D79]">
-        See who&apos;s making an impact nearby
-      </p>
-    </div>
-
-    <ChevronDown
-      className={`h-4 w-4 text-[#607D79] transition-transform ${
-        showCommunity ? "rotate-180" : ""
-      }`}
-    />
-  </button>
-
-  {showCommunity && (
-    <div className="px-5 pb-5 pl-[52px]">
-      <div className="space-y-4 border-l border-white/[0.06] pl-4">
-        {leaderboard.map((leader, index) => (
-          <div
-            key={leader.userId}
-            className="flex items-center justify-between gap-4"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-[#D9E2E0]">
-                {leader.userName}
-              </p>
-
-              <p className="mt-0.5 text-[11px] text-[#607D79]">
-                {leader.reports} reports · {leader.upvotes} upvotes
-              </p>
+              <span
+                className={`text-xs font-bold ${
+                  userReports.length > 0 ? "text-[#4ADE80]" : "text-[#7BA3A1]"
+                }`}
+              >
+                {userReports.length > 0 ? "Unlocked" : "Locked"}
+              </span>
             </div>
 
-            <span className="shrink-0 text-xs font-bold text-[#D8AD4B]">
-              #{index + 1}
-            </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#F5F3EF]">
+                  🛡️ Local Guardian
+                </p>
+                <p className="text-[11px] text-[#7BA3A1]">
+                  Submit 10 community reports
+                </p>
+              </div>
+
+              <span className="text-xs font-bold text-[#E8A838]">
+                {userReports.length >= 10 ? "Completed" : `${userReports.length}/10`}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#F5F3EF]">
+                  🏆 Trusted Reporter
+                </p>
+                <p className="text-[11px] text-[#7BA3A1]">
+                  Reach 25 trusted reports
+                </p>
+              </div>
+
+              <span className="text-xs font-bold text-[#E8A838]">
+                {userReports.length >= 25 ? "Completed" : `${userReports.length}/25`}
+              </span>
+            </div>
           </div>
+        </div>
+
+        {/* Menu */}
+        <div className="mt-5 space-y-2">
+          {menuItems.map((item, i) => (
+            <button
+              key={i}
+             onClick={() => {
+  if (item.label === "Safety Preferences") {
+    setShowSafetyPreferences((current) => !current);
+    return;
+  }
+
+  if (item.label === "Help & Support") {
+    window.location.href =
+      "mailto:citysenseie@proton.me?subject=CitySense Support Request";
+    return;
+  }
+
+  alert(`${item.label} coming soon`);
+}}
+              className="w-full flex items-center gap-3 bg-[#1A2E2D] rounded-xl px-4 py-3.5 border border-[#2D5A5820] text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="text-[#E8A838]">{item.icon}</div>
+
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[#F5F3EF]">
+                  {item.label}
+                </p>
+                <p className="text-[11px] text-[#7BA3A1]">{item.sub}</p>
+              </div>
+
+              <ChevronRight className="w-4 h-4 text-[#7BA3A1]" />
+            </button>
+          ))}
+        </div>
+{/* Safety Preferences */}
+{showSafetyPreferences && (
+  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+    <div className="mb-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
+        Safety Preferences
+      </p>
+
+      <h3 className="mt-1 text-sm font-bold text-[#F5F3EF]">
+        Personalize your safety signals
+      </h3>
+
+      <p className="mt-1 text-[11px] text-[#7BA3A1]">
+        Choose what CitySense should prioritize around you.
+      </p>
+    </div>
+
+    {/* Alert radius */}
+    <div className="border-t border-white/[0.05] py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-[#F5F3EF]">
+            Alert radius
+          </p>
+
+          <p className="mt-1 text-[10px] text-[#7BA3A1]">
+            How far around you to monitor
+          </p>
+        </div>
+
+        <span className="text-xs font-bold text-[#E8A838]">
+          {alertRadius} km
+        </span>
+      </div>
+
+      <input
+        type="range"
+        min="1"
+        max="10"
+        step="1"
+        value={alertRadius}
+        onChange={(e) => setAlertRadius(Number(e.target.value))}
+        className="mt-4 w-full accent-[#E8A838]"
+      />
+    </div>
+
+    {/* Sensitivity */}
+    <div className="border-t border-white/[0.05] py-4">
+      <p className="text-xs font-semibold text-[#F5F3EF]">
+        Alert sensitivity
+      </p>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {(["low", "balanced", "high"] as const).map((level) => (
+          <button
+            key={level}
+            type="button"
+            onClick={() => setAlertSensitivity(level)}
+            className={`rounded-xl py-2.5 text-[11px] font-semibold capitalize ${
+              alertSensitivity === level
+                ? "bg-[#E8A838] text-[#0F1E1E]"
+                : "bg-[#0F1E1E] text-[#7BA3A1]"
+            }`}
+          >
+            {level}
+          </button>
         ))}
       </div>
     </div>
-  )}
-</section>
 
-{/* Account */}
-<section className="mt-2 border-t border-white/[0.055] px-5 pt-6">
-  <div className="mb-2">
-    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#607D79]">
-      Account
-    </p>
-  </div>
+    {/* Safety signals */}
+    <div className="border-t border-white/[0.05] pt-4">
+      <p className="mb-2 text-xs font-semibold text-[#F5F3EF]">
+        Safety signals
+      </p>
 
-  <div>
-    {menuItems.map((item, i) => (
-      <button
-        key={i}
-        type="button"
-        onClick={() => {
-          if (item.label === "Help & Support") {
-            window.location.href =
-              "mailto:citysenseie@proton.me?subject=CitySense Support Request";
-            return;
-          }
+      {[
+        {
+          label: "Emergency SOS",
+          value: sosAlertsEnabled,
+          toggle: () => setSosAlertsEnabled((current) => !current),
+        },
+        {
+          label: "Unsafe area reports",
+          value: unsafeAlertsEnabled,
+          toggle: () => setUnsafeAlertsEnabled((current) => !current),
+        },
+        {
+          label: "Police presence",
+          value: policeAlertsEnabled,
+          toggle: () => setPoliceAlertsEnabled((current) => !current),
+        },
+      ].map((setting) => (
+        <div
+          key={setting.label}
+          className="flex items-center justify-between border-t border-white/[0.04] py-3 first:border-t-0"
+        >
+          <span className="text-xs text-[#A8B8B5]">
+            {setting.label}
+          </span>
 
-          alert(`${item.label} coming soon`);
-        }}
-        className="group flex w-full items-center gap-3 py-4 text-left"
-      >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.035] text-[#8DA6A2] transition group-active:scale-95">
-          {item.icon}
+          <button
+            type="button"
+            onClick={setting.toggle}
+            className={`relative h-6 w-11 rounded-full transition ${
+              setting.value ? "bg-[#5EEAD4]" : "bg-[#0F1E1E]"
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-4 w-4 rounded-full bg-[#F5F3EF] transition-all ${
+                setting.value ? "left-6" : "left-1"
+              }`}
+            />
+          </button>
         </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[#E4E9E7]">
-            {item.label}
-          </p>
-
-          <p className="mt-0.5 text-[11px] text-[#607D79]">
-            {item.sub}
-          </p>
-        </div>
-
-        <ChevronRight className="h-4 w-4 text-[#4F6966]" />
-      </button>
-    ))}
+      ))}
+    </div>
   </div>
-</section>
-{/* Sign out */}
-<div className="px-5 pb-8 pt-6">
-  <button
-    type="button"
-    onClick={logout}
-    className="flex items-center gap-2 text-sm font-medium text-[#A86B6B] transition active:scale-[0.98]"
-  >
-    <LogOut className="h-4 w-4" />
-    Sign out
-  </button>
-
-  <p className="mt-8 text-[10px] uppercase tracking-[0.16em] text-[#405B58]">
-    Minimal outside. Powerful inside.
-  </p>
-</div>
-
-</div>
-);
+)}
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className="w-full mt-5 py-3.5 bg-[#EF444415] border border-[#EF444430] rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-[#EF4444] active:scale-[0.98] transition-transform"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
+      </div>
+    
+  );
 }
