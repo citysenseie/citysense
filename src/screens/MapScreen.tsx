@@ -941,7 +941,7 @@ const aiSummary =
   )}
 
  {/* Nearby activity */}
-<div className="absolute bottom-20 left-4 right-4 z-40">
+<div className="absolute bottom-32 left-4 right-4 z-40">
   <div className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-[#0B1515]/92 shadow-2xl backdrop-blur-xl">
     <button
       type="button"
