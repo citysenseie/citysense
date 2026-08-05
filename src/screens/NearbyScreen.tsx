@@ -726,6 +726,36 @@ const searchPrayerSpaces = () =>
           Find useful places and safety support near you.
         </p>
       </div>
+      {/* Live Location */}
+<div className="mt-5 mb-6">
+  <button
+    type="button"
+   onClick={_onLiveLocation}
+    className="group flex w-full items-center gap-3.5 border-y border-white/[0.055] py-4 text-left active:opacity-80 transition-opacity"
+  >
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#4ADE80]/10">
+      <MapPin className="h-5 w-5 text-[#4ADE80]" />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold text-[#F5F3EF]">
+          Share Live Location
+        </p>
+
+        <span className="rounded-full bg-[#4ADE80]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#4ADE80]">
+          Live
+        </span>
+      </div>
+
+      <p className="mt-1 text-[11px] leading-relaxed text-[#607D79]">
+        Let someone follow your location in real time
+      </p>
+    </div>
+
+    <ChevronRight className="h-4 w-4 shrink-0 text-[#4F6966] transition-transform group-active:translate-x-0.5" />
+  </button>
+</div>
       {/* Nearby Results */}
 {(nearbyLoading || nearbyError || nearbyResults) && (
   <div className="mb-5">
