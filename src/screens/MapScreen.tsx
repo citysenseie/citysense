@@ -706,9 +706,8 @@ const aiSummary =
   )}
       
 
-      
-     {/* Report action */}
-<div className="absolute bottom-12 right-20 z-50 flex flex-col items-end gap-2">
+    {/* Report action */}
+<div className="absolute bottom-28 right-4 z-50 flex flex-col items-end gap-2">
   {showReportActions && (
     <div className="mb-1 flex flex-col items-end gap-2">
       <button
@@ -792,23 +791,15 @@ const aiSummary =
   </div>
 )}
 
-{/* Alert mode - sits above action buttons */}
-<div className="absolute left-4 right-4 bottom-24 z-40">
-  <div className="px-3 py-2 rounded-xl text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
+{/* Alert mode */}
+<div className="absolute left-4 bottom-28 z-40">
+  <div className="px-3 py-2 rounded-full text-[9px] font-bold shadow-xl border bg-[#2A0F0F]/95 text-[#EF4444] border-[#EF444460] backdrop-blur-md">
     ALERT MODE
   </div>
 </div>
 
 {/* Report button */}
-<button
-  onClick={() => {
-    console.log("PLUS CLICKED");
-    setShowReportModal(true);
-  }}
-  className="absolute bottom-10 right-20 w-12 h-12 bg-[#EF4444] rounded-full flex items-center justify-center shadow-lg shadow-[#EF444430] text-white text-2xl font-bold active:scale-95 transition-transform z-50"
->
-  +
-</button>
+
        <div className="absolute top-24 right-4 flex gap-2 z-40">
           {(["all", "safe", "unsafe"] as const).map((filter) => (
             <button
