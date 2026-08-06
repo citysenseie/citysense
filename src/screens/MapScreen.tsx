@@ -1084,8 +1084,12 @@ const aiSummary =
     </div>
   )}
 
- {/* Nearby activity */}
-<div className="absolute bottom-32 left-4 right-4 z-40">
+{/* Nearby activity */}
+<div
+  className={`absolute left-4 right-4 z-[60] transition-all duration-300 ${
+    showNearbyReports ? "bottom-20" : "bottom-32"
+  }`}
+>
   <div className="overflow-hidden rounded-[22px] border border-white/[0.07] bg-[#0B1515]/92 shadow-2xl backdrop-blur-xl">
     <button
       type="button"
