@@ -4,6 +4,7 @@ import { auth, db, collection, getDocs, addDoc, serverTimestamp } from "@/lib/fi
 import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
+import HoldToActivateButton from "@/components/HoldToActivateButton";
 interface EmergencyContact {
   id: string;
   name: string;
@@ -14,6 +15,9 @@ export default function SOSScreen() {
   const { location } = useLocation();
   const { submitReport } = useReports();
   const [activated, setActivated] = useState(false);
+  const [holdingSOS, setHoldingSOS] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+const [holdTimer, setHoldTimer] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
   const [timerActive, setTimerActive] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(300);
@@ -67,13 +71,60 @@ const loadTrustedContacts = async () => {
     const sec = s % 60;
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
-const handleSOSActivate = async () => {
-  setActivated(true);
+  const startHoldingSOS = () => {
+  setHoldingSOS(true);
+  setHoldProgress(0);
 
+  const started = Date.now();
+
+  const interval = window.setInterval(() => {
+    const elapsed = Date.now() - started;
+    const progress = Math.min((elapsed / 2000) * 100, 100);
+
+    setHoldProgress(progress);
+
+    if (progress >= 100) {
+      clearInterval(interval);
+
+      setHoldingSOS(false);
+      setHoldProgress(0);
+
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+
+      void handleSOSActivate();
+    }
+  }, 20);
+
+  setHoldTimer(interval);
+};
+
+const stopHoldingSOS = () => {
+  if (holdTimer !== null) {
+    clearInterval(holdTimer);
+  }
+
+  setHoldTimer(null);
+  setHoldingSOS(false);
+  setHoldProgress(0);
+};
+const handleSOSActivate = async () => {
   const user = auth.currentUser;
 
-  if (!user || !location) return;
+  if (!user) {
+    alert("Please sign in before using CitySense SOS.");
+    return;
+  }
 
+  if (!location) {
+    alert(
+      "CitySense needs your location before SOS can be activated. Please enable location access and try again."
+    );
+    return;
+  }
+
+  setActivated(true);
   try {
     await submitReport({
       type: "unsafe",
@@ -150,33 +201,117 @@ longitude: location.longitude,
       </div>
     );
   }
+const readinessChecks = [
+  { ok: !!location },
+  { ok: contacts.length > 0 },
+  { ok: navigator.onLine },
+];
 
+const readinessScore = Math.round(
+  (readinessChecks.filter((c) => c.ok).length /
+    readinessChecks.length) *
+    100
+);
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <h2 className="text-xl font-bold text-[#F5F3EF]">Emergency</h2>
-        <p className="text-xs text-[#7BA3A1] mt-0.5">Quick access to emergency services</p>
+     {/* Emergency Header */}
+<div className="px-4 pt-5">
+
+  <h1 className="text-2xl font-black text-[#F5F3EF]">
+    Emergency Assistance
+  </h1>
+
+  <p className="text-sm text-[#7BA3A1] mt-1">
+    Stay calm. CitySense is ready to help.
+  </p>
+
+  <div className="mt-5 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-bold text-[#F5F3EF]">
+        Emergency Readiness
+      </span>
+
+      
+      <div className="text-right">
+  <p className="text-lg font-black text-[#4ADE80]">
+    {readinessScore}%
+  </p>
+
+  <p className="text-[10px] text-[#7BA3A1]">
+    READY
+  </p>
+</div>
+    </div>
+
+    <div className="mt-4 space-y-3">
+
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-[#F5F3EF]">
+          GPS
+        </span>
+
+        <span
+          className={`text-xs font-bold ${
+            location ? "text-[#4ADE80]" : "text-[#EF4444]"
+          }`}
+        >
+          {location ? "READY" : "WAITING"}
+        </span>
       </div>
 
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-[#F5F3EF]">
+          Internet
+        </span>
+
+        <span className="text-xs font-bold text-[#4ADE80]">
+          ONLINE
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-[#F5F3EF]">
+          Trusted Contacts
+        </span>
+
+        <span className="text-xs font-bold text-[#E8A838]">
+          {contacts.length} Connected
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
       <div className="flex-1 overflow-y-auto px-4 pb-6">
-        {/* Big SOS Button */}
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={handleSOSActivate}
-            className="w-40 h-40 rounded-full bg-gradient-to-br from-[#EF4444] to-[#DC2626] flex flex-col items-center justify-center shadow-2xl shadow-[#EF444440] active:scale-95 transition-transform"
-          >
-            <Siren className="w-10 h-10 text-white mb-1" />
-            <span className="text-2xl font-black text-white tracking-wider">SOS</span>
-            <span className="text-[10px] text-white/70 mt-0.5">HOLD TO ACTIVATE</span>
-          </button>
-        </div>
+       {/* Hero SOS Button */}
+<div className="mt-8 flex flex-col items-center">
 
-        <p className="text-center text-xs text-[#7BA3A1] mt-4">
-          Press and hold the SOS button to alert emergency contacts
-        </p>
+  <HoldToActivateButton
+    holding={holdingSOS}
+    progress={holdProgress}
+    onMouseDown={startHoldingSOS}
+    onMouseUp={stopHoldingSOS}
+    onMouseLeave={stopHoldingSOS}
+    onTouchStart={startHoldingSOS}
+    onTouchEnd={stopHoldingSOS}
+  />
 
-        {/* Safety Timer */}
+  <p className="mt-5 max-w-[280px] text-center text-sm text-[#7BA3A1]">
+    Press and hold for{" "}
+    <span className="font-semibold text-[#F5F3EF]">
+      2 seconds
+    </span>{" "}
+    to activate Emergency Mode. You can still cancel during the
+    5-second countdown.
+  </p>
+
+</div>
+     
+ {/* Safety Timer */}
         <div className="mt-6 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
