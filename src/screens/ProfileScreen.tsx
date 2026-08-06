@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useReports } from "@/hooks/useReports";
 import {
   db,
@@ -19,6 +19,7 @@ import {
   Share2,
   Fingerprint,
 } from "lucide-react";
+
 interface ProfileScreenProps {
   onLogin: () => void;
   appearanceMode: "dark" | "light" | "system";
@@ -56,7 +57,41 @@ const [unsafeAlertsEnabled, setUnsafeAlertsEnabled] = useState(true);
 const [policeAlertsEnabled, setPoliceAlertsEnabled] = useState(true);
 const [showAppearance, setShowAppearance] = useState(false);
 
+const safetyPreferencesRef = useRef<HTMLDivElement>(null);
+const notificationsRef = useRef<HTMLDivElement>(null);
+const appearanceRef = useRef<HTMLDivElement>(null);
+useEffect(() => {
+  if (showSafetyPreferences) {
+    setTimeout(() => {
+      safetyPreferencesRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  }
+}, [showSafetyPreferences]);
 
+useEffect(() => {
+  if (showNotifications) {
+    setTimeout(() => {
+      notificationsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  }
+}, [showNotifications]);
+
+useEffect(() => {
+  if (showAppearance) {
+    setTimeout(() => {
+      appearanceRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  }
+}, [showAppearance]);
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
@@ -516,7 +551,9 @@ const leaderboard = Object.values(
         </div>
 {/* Safety Preferences */}
 {showSafetyPreferences && (
-  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+  <div
+   ref={safetyPreferencesRef}
+   className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
     <div className="mb-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
         Safety Preferences
@@ -635,7 +672,9 @@ const leaderboard = Object.values(
 )}
 {/* Notifications */}
 {showNotifications && (
-  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+<div
+    ref={notificationsRef}
+   className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
     <div className="mb-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
         Notifications
@@ -649,7 +688,6 @@ const leaderboard = Object.values(
         Control CitySense alerts and reminders.
       </p>
     </div>
-
     {[
       {
         label: "Push notifications",
@@ -710,7 +748,10 @@ const leaderboard = Object.values(
 )}
 {/* Appearance */}
 {showAppearance && (
-  <div className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+  <div
+    ref={appearanceRef}
+    className="mx-1 mt-4 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4"
+  >
     <div className="mb-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E8A838]">
         Appearance
@@ -731,7 +772,7 @@ const leaderboard = Object.values(
           key={mode}
           type="button"
           onClick={() => onAppearanceChange(mode)}
-          
+
           className={`rounded-xl border px-2 py-3 text-[11px] font-semibold capitalize transition ${
             appearanceMode === mode
               ? "border-[#E8A838] bg-[#E8A838] text-[#0F1E1E]"
