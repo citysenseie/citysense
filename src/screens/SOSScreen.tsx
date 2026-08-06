@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { auth, db, collection, getDocs, addDoc, serverTimestamp } from "@/lib/firebase";
-import { Phone, MessageCircle, Siren, Volume2, MapPin, X, Clock } from "lucide-react";
+import { Phone, Wifi, Users, MessageCircle, Siren, Volume2, MapPin, X, } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import HoldToActivateButton from "@/components/HoldToActivateButton";
+
 interface EmergencyContact {
   id: string;
   name: string;
@@ -19,7 +20,7 @@ export default function SOSScreen() {
   const [holdProgress, setHoldProgress] = useState(0);
 const [holdTimer, setHoldTimer] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
-  const [timerActive, setTimerActive] = useState(false);
+  const [timerActive] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(300);
   const [sirenOn, setSirenOn] = useState(false);
 const [contacts, setContacts] = useState<EmergencyContact[]>([]);
@@ -66,11 +67,7 @@ const loadTrustedContacts = async () => {
     setCountdown(5);
   }, []);
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-  };
+ 
   const startHoldingSOS = () => {
   setHoldingSOS(true);
   setHoldProgress(0);
@@ -225,7 +222,7 @@ const readinessScore = Math.round(
     Stay calm. CitySense is ready to help.
   </p>
 
-  <div className="mt-5 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
+  <div className="mt-5 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-5">
 
     <div className="flex items-center justify-between">
       <span className="text-sm font-bold text-[#F5F3EF]">
@@ -244,13 +241,16 @@ const readinessScore = Math.round(
 </div>
     </div>
 
-    <div className="mt-4 space-y-3">
+    <div className="mt-5 space-y-5">
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#F5F3EF]">
-          GPS
-        </span>
+       <div className="flex items-center gap-2">
+  <MapPin className="w-4 h-4 text-[#4ADE80]" />
 
+  <span className="text-sm text-[#F5F3EF]">
+    GPS Ready
+  </span>
+</div>
         <span
           className={`text-xs font-bold ${
             location ? "text-[#4ADE80]" : "text-[#EF4444]"
@@ -261,9 +261,12 @@ const readinessScore = Math.round(
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#F5F3EF]">
-          Internet
-        </span>
+        <div className="flex items-center gap-2">
+          <Wifi className="w-4 h-4 text-[#4ADE80]" />
+          <span className="text-sm text-[#F5F3EF]">
+            Internet
+          </span>
+        </div>
 
         <span className="text-xs font-bold text-[#4ADE80]">
           ONLINE
@@ -271,9 +274,13 @@ const readinessScore = Math.round(
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#F5F3EF]">
-          Trusted Contacts
-        </span>
+        <div className="flex items-center gap-2">
+  <Users className="w-4 h-4 text-[#E8A838]" />
+
+          <span className="text-sm text-[#F5F3EF]">
+            Trusted Contacts
+          </span>
+        </div>
 
         <span className="text-xs font-bold text-[#E8A838]">
           {contacts.length} Connected
@@ -311,53 +318,91 @@ const readinessScore = Math.round(
 
 </div>
      
- {/* Safety Timer */}
-        <div className="mt-6 bg-[#1A2E2D] rounded-2xl p-4 border border-[#2D5A5820]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#E8A838]" />
-              <span className="text-sm font-bold text-[#F5F3EF]">Safety Timer</span>
-            </div>
-            <span className="text-2xl font-bold text-[#E8A838] font-mono">{formatTime(timerSeconds)}</span>
-          </div>
-          <p className="text-xs text-[#7BA3A1] mt-2">
-            {timerActive
-              ? "Timer running. We'll alert your contacts if you don't check in."
-              : "Set a timer for your journey. We'll check in when it expires."}
+ {/* Quick Actions */}
+<div className="mt-8">
+
+  <h3 className="text-lg font-bold text-[#F5F3EF] mb-4">
+    Quick Actions
+  </h3>
+
+  <div className="space-y-3">
+
+    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h4 className="text-[#F5F3EF] font-semibold">
+            🛡️ Safety Journey
+          </h4>
+
+          <p className="text-sm text-[#7BA3A1] mt-1">
+            Start a monitored journey.
           </p>
-          <div className="flex gap-2 mt-3">
-            {!timerActive ? (
-              <>
-                <button
-                  onClick={() => { setTimerSeconds(300); setTimerActive(true); }}
-                  className="flex-1 py-2 bg-[#E8A838] text-[#0F1E1E] rounded-lg text-xs font-bold active:scale-95 transition-transform"
-                >
-                  5 Min
-                </button>
-                <button
-                  onClick={() => { setTimerSeconds(600); setTimerActive(true); }}
-                  className="flex-1 py-2 bg-[#2D5A58] text-[#F5F3EF] rounded-lg text-xs font-bold active:scale-95 transition-transform"
-                >
-                  10 Min
-                </button>
-                <button
-                  onClick={() => { setTimerSeconds(900); setTimerActive(true); }}
-                  className="flex-1 py-2 bg-[#2D5A58] text-[#F5F3EF] rounded-lg text-xs font-bold active:scale-95 transition-transform"
-                >
-                  15 Min
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => { setTimerActive(false); setTimerSeconds(300); }}
-                className="flex-1 py-2 bg-[#4ADE80] text-[#0F1E1E] rounded-lg text-xs font-bold active:scale-95 transition-transform"
-              >
-                I'm Safe — Check In
-              </button>
-            )}
-          </div>
+
         </div>
 
+        <span className="text-[#7BA3A1] text-xl">
+          →
+        </span>
+
+      </div>
+
+    </button>
+
+    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h4 className="text-[#F5F3EF] font-semibold">
+            📍 Share Live Location
+          </h4>
+
+          <p className="text-sm text-[#7BA3A1] mt-1">
+            Share your GPS with trusted contacts.
+          </p>
+
+        </div>
+
+        <span className="text-[#7BA3A1] text-xl">
+          →
+        </span>
+
+      </div>
+
+    </button>
+
+    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h4 className="text-[#F5F3EF] font-semibold">
+            📞 Call 112
+          </h4>
+
+          <p className="text-sm text-[#7BA3A1] mt-1">
+            Contact emergency services immediately.
+          </p>
+
+        </div>
+
+        <span className="text-[#7BA3A1] text-xl">
+          →
+        </span>
+
+      </div>
+
+    </button>
+
+  </div>
+
+</div>
+           
         {/* Siren Toggle */}
         <button
           onClick={() => setSirenOn(!sirenOn)}
