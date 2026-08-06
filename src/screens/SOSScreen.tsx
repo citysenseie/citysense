@@ -293,7 +293,7 @@ const readinessScore = Math.round(
 
 </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
+     
        {/* Hero SOS Button */}
 <div className="mt-8 flex flex-col items-center">
 
@@ -317,7 +317,7 @@ const readinessScore = Math.round(
   </p>
 
 </div>
-     
+      <div className="flex-1 overflow-y-auto px-4 pb-6">
  {/* Quick Actions */}
 <div className="mt-8">
 
