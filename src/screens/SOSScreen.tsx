@@ -1,11 +1,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { auth, db, collection, getDocs, addDoc, serverTimestamp } from "@/lib/firebase";
-import { Phone, Wifi, Users, MessageCircle, Siren, Volume2, MapPin, X, } from "lucide-react";
+import { Phone, Shield, Wifi, Users, MessageCircle, Siren, Volume2, MapPin, X, } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import { useReports } from "@/hooks/useReports";
 import HoldToActivateButton from "@/components/HoldToActivateButton";
-
+import QuickActionCard from "@/components/QuickActionCard";
 interface EmergencyContact {
   id: string;
   name: string;
@@ -327,82 +327,39 @@ const readinessScore = Math.round(
 
   <div className="space-y-3">
 
-    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
+    <QuickActionCard
+     color="amber"
+  icon={<Shield className="w-6 h-6" />}
+  title="Safety Journey"
+  description="Start a monitored journey and check in safely."
+  onClick={() => {
+    alert("Safety Journey coming soon");
+  }}
+/>
 
-      <div className="flex items-center justify-between">
+    <QuickActionCard
+  color="blue"
+  icon={<MapPin className="w-6 h-6" />}
+  title="Share Live Location"
+  description="Share your real-time location with trusted contacts."
+  onClick={() => {
+    alert("Live Location coming soon");
+  }}
+/>
+    
 
-        <div>
+   <QuickActionCard
+  color="red"
+  icon={<Phone className="w-6 h-6" />}
+  title="Emergency Call"
+  description="Call local emergency services instantly."
+  onClick={() => {
+    window.location.href = "tel:112";
+  }}
+/>
+     </div>
 
-          <h4 className="text-[#F5F3EF] font-semibold">
-            🛡️ Safety Journey
-          </h4>
-
-          <p className="text-sm text-[#7BA3A1] mt-1">
-            Start a monitored journey.
-          </p>
-
-        </div>
-
-        <span className="text-[#7BA3A1] text-xl">
-          →
-        </span>
-
-      </div>
-
-    </button>
-
-    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
-
-      <div className="flex items-center justify-between">
-
-        <div>
-
-          <h4 className="text-[#F5F3EF] font-semibold">
-            📍 Share Live Location
-          </h4>
-
-          <p className="text-sm text-[#7BA3A1] mt-1">
-            Share your GPS with trusted contacts.
-          </p>
-
-        </div>
-
-        <span className="text-[#7BA3A1] text-xl">
-          →
-        </span>
-
-      </div>
-
-    </button>
-
-    <button className="w-full rounded-2xl bg-[#1A2E2D] border border-[#2D5A5820] p-4 text-left transition active:scale-[0.98]">
-
-      <div className="flex items-center justify-between">
-
-        <div>
-
-          <h4 className="text-[#F5F3EF] font-semibold">
-            📞 Call 112
-          </h4>
-
-          <p className="text-sm text-[#7BA3A1] mt-1">
-            Contact emergency services immediately.
-          </p>
-
-        </div>
-
-        <span className="text-[#7BA3A1] text-xl">
-          →
-        </span>
-
-      </div>
-
-    </button>
-
-  </div>
-
-</div>
-           
+</div>       
         {/* Siren Toggle */}
         <button
           onClick={() => setSirenOn(!sirenOn)}
