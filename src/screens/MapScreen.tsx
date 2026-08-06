@@ -833,29 +833,28 @@ const aiSummary =
   )}
       
 
-   {/* Report{/* Search moved map area */}
+   {/* Search moved map area */}
 {movedMapCenter && (
   <button
     type="button"
     onClick={() => {
-  if (!movedMapCenter) return;
+      setAnalysisCenter({
+        latitude: movedMapCenter.latitude,
+        longitude: movedMapCenter.longitude,
+      });
 
-  setAnalysisCenter({
-    latitude: movedMapCenter.latitude,
-    longitude: movedMapCenter.longitude,
-  });
-
-  setMovedMapCenter(null);
-}}
-    className="absolute left-1/2 top-24 z-50 -translate-x-1/2 rounded-full border border-white/[0.08] bg-[#0B1515]/95 px-4 py-2.5 text-xs font-semibold text-[#F5F3EF] shadow-xl backdrop-blur-xl transition active:scale-95"
+      setMovedMapCenter(null);
+      setShowNearbyReports(true);
+    }}
+    className="absolute left-4 top-[92px] z-50 rounded-full border border-white/[0.08] bg-[#0B1515]/95 px-4 py-2 text-[11px] font-semibold text-[#F5F3EF] shadow-xl backdrop-blur-xl transition active:scale-95"
   >
     Search this area
   </button>
-)} 
+)}
 
-<div className="absolute bottom-12 left-28 z-50 flex flex-col items-start gap-2">
+<div className="absolute bottom-12 left-1/2 z-[70] flex -translate-x-1/2 flex-col items-center gap-2">
   {showReportActions && (
-    <div className="mb-1 flex flex-col items-end gap-2">
+    <div className="mb-1 flex flex-col items-center gap-2">
       <button
         type="button"
         onClick={() => {
