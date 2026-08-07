@@ -211,6 +211,7 @@ const readinessScore = Math.round(
 );
   return (
     <div className="h-full flex flex-col bg-[#0F1E1E]">
+       <div className="flex-1 overflow-y-auto px-4 pb-6">
      {/* Emergency Header */}
 <div className="px-4 pt-5">
 
@@ -222,7 +223,7 @@ const readinessScore = Math.round(
     Stay calm. CitySense is ready to help.
   </p>
 
-  <div className="mt-5 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-5">
+  <div className="mt-5 rounded-2xl border border-[#2D5A5820] bg-[#1A2E2D] p-4">
 
     <div className="flex items-center justify-between">
       <span className="text-sm font-bold text-[#F5F3EF]">
@@ -241,7 +242,7 @@ const readinessScore = Math.round(
 </div>
     </div>
 
-    <div className="mt-5 space-y-5">
+    <div className="mt-3 space-y-3">
 
       <div className="flex items-center justify-between">
        <div className="flex items-center gap-2">
@@ -307,7 +308,7 @@ const readinessScore = Math.round(
     onTouchEnd={stopHoldingSOS}
   />
 
-  <p className="mt-5 max-w-[280px] text-center text-sm text-[#7BA3A1]">
+  <p className="mt-8 max-w-[280px] text-center text-sm text-[#7BA3A1]">
     Press and hold for{" "}
     <span className="font-semibold text-[#F5F3EF]">
       2 seconds
@@ -317,15 +318,15 @@ const readinessScore = Math.round(
   </p>
 
 </div>
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
+     
  {/* Quick Actions */}
-<div className="mt-8">
+<div className="mt-10">
 
   <h3 className="text-lg font-bold text-[#F5F3EF] mb-4">
     Quick Actions
   </h3>
 
-  <div className="space-y-3">
+  <div className="space-y-4">
 
     <QuickActionCard
      color="amber"
@@ -404,7 +405,7 @@ const readinessScore = Math.round(
               window.open(`sms:?&body=${encodeURIComponent(text)}`, "_blank");
             }
           }}
-          className="w-full mt-3 py-3 bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-[#F5F3EF] active:scale-[0.98] transition-transform"
+          className="w-full mt-5 py-3 bg-[#1A2E2D] border border-[#2D5A5840] rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-[#F5F3EF] active:scale-[0.98] transition-transform"
         >
           <MessageCircle className="w-4 h-4 text-[#E8A838]" />
           Share Location via SMS

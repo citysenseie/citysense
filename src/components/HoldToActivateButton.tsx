@@ -25,13 +25,14 @@ export default function HoldToActivateButton({
   return (
     <div className="flex flex-col items-center">
 
-      <div className="relative w-60 h-60">
+      <div className="relative w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60">
 
         {/* Progress Ring */}
         <svg
           className="absolute inset-0 -rotate-90"
-          width="240"
-          height="240"
+          width="100%"
+height="100%"
+viewBox="0 0 240 240"
         >
           <circle
             cx="120"
@@ -66,7 +67,7 @@ export default function HoldToActivateButton({
           onMouseLeave={onMouseLeave}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
-          className={`absolute inset-5 rounded-full flex flex-col items-center justify-center transition-all duration-300
+          className={`absolute inset-4 rounded-full flex flex-col items-center justify-center transition-all duration-300
           ${
             holding
               ? "scale-105 shadow-[0_0_80px_rgba(239,68,68,0.65)]"
@@ -78,12 +79,12 @@ export default function HoldToActivateButton({
           to-[#991B1B]`}
         >
           <Siren
-            className={`w-14 h-14 text-white mb-2 transition-transform duration-300 ${
-              holding ? "scale-110" : ""
-            }`}
-          />
+  className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 text-white mb-2 transition-transform duration-300 ${
+    holding ? "scale-110" : ""
+  }`}
+/>
 
-          <h2 className="text-4xl font-black tracking-widest text-white">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-widest text-white">
             SOS
           </h2>
 
