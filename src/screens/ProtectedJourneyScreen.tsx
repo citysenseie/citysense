@@ -1,10 +1,11 @@
-
+import { LocationService } from "../services/protectedJourney/LocationService";
 import Step4Review from "../components/protectedjourney/Step4Review";
 import Step3TrustedContacts from "../components/protectedjourney/Step3TrustedContacts";
 import Step1Destination from "../components/protectedjourney/Step1Destination";
 import Step2TravelMode from "../components/protectedjourney/Step2TravelMode";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Step5JourneyActive from "../components/protectedjourney/Step5JourneyActive";
+import { ProtectedJourneyEngine } from "@/services/protectedJourney/ProtectedJourneyEngine";
 
 
 export default function ProtectedJourneyScreen() {
@@ -15,8 +16,22 @@ export default function ProtectedJourneyScreen() {
 const [selectedTravelMode, setSelectedTravelMode] =
   useState<string | null>(null);
 
-  
+const journeyEngine = new ProtectedJourneyEngine();
+const locationService = new LocationService();
+useEffect(() => {
+  if (step !== 5) return;
 
+  locationService.startTracking((location, speed) => {
+    journeyEngine.updateLocation(location, speed);
+
+    console.log("GPS Update:", location);
+    console.log("Speed:", speed);
+  });
+
+  return () => {
+    locationService.stopTracking();
+  };
+}, [step]);
   return (
 
     

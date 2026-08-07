@@ -54,11 +54,19 @@ export class ProtectedJourneyEngine {
     this.session.state = "completed";
   }
 
-  public updateLocation(location: JourneyLocation) {
-    if (!this.session) return;
+ public updateLocation(
+  location: JourneyLocation,
+  speed: number
+) {
+  if (!this.session) return;
 
-    this.session.currentLocation = location;
+  this.session.currentLocation = location;
+  this.session.lastKnownSpeed = speed;
+
+  if (speed > 2) {
+    this.session.lastMovementAt = Date.now();
   }
+}
 
   private generateJourneyId() {
     return `PJ-${Date.now()}`;
