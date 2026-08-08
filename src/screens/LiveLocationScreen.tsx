@@ -351,13 +351,30 @@ setShowShareSheet(false);
 const liveLocationUrl =
   `${window.location.origin}/live-location/${session.id}`;
 
+const shareMessage =
+  "I'm sharing my live location with you. Follow my location here:";
+
 try {
-  await navigator.clipboard.writeText(liveLocationUrl);
-  alert("Live location link copied.");
+  if (navigator.share) {
+    await navigator.share({
+      title: "CitySense Live Location",
+      text: shareMessage,
+      url: liveLocationUrl,
+    });
+  } else {
+    await navigator.clipboard.writeText(
+      `${shareMessage}\n${liveLocationUrl}`
+    );
+    alert("Live location link copied. You can now send it.");
+  }
 } catch (error) {
-  console.error("Could not copy live location link:", error);
+  if ((error as DOMException)?.name !== "AbortError") {
+    console.error("Could not share live location:", error);
+  }
 }
-   
+setActiveSessionId(session.id);
+setSharing(true);
+setShowShareSheet(false);
   } catch (error) {
     console.error("Failed to start live sharing:", error);
 
