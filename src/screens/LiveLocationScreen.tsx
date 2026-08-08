@@ -313,15 +313,17 @@ const linkedRecipientUserIds = selectedContacts
   .map((contact) => contact.userId)
   .filter((userId): userId is string => Boolean(userId));
 
+const selectedRecipientIds = selectedContacts
+  .map((contact) => contact.id)
+  .filter((id): id is string => Boolean(id));
 const session = await createLiveLocationSession({
   latitude: location.latitude,
   longitude: location.longitude,
   address: location.address,
   avatarId: selectedAvatarId,
-  recipientIds: linkedRecipientUserIds,
+  recipientIds: selectedRecipientIds,
   duration: shareDuration,
 });
-
 const currentUser = auth.currentUser;
 
 if (!currentUser) {
@@ -355,9 +357,7 @@ try {
 } catch (error) {
   console.error("Could not copy live location link:", error);
 }
-    setActiveSessionId(session.id);
-    setSharing(true);
-    setShowShareSheet(false);
+   
   } catch (error) {
     console.error("Failed to start live sharing:", error);
 
