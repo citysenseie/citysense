@@ -114,7 +114,7 @@ import {
   ArrowLeft,
   Check,
   ChevronRight,
-
+  
   MapPin,
   Radio,
   ShieldCheck,
@@ -122,7 +122,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { linkTrustedContactToCitySense } from "../services/contactLinkService";
+
 import { useLocation } from "@/hooks/useLocation";
 import { auth, db, collection, getDocs } from "@/lib/firebase";
 import {
@@ -161,7 +161,7 @@ const [sharingLoading, setSharingLoading] = useState(false);
 const [shareDuration, setShareDuration] = useState<
   "15m" | "1h" | "8h" | "untilStopped"
 >("1h");
-const [linkingContactId, setLinkingContactId] = useState<string | null>(null);
+
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(
     () => localStorage.getItem(AVATAR_STORAGE_KEY)
   );
@@ -336,57 +336,6 @@ const handleStopSharing = async () => {
     );
   } finally {
     setSharingLoading(false);
-  }
-};
-const handleLinkCitySenseAccount = async (
-  contact: TrustedContact
-) => {
-  if (!contact.id) {
-    alert("This trusted contact could not be identified.");
-    return;
-  }
-
-  const code = window.prompt(
-    `Enter ${contact.name}'s CitySense connection code`
-  );
-
-  if (!code) {
-    return;
-  }
-
-  try {
-    setLinkingContactId(contact.id);
-
-    const result = await linkTrustedContactToCitySense(
-      contact.id,
-      code
-    );
-
-    setContacts((currentContacts) =>
-      currentContacts.map((currentContact) =>
-        currentContact.id === contact.id
-          ? {
-              ...currentContact,
-              userId: result.userId,
-            }
-          : currentContact
-      )
-    );
-
-    alert(`${contact.name} is now connected to CitySense.`);
-  } catch (error) {
-    console.error(
-      "Failed to link CitySense account:",
-      error
-    );
-
-    alert(
-      error instanceof Error
-        ? error.message
-        : "Could not link this CitySense account."
-    );
-  } finally {
-    setLinkingContactId(null);
   }
 };
   const lastUpdated = new Date().toLocaleTimeString([], {
@@ -810,87 +759,51 @@ const handleLinkCitySenseAccount = async (
           </div>
 
           <div className="space-y-2">
-
             {contacts.map((contact, index) => {
-  const contactId =
-    contact.id || `${contact.phone}-${index}`;
+              const contactId =
+                contact.id || `${contact.phone}-${index}`;
 
-  const isSelected =
-    selectedContactIds.includes(contactId);
+              const isSelected =
+                selectedContactIds.includes(contactId);
 
-  const isLinked = Boolean(contact.userId);
-  const isLinking = linkingContactId === contact.id;
+              return (
+                <button
+                  key={contactId}
+                  onClick={() => toggleShareContact(contactId)}
+                  className={`flex w-full items-center gap-3 rounded-[18px] border p-3 text-left transition ${
+                    isSelected
+                      ? "border-[#2DD4BF]/30 bg-[#2DD4BF]/10"
+                      : "border-white/[0.05] bg-[#0B1918]"
+                  }`}
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#31514E] bg-[#17302D] text-sm font-bold text-white">
+                    {contact.name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
 
-  return (
-    <div
-      key={contactId}
-      role="button"
-      tabIndex={0}
-      onClick={() => toggleShareContact(contactId)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleShareContact(contactId);
-        }
-      }}
-      className={`flex w-full cursor-pointer items-center gap-3 rounded-[18px] border p-3 text-left transition ${
-        isSelected
-          ? "border-[#2DD4BF]/30 bg-[#2DD4BF]/10"
-          : "border-white/[0.05] bg-[#0B1918]"
-      }`}
-    >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#31514E] bg-[#17302D] text-sm font-bold text-white">
-        {contact.name?.charAt(0)?.toUpperCase() || "?"}
-      </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-white">
+                      {contact.name}
+                    </p>
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-white">
-          {contact.name}
-        </p>
+                    <p className="mt-0.5 truncate text-xs text-[#78908E]">
+                      {contact.relationship || "Trusted contact"}
+                    </p>
+                  </div>
 
-        <p className="mt-0.5 truncate text-xs text-[#78908E]">
-          {contact.relationship || "Trusted contact"}
-        </p>
-
-        {isLinked ? (
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
-
-            <span className="text-[11px] font-semibold text-[#5EEAD4]">
-              CitySense connected
-            </span>
-          </div>
-        ) : (
-          <button
-            type="button"
-            disabled={isLinking}
-            onClick={(event) => {
-              event.stopPropagation();
-              void handleLinkCitySenseAccount(contact);
-            }}
-            className="mt-1.5 text-[11px] font-semibold text-[#E7BA52] disabled:opacity-50"
-          >
-            {isLinking
-              ? "Connecting..."
-              : "Link CitySense account"}
-          </button>
-        )}
-      </div>
-
-      <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
-          isSelected
-            ? "border-[#2DD4BF] bg-[#2DD4BF]"
-            : "border-[#49625F] bg-transparent"
-        }`}
-      >
-        {isSelected && (
-          <Check className="h-4 w-4 text-[#081514]" />
-        )}
-      </div>
-    </div>
-  );
-})}
+                  <div
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                      isSelected
+                        ? "border-[#2DD4BF] bg-[#2DD4BF]"
+                        : "border-[#49625F] bg-transparent"
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="h-4 w-4 text-[#081514]" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
 
