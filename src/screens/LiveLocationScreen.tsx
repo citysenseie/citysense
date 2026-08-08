@@ -123,8 +123,13 @@ import {
   X,
 } from "lucide-react";
 
-import { useLocation } from "@/hooks/useLocation";
-import { auth, db, collection, getDocs } from "@/lib/firebase";
+import { useLocation } from "@/hooks/useLocation";import {
+  auth,
+  db,
+  collection,
+  getDocs,
+  addDoc,
+} from "@/lib/firebase";
 import {
   citySenseAvatars,
   getCitySenseAvatar,
@@ -161,7 +166,11 @@ const [sharingLoading, setSharingLoading] = useState(false);
 const [shareDuration, setShareDuration] = useState<
   "15m" | "1h" | "8h" | "untilStopped"
 >("1h");
-
+const [showAddContactSheet, setShowAddContactSheet] = useState(false);
+const [newContactName, setNewContactName] = useState("");
+const [newContactPhone, setNewContactPhone] = useState("");
+const [newContactRelationship, setNewContactRelationship] = useState("");
+const [addingContact, setAddingContact] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(
     () => localStorage.getItem(AVATAR_STORAGE_KEY)
   );
@@ -198,7 +207,48 @@ const [shareDuration, setShareDuration] = useState<
       console.error("Unable to load trusted contacts:", error);
     }
   };
+const handleAddTrustedContact = async () => {
+  const user = auth.currentUser;
 
+  if (!user) {
+    alert("Please sign in first.");
+    return;
+  }
+
+  if (!newContactName.trim() || !newContactPhone.trim()) {
+    alert("Please enter a name and phone number.");
+    return;
+  }
+
+  try {
+    setAddingContact(true);
+
+    await addDoc(
+      collection(db, "users", user.uid, "trustedContacts"),
+      {
+        name: newContactName.trim(),
+        phone: newContactPhone.trim(),
+        relationship:
+          newContactRelationship.trim() || "Trusted contact",
+        userId: null,
+      }
+    );
+
+    await loadContacts();
+
+    setNewContactName("");
+    setNewContactPhone("");
+    setNewContactRelationship("");
+    setShowAddContactSheet(false);
+
+    alert("Trusted contact added.");
+  } catch (error) {
+    console.error("Unable to add trusted contact:", error);
+    alert("Could not add trusted contact.");
+  } finally {
+    setAddingContact(false);
+  }
+};
   useEffect(() => {
     loadContacts();
   }, []);
@@ -296,7 +346,15 @@ await Promise.all(
 setActiveSessionId(session.id);
 setSharing(true);
 setShowShareSheet(false);
+const liveLocationUrl =
+  `${window.location.origin}/live-location/${session.id}`;
 
+try {
+  await navigator.clipboard.writeText(liveLocationUrl);
+  alert("Live location link copied.");
+} catch (error) {
+  console.error("Could not copy live location link:", error);
+}
     setActiveSessionId(session.id);
     setSharing(true);
     setShowShareSheet(false);
@@ -947,7 +1005,69 @@ const handleStopSharing = async () => {
             </div>
           </div>
         </div>
-      )}
+       )}
+
+  {showAddContactSheet && (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/60">
+      <div className="w-full rounded-t-[28px] bg-[#102725] p-6 text-white">
+
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold">
+              Add Trusted Contact
+            </h2>
+
+            <p className="mt-1 text-sm text-[#78908E]">
+              Someone you trust in an emergency.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAddContactSheet(false)}
+            className="rounded-full p-2 text-[#9DB3B0]"
+          >
+            ✕
+          </button>
+        </div>
+
+        <input
+          value={newContactName}
+          onChange={(e) => setNewContactName(e.target.value)}
+          placeholder="Name"
+          className="mb-3 w-full rounded-2xl border border-[#31514E] bg-[#081514] px-4 py-3 text-white outline-none"
+        />
+
+        <input
+          value={newContactPhone}
+          onChange={(e) => setNewContactPhone(e.target.value)}
+          placeholder="Phone number"
+          type="tel"
+          className="mb-3 w-full rounded-2xl border border-[#31514E] bg-[#081514] px-4 py-3 text-white outline-none"
+        />
+
+        <input
+          value={newContactRelationship}
+          onChange={(e) => setNewContactRelationship(e.target.value)}
+          placeholder="Relationship (e.g. Wife)"
+          className="mb-4 w-full rounded-2xl border border-[#31514E] bg-[#081514] px-4 py-3 text-white outline-none"
+        />
+
+        <button
+          type="button"
+          disabled={addingContact}
+          onClick={handleAddTrustedContact}
+          className="w-full rounded-2xl bg-[#2DD4BF] px-5 py-4 font-bold text-[#06201D] disabled:opacity-50"
+        >
+          {addingContact ? "Adding..." : "Add Trusted Contact"}
+        </button>
+
+      </div>
     </div>
-  );
+  )}
+
+</div>
+
+);
 }
+

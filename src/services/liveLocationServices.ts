@@ -4,11 +4,11 @@ import {
   collection,
   addDoc,
   doc,
+  getDoc,
   updateDoc,
   serverTimestamp,
   Timestamp,
 } from "@/lib/firebase";
-
 export type LiveLocationDuration =
   | "15m"
   | "1h"
@@ -150,4 +150,17 @@ export const stopLiveLocationSession = async (
     stoppedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+};
+export const getLiveLocationSession = async (sessionId: string) => {
+  const sessionRef = doc(db, "liveLocationSessions", sessionId);
+  const snapshot = await getDoc(sessionRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
 };

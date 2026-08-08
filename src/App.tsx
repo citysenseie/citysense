@@ -1,3 +1,4 @@
+import SharedLiveLocationScreen from "./screens/SharedLiveLocationScreen";
 import CrowdSenseScreen from "@/screens/CrowdSenseScreen";
 import NightModeScreen from "@/screens/NightModeScreen";
 import LiveLocationScreen from "@/screens/LiveLocationScreen";
@@ -90,8 +91,7 @@ useEffect(() => {
       case "main":
         return renderMain();
 
-      case "livelocation":
-        return <LiveLocationScreen onBack={() => setScreen("main")} />;
+  
 
       case "safehaven":
         return <SafeHavenScreen onBack={() => setScreen("main")} />;
@@ -166,7 +166,16 @@ useEffect(() => {
         return <MapScreen />;
     }
   };
+const liveLocationMatch =
+  window.location.pathname.match(/^\/live-location\/([^/]+)$/);
 
+if (liveLocationMatch) {
+  return (
+    <SharedLiveLocationScreen
+      sessionId={liveLocationMatch[1]}
+    />
+  );
+}
   if (loading) {
     return (
       <div className="h-screen w-screen bg-[#0F1E1E] flex items-center justify-center">
