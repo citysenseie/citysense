@@ -1,4 +1,4 @@
-import SharedLiveLocationScreen from "./screens/SharedLiveLocationScreen";
+
 import CrowdSenseScreen from "@/screens/CrowdSenseScreen";
 import NightModeScreen from "@/screens/NightModeScreen";
 import LiveLocationScreen from "@/screens/LiveLocationScreen";
@@ -171,9 +171,25 @@ const liveLocationMatch =
 
 if (liveLocationMatch) {
   return (
-    <SharedLiveLocationScreen
-      sessionId={liveLocationMatch[1]}
-    />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#081514",
+        color: "white",
+        padding: "40px 20px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <h1>CitySense Live Location</h1>
+
+      <p>ROUTE WORKS</p>
+
+      <p>
+        Session ID:
+        <br />
+        {liveLocationMatch[1]}
+      </p>
+    </div>
   );
 }
   if (loading) {
