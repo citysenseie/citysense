@@ -21,11 +21,12 @@ import WalkMeHomeScreen from "@/screens/WalkMeHomeScreen";
 import DriverModeScreen from "@/screens/DriverModeScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import "./App.css";
-
+import ProtectedJourneyScreen from "@/screens/ProtectedJourneyScreen";
 type Screen =
   | "login"
   | "signup"
   | "main"
+  | "protectedjourney"
   | "livelocation"
   | "safehaven"
   | "drivermode"
@@ -37,7 +38,6 @@ type Screen =
   | "childsafety"
   | "nightmode"
   | "crowdsense";
-
 export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>("login");
@@ -91,7 +91,8 @@ useEffect(() => {
       case "main":
         return renderMain();
 
-  
+  case "protectedjourney":
+  return <ProtectedJourneyScreen />;
 
       case "safehaven":
         return <SafeHavenScreen onBack={() => setScreen("main")} />;
@@ -152,7 +153,11 @@ useEffect(() => {
         return <ReportScreen />;
 
       case "sos":
-        return <SOSScreen />;
+  return (
+    <SOSScreen
+      onProtectedJourney={() => setScreen("protectedjourney")}
+    />
+  );
 
       case "profile":
   return (

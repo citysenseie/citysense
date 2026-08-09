@@ -12,7 +12,13 @@ interface EmergencyContact {
   phone: string;
 }
 
-export default function SOSScreen() {
+interface SOSScreenProps {
+  onProtectedJourney: () => void;
+}
+
+export default function SOSScreen({
+  onProtectedJourney,
+}: SOSScreenProps) {
   const { location } = useLocation();
   const { submitReport } = useReports();
   const [activated, setActivated] = useState(false);
@@ -333,9 +339,9 @@ const readinessScore = Math.round(
   icon={<Shield className="w-6 h-6" />}
   title="Safety Journey"
   description="Start a monitored journey and check in safely."
-  onClick={() => {
-    alert("Safety Journey coming soon");
-  }}
+ onClick={onProtectedJourney}
+    
+  
 />
 
     <QuickActionCard
