@@ -7,6 +7,8 @@ import {
   getDocs,
 } from "@/lib/firebase";
 
+import { linkTrustedContactToCitySense } from "@/services/contactLinkService";
+
 interface TrustedContactsScreenProps {
   onBack: () => void;
 }
@@ -16,6 +18,8 @@ interface TrustedContact {
   name: string;
   phone: string;
   relationship: string;
+  userId?: string | null;
+  connectionCode?: string | null;
 }
 
 export default function TrustedContactsScreen({
@@ -89,7 +93,46 @@ export default function TrustedContactsScreen({
       alert("Could not save contact. Please try again.");
     }
   };
+const connectCitySenseAccount = async (
+  contact: TrustedContact
+) => {
+  if (!contact.id) {
+    alert("This trusted contact could not be identified.");
+    return;
+  }
 
+  const connectionCode = window.prompt(
+    `Enter ${contact.name}'s CitySense connection code.\n\nExample: CS-ABC123`
+  );
+
+  if (!connectionCode?.trim()) {
+    return;
+  }
+
+  try {
+    await linkTrustedContactToCitySense(
+      contact.id,
+      connectionCode
+    );
+
+    alert(
+      `${contact.name} is now connected to CitySense.`
+    );
+
+    await loadContacts();
+  } catch (error) {
+    console.error(
+      "Failed to connect CitySense account:",
+      error
+    );
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Could not connect this CitySense account."
+    );
+  }
+};
   useEffect(() => {
     loadContacts();
   }, []);
@@ -147,18 +190,54 @@ export default function TrustedContactsScreen({
       )}
 
       <div className="space-y-3">
-        {contacts.map((contact) => (
-          <div
-            key={contact.id || contact.phone}
-            className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4"
-          >
-            <p className="font-bold">👤 {contact.name}</p>
-            <p className="text-sm text-[#7BA3A1] mt-1">📞 {contact.phone}</p>
-            <p className="text-sm text-[#E8A838] mt-1">
-              ❤️ {contact.relationship}
-            </p>
-          </div>
-        ))}
+  {contacts.map((contact) => (
+    <div
+      key={contact.id || contact.phone}
+      className="bg-[#1A2E2D] border border-[#2D5A5840] rounded-2xl p-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-bold">
+            👤 {contact.name}
+          </p>
+
+          <p className="text-sm text-[#7BA3A1] mt-1">
+            📞 {contact.phone}
+          </p>
+
+          <p className="text-sm text-[#E8A838] mt-1">
+            ❤️ {contact.relationship}
+          </p>
+        </div>
+
+        {contact.userId && (
+          <span className="shrink-0 rounded-full bg-[#123D35] px-3 py-1 text-xs font-bold text-[#5EEAD4]">
+            🟢 CitySense
+          </span>
+        )}
+      </div>
+
+      {contact.userId ? (
+        <div className="mt-4 rounded-xl bg-[#0B201D] px-3 py-3">
+          <p className="text-sm font-semibold text-[#5EEAD4]">
+            Connected to CitySense
+          </p>
+
+          <p className="mt-1 text-xs text-[#7BA3A1]">
+            This contact can receive CitySense safety features.
+          </p>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => connectCitySenseAccount(contact)}
+          className="mt-4 w-full rounded-xl bg-[#2DD4BF] px-4 py-3 font-bold text-[#06201D]"
+        >
+          🔗 Connect CitySense Account
+        </button>
+      )}
+    </div>
+  ))}
 
         {!loading && contacts.length === 0 && (
           <p className="text-sm text-[#7BA3A1] text-center">
