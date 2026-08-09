@@ -17,6 +17,9 @@ export default function ProtectedJourneyScreen() {
 const [selectedTravelMode, setSelectedTravelMode] =
   useState<string | null>(null);
 
+const [selectedTrustedContacts, setSelectedTrustedContacts] =
+  useState<string[]>([]);
+
 const journeyEngine = new ProtectedJourneyEngine();
 const locationService = new LocationService();
 useEffect(() => {
@@ -52,7 +55,7 @@ useEffect(() => {
           | "cycling"
           | "driving"
           | "public_transport",
-        [],
+        selectedTrustedContacts,
         Date.now() + 30 * 60 * 1000
       );
 
@@ -106,6 +109,8 @@ useEffect(() => {
 )}
 {step === 3 && (
   <Step3TrustedContacts
+    selectedContacts={selectedTrustedContacts}
+    setSelectedContacts={setSelectedTrustedContacts}
     onContinue={() => setStep(4)}
   />
 )}
@@ -113,6 +118,7 @@ useEffect(() => {
   <Step4Review
     destination={selectedDestination}
     travelMode={selectedTravelMode}
+
   onStart={() => {
   console.log("Protected Journey Started");
   setStep(5);
@@ -121,6 +127,9 @@ useEffect(() => {
 )}
 {step === 5 && (
   <Step5JourneyActive
+    destination={selectedDestination}
+    travelMode={selectedTravelMode}
+    trustedContacts={selectedTrustedContacts}
     onEndJourney={() => {
       console.log("Protected Journey Ended");
       setStep(1);
