@@ -23,7 +23,7 @@ export class LocationService {
     accuracy: position.coords.accuracy,
     timestamp: position.timestamp,
   },
-  position.coords.speed ?? 0
+  (position.coords.speed ?? 0) * 3.6
 );
       },
       (error) => {

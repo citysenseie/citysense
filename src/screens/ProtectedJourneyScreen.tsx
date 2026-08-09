@@ -1,3 +1,4 @@
+import { safeZones } from "@/data/SafeZones";
 import { LocationService } from "../services/protectedJourney/LocationService";
 import Step4Review from "../components/protectedjourney/Step4Review";
 import Step3TrustedContacts from "../components/protectedjourney/Step3TrustedContacts";
@@ -22,10 +23,47 @@ useEffect(() => {
   if (step !== 5) return;
 
   locationService.startTracking((location, speed) => {
+    const destinationZone = safeZones.find(
+      (zone) => zone.id === selectedDestination
+    );
+
+    if (!destinationZone) {
+      console.warn(
+        "No destination coordinates found for:",
+        selectedDestination
+      );
+      return;
+    }
+
+    const destinationLocation = {
+      latitude: destinationZone.latitude,
+      longitude: destinationZone.longitude,
+      accuracy: destinationZone.radius,
+      timestamp: Date.now(),
+    };
+
+    if (!journeyEngine.getSession()) {
+      journeyEngine.startJourney(
+        destinationZone.name,
+        destinationLocation,
+        location,
+        (selectedTravelMode ?? "walking") as
+          | "walking"
+          | "cycling"
+          | "driving"
+          | "public_transport",
+        [],
+        Date.now() + 30 * 60 * 1000
+      );
+
+      console.log("Protected Journey session created");
+    }
+
     journeyEngine.updateLocation(location, speed);
 
     console.log("GPS Update:", location);
     console.log("Speed:", speed);
+    console.log("Journey Session:", journeyEngine.getSession());
   });
 
   return () => {
