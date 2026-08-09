@@ -152,15 +152,43 @@ export const stopLiveLocationSession = async (
   });
 };
 export const getLiveLocationSession = async (sessionId: string) => {
-  const sessionRef = doc(db, "liveLocationSessions", sessionId);
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error(
+      "You must be signed in to view this live location."
+    );
+  }
+
+  const sessionRef = doc(
+    db,
+    "liveLocationSessions",
+    sessionId
+  );
+
   const snapshot = await getDoc(sessionRef);
 
   if (!snapshot.exists()) {
     return null;
   }
 
+  const data = snapshot.data();
+
+  const recipientIds = Array.isArray(data.recipientIds)
+    ? data.recipientIds
+    : [];
+
+  const isOwner = data.ownerId === user.uid;
+  const isRecipient = recipientIds.includes(user.uid);
+
+  if (!isOwner && !isRecipient) {
+    throw new Error(
+      "You are not authorized to view this live location."
+    );
+  }
+
   return {
     id: snapshot.id,
-    ...snapshot.data(),
+    ...data,
   };
 };

@@ -1,10 +1,10 @@
+
 import {
   addDoc,
   collection,
+  db,
   serverTimestamp,
 } from "@/lib/firebase";
-import { db } from "@/lib/firebase";
-
 export interface LiveLocationNotificationInput {
   recipientUserId: string;
   senderUserId: string;
