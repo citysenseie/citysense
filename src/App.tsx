@@ -195,7 +195,7 @@ if (liveLocationMatch) {
   return (
     <div className="h-screen w-screen bg-neutral-900 flex justify-center items-center p-0 md:p-4">
       <div className="w-full max-w-[430px] h-[100dvh] md:h-[850px] bg-[#0F1E1E] rounded-none overflow-hidden shadow-2xl relative isolate flex flex-col">
-        <main className="flex-1 overflow-hidden">{renderScreen()}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">{renderScreen()}</main>
 
         {screen === "main" && (
           <BottomNav active={activeTab} onChange={setActiveTab} />
