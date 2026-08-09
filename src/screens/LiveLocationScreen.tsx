@@ -313,15 +313,12 @@ const linkedRecipientUserIds = selectedContacts
   .map((contact) => contact.userId)
   .filter((userId): userId is string => Boolean(userId));
 
-const selectedRecipientIds = selectedContacts
-  .map((contact) => contact.id)
-  .filter((id): id is string => Boolean(id));
 const session = await createLiveLocationSession({
   latitude: location.latitude,
   longitude: location.longitude,
   address: location.address,
   avatarId: selectedAvatarId,
-  recipientIds: selectedRecipientIds,
+  recipientIds: linkedRecipientUserIds,
   duration: shareDuration,
 });
 const currentUser = auth.currentUser;
@@ -348,30 +345,11 @@ await Promise.all(
 setActiveSessionId(session.id);
 setSharing(true);
 setShowShareSheet(false);
-const liveLocationUrl =
-  `${window.location.origin}/live-location/${session.id}`;
-
-const shareMessage =
-  "I'm sharing my live location with you. Follow my location here:";
-
-try {
-  if (navigator.share) {
-    await navigator.share({
-      title: "CitySense Live Location",
-      text: shareMessage,
-      url: liveLocationUrl,
-    });
-  } else {
-    await navigator.clipboard.writeText(
-      `${shareMessage}\n${liveLocationUrl}`
-    );
-    alert("Live location link copied. You can now send it.");
-  }
-} catch (error) {
-  if ((error as DOMException)?.name !== "AbortError") {
-    console.error("Could not share live location:", error);
-  }
-}
+alert(
+  `Live location is now being shared with ${selectedContacts
+    .map((contact) => contact.name)
+    .join(", ")}.`
+);
 setActiveSessionId(session.id);
 setSharing(true);
 setShowShareSheet(false);
