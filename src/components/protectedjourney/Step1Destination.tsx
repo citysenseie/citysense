@@ -11,17 +11,23 @@ import {
   X,
   Check,
 } from "lucide-react";
-import JourneyHeader from "./JourneyHeader";
-
 interface Step1DestinationProps {
   selectedDestination: string | null;
   setSelectedDestination: (value: string) => void;
+
+  onDestinationLocationSelect: (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => void;
+
   onContinue: () => void;
 }
 
 export default function Step1Destination({
   selectedDestination,
   setSelectedDestination,
+  onDestinationLocationSelect,
   onContinue,
 }: Step1DestinationProps) {
   const [showSearch, setShowSearch] = useState(false);
@@ -29,9 +35,10 @@ export default function Step1Destination({
 
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
 
-  const [selectedMapLocation, setSelectedMapLocation] = useState<{
+  const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number;
     longitude: number;
+    address: string;
   } | null>(null);
 
   const handleSearchSelect = (location: {
@@ -39,34 +46,46 @@ export default function Step1Destination({
     longitude: number;
     address: string;
   }) => {
+    setSelectedLocation(location);
     setSelectedAddress(location.address);
     setSelectedDestination("search");
+
     setShowSearch(false);
   };
 
-  const handleMapSelect = (position: [number, number]) => {
-    setSelectedMapLocation({
-      latitude: position[0],
-      longitude: position[1],
-    });
+  const handleMapSelect = (
+  position: [number, number]
+) => {
+  const location = {
+    latitude: position[0],
+    longitude: position[1],
+    address: `${position[0].toFixed(
+      5
+    )}, ${position[1].toFixed(5)}`,
   };
 
+  setSelectedLocation(location);
+  setSelectedAddress(location.address);
+
+  onDestinationLocationSelect(location);
+};
+
   const confirmMapLocation = () => {
-    if (!selectedMapLocation) return;
+    if (!selectedLocation) return;
 
     setSelectedDestination("map");
     setShowMap(false);
   };
 
-  return (
-    <>
-      <JourneyHeader
-        currentStep={1}
-        totalSteps={5}
-        title="Where are you going?"
-        subtitle="Choose your destination."
-      />
+  const canContinue =
+    selectedDestination !== null &&
+    (selectedDestination === "home" ||
+      selectedDestination === "work" ||
+      selectedDestination === "family" ||
+      !!selectedLocation);
 
+  return (
+    <div className="space-y-5 pb-4">
       <div className="space-y-3">
         <DestinationCard
           icon={<Home className="w-6 h-6" />}
@@ -76,6 +95,9 @@ export default function Step1Destination({
           onClick={() => {
             setSelectedDestination("home");
             setSelectedAddress(null);
+            setSelectedLocation(null);
+            setShowSearch(false);
+            setShowMap(false);
           }}
         />
 
@@ -87,17 +109,25 @@ export default function Step1Destination({
           onClick={() => {
             setSelectedDestination("work");
             setSelectedAddress(null);
+            setSelectedLocation(null);
+            setShowSearch(false);
+            setShowMap(false);
           }}
         />
 
         <DestinationCard
           icon={<Heart className="w-6 h-6" />}
           title="Family"
-          subtitle="Home address"
+          subtitle={
+            selectedDestination === "family" && selectedAddress
+              ? selectedAddress
+              : "Home address"
+          }
           selected={selectedDestination === "family"}
           onClick={() => {
             setSelectedDestination("family");
-            setSelectedAddress(null);
+            setShowSearch(false);
+            setShowMap(false);
           }}
         />
 
@@ -105,12 +135,8 @@ export default function Step1Destination({
           icon={<MapPin className="w-6 h-6" />}
           title="Choose on Map"
           subtitle={
-            selectedDestination === "map"
-              ? selectedMapLocation
-                ? `${selectedMapLocation.latitude.toFixed(
-                    5
-                  )}, ${selectedMapLocation.longitude.toFixed(5)}`
-                : "Location selected"
+            selectedDestination === "map" && selectedLocation
+              ? selectedLocation.address
               : "Select a location on the map"
           }
           selected={selectedDestination === "map"}
@@ -136,16 +162,17 @@ export default function Step1Destination({
         />
       </div>
 
-      {/* Search Address Panel */}
+      {/* SEARCH */}
       {showSearch && (
-        <div className="mt-5 rounded-2xl border border-[#2D5A5830] bg-[#1A2E2D] p-4">
+        <div className="rounded-2xl border border-[#2D5A5830] bg-[#1A2E2D] p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-[#F5F3EF]">
                 Search Address
               </h3>
+
               <p className="mt-1 text-sm text-[#7BA3A1]">
-                Find the place you want to travel to.
+                Search for a street, city or landmark.
               </p>
             </div>
 
@@ -153,26 +180,28 @@ export default function Step1Destination({
               type="button"
               onClick={() => setShowSearch(false)}
               className="rounded-full p-2 text-[#7BA3A1] hover:bg-[#223635]"
-              aria-label="Close search"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <LocationSearch onLocationSelect={handleSearchSelect} />
+          <LocationSearch
+            onLocationSelect={handleSearchSelect}
+          />
         </div>
       )}
 
-      {/* Map Picker */}
+      {/* MAP */}
       {showMap && (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-[#2D5A5830] bg-[#1A2E2D]">
+        <div className="overflow-hidden rounded-2xl border border-[#2D5A5830] bg-[#1A2E2D]">
           <div className="flex items-center justify-between p-4">
             <div>
               <h3 className="font-bold text-[#F5F3EF]">
                 Choose on Map
               </h3>
+
               <p className="mt-1 text-sm text-[#7BA3A1]">
-                Tap the map to choose your destination.
+                Tap anywhere on the map to choose your destination.
               </p>
             </div>
 
@@ -180,27 +209,38 @@ export default function Step1Destination({
               type="button"
               onClick={() => setShowMap(false)}
               className="rounded-full p-2 text-[#7BA3A1] hover:bg-[#223635]"
-              aria-label="Close map"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="h-[55vh] min-h-[320px] w-full">
+          <div className="h-[55vh] min-h-[360px] w-full">
             <LocationPickerMap
-              selectedLocation={selectedMapLocation}
+              selectedLocation={selectedLocation}
               onLocationSelect={handleMapSelect}
             />
           </div>
+
+          {selectedLocation && (
+            <div className="border-t border-[#2D5A5830] px-4 py-3">
+              <p className="text-xs uppercase tracking-wider text-[#7BA3A1]">
+                Selected destination
+              </p>
+
+              <p className="mt-1 text-sm font-semibold text-[#F5F3EF]">
+                {selectedLocation.address}
+              </p>
+            </div>
+          )}
 
           <div className="p-4">
             <button
               type="button"
               onClick={confirmMapLocation}
-              disabled={!selectedMapLocation}
+              disabled={!selectedLocation}
               className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold transition ${
-                selectedMapLocation
-                  ? "bg-[#4ADE80] text-[#0F1E1E]"
+                selectedLocation
+                  ? "bg-[#4ADE80] text-[#0F1E1E] shadow-lg"
                   : "cursor-not-allowed bg-[#294240] text-[#7BA3A1]"
               }`}
             >
@@ -211,13 +251,14 @@ export default function Step1Destination({
         </div>
       )}
 
-      {/* Continue */}
-      <div className="sticky bottom-0 z-20 mt-6 bg-[#0F1E1E] pb-4 pt-3">
+      {/* CONTINUE */}
+      <div className="sticky bottom-0 z-20 bg-[#0F1E1E] pb-3 pt-3">
         <button
+          type="button"
           onClick={onContinue}
-          disabled={!selectedDestination}
-          className={`w-full rounded-2xl py-4 font-bold transition-all duration-300 ${
-            selectedDestination
+          disabled={!canContinue}
+          className={`w-full rounded-2xl py-4 font-bold transition-all ${
+            canContinue
               ? "bg-[#4ADE80] text-[#0F1E1E] shadow-lg"
               : "cursor-not-allowed bg-[#294240] text-[#7BA3A1]"
           }`}
@@ -225,6 +266,6 @@ export default function Step1Destination({
           Continue →
         </button>
       </div>
-    </>
+    </div>
   );
 }
