@@ -3,11 +3,13 @@ import {
   MapContainer,
   Marker,
   Polyline,
+  Popup,
   TileLayer,
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import {
+  AlertTriangle,
   CheckCircle2,
   LocateFixed,
   MapPin,
@@ -18,11 +20,19 @@ import {
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
+import { safetyEvents } from "../../data/SafetyEvents";
+import {
+  assessSafetyEvents,
+  getHighestPrioritySafetyEvent,
+  type JourneyPosition,
+} from "@/services/safety/SafetyIntelligence";
+
 type TravelMode =
   | "walking"
   | "cycling"
   | "driving"
   | "public_transport";
+
 type LocationPoint = {
   latitude: number;
   longitude: number;
@@ -38,6 +48,10 @@ type Props = {
 };
 
 type RoutePoint = [number, number];
+
+/* =========================================================
+   MAP HELPERS
+   ========================================================= */
 
 function FitRouteOnce({
   points,
@@ -97,7 +111,10 @@ function RecenterMap({
       );
     };
 
-    window.addEventListener("citysense-recenter", handleRecenter);
+    window.addEventListener(
+      "citysense-recenter",
+      handleRecenter
+    );
 
     return () => {
       window.removeEventListener(
@@ -109,6 +126,10 @@ function RecenterMap({
 
   return null;
 }
+
+/* =========================================================
+   MAP ICONS
+   ========================================================= */
 
 const userIcon = L.divIcon({
   className: "",
@@ -148,7 +169,144 @@ const destinationIcon = L.divIcon({
   iconAnchor: [21, 21],
 });
 
-function getRouteProfile(travelMode: TravelMode) {
+/* =========================================================
+   SAFETY EVENT ICONS
+   ========================================================= */
+
+function getSafetyEmoji(type: string) {
+  switch (type) {
+    case "aggressive_driver":
+      return "🚗";
+
+    case "road_block":
+      return "🚧";
+
+    case "traffic":
+      return "🚦";
+
+    case "accident":
+      return "💥";
+
+    case "road_hazard":
+      return "⚠️";
+
+    case "unsafe_area":
+      return "🚨";
+
+    case "police_activity":
+      return "👮";
+
+    case "emergency":
+      return "🆘";
+
+    case "flooding":
+      return "🌊";
+
+    case "crowd":
+      return "👥";
+
+    case "safe_zone":
+      return "🛡️";
+
+    default:
+      return "⚠️";
+  }
+}
+
+function getSafetyColor(severity: string) {
+  switch (severity) {
+    case "critical":
+      return "#DC2626";
+
+    case "high":
+      return "#F97316";
+
+    case "moderate":
+      return "#EAB308";
+
+    case "low":
+    default:
+      return "#2563EB";
+  }
+}
+
+function getSeverityLabel(severity: string) {
+  switch (severity) {
+    case "critical":
+      return "CRITICAL";
+
+    case "high":
+      return "WARNING";
+
+    case "moderate":
+      return "CAUTION";
+
+    case "low":
+    default:
+      return "INFO";
+  }
+}
+
+function createSafetyEventIcon(
+  type: string,
+  severity: string
+) {
+  const color = getSafetyColor(severity);
+  const emoji = getSafetyEmoji(type);
+
+  const pulse =
+    severity === "critical" ||
+    severity === "high";
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        position:relative;
+        width:46px;
+        height:46px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:50%;
+        background:${color};
+        border:4px solid white;
+        box-shadow:
+          0 4px 14px rgba(0,0,0,.45),
+          0 0 0 4px ${color}55;
+        font-size:20px;
+      ">
+        ${emoji}
+
+        ${
+          pulse
+            ? `
+              <div style="
+                position:absolute;
+                inset:-5px;
+                border-radius:50%;
+                border:2px solid ${color};
+                opacity:.55;
+                animation:citysenseSafetyPulse 1.8s ease-out infinite;
+              "></div>
+            `
+            : ""
+        }
+      </div>
+    `,
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+    popupAnchor: [0, -25],
+  });
+}
+
+/* =========================================================
+   ROUTING
+   ========================================================= */
+
+function getRouteProfile(
+  travelMode: TravelMode
+) {
   switch (travelMode) {
     case "walking":
       return "routed-foot";
@@ -164,7 +322,9 @@ function getRouteProfile(travelMode: TravelMode) {
   }
 }
 
-function getTravelLabel(travelMode: TravelMode) {
+function getTravelLabel(
+  travelMode: TravelMode
+) {
   switch (travelMode) {
     case "walking":
       return "🚶 Walking";
@@ -180,6 +340,10 @@ function getTravelLabel(travelMode: TravelMode) {
   }
 }
 
+/* =========================================================
+   DISTANCE
+   ========================================================= */
+
 function getDistanceKm(
   lat1: number,
   lng1: number,
@@ -188,8 +352,11 @@ function getDistanceKm(
 ) {
   const R = 6371;
 
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const dLat =
+    ((lat2 - lat1) * Math.PI) / 180;
+
+  const dLng =
+    ((lng2 - lng1) * Math.PI) / 180;
 
   const a =
     Math.sin(dLat / 2) ** 2 +
@@ -207,15 +374,27 @@ function getDistanceKm(
   );
 }
 
-function formatDistance(distanceMeters: number | null) {
-  if (distanceMeters === null) return "—";
-
-  if (distanceMeters < 1000) {
-    return `${Math.round(distanceMeters)} m`;
+function formatDistance(
+  distanceMeters: number | null
+) {
+  if (distanceMeters === null) {
+    return "—";
   }
 
-  return `${(distanceMeters / 1000).toFixed(1)} km`;
+  if (distanceMeters < 1000) {
+    return `${Math.round(
+      distanceMeters
+    )} m`;
+  }
+
+  return `${(
+    distanceMeters / 1000
+  ).toFixed(1)} km`;
 }
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
 
 export default function Step5JourneyActive({
   destination,
@@ -225,12 +404,16 @@ export default function Step5JourneyActive({
   currentLocation,
   onEndJourney,
 }: Props) {
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
+  const [routePoints, setRoutePoints] =
+    useState<RoutePoint[]>([]);
+
   const [routeDistanceKm, setRouteDistanceKm] =
     useState<number | null>(null);
 
-  const [routeDurationSeconds, setRouteDurationSeconds] =
-    useState<number | null>(null);
+  const [
+    routeDurationSeconds,
+    setRouteDurationSeconds,
+  ] = useState<number | null>(null);
 
   const [loadingRoute, setLoadingRoute] =
     useState(true);
@@ -244,22 +427,25 @@ export default function Step5JourneyActive({
   const [nextInstruction, setNextInstruction] =
     useState("Follow the route");
 
-  const [nextInstructionDistance, setNextInstructionDistance] =
-    useState<number | null>(null);
+  const [
+    nextInstructionDistance,
+    setNextInstructionDistance,
+  ] = useState<number | null>(null);
 
   const travelLabel = useMemo(
     () => getTravelLabel(travelMode),
     [travelMode]
   );
 
-  const remainingDistance = currentLocation
-    ? getDistanceKm(
-        currentLocation.latitude,
-        currentLocation.longitude,
-        destinationLatitude,
-        destinationLongitude
-      )
-    : null;
+  const remainingDistance =
+    currentLocation
+      ? getDistanceKm(
+          currentLocation.latitude,
+          currentLocation.longitude,
+          destinationLatitude,
+          destinationLongitude
+        )
+      : null;
 
   const etaMinutes =
     routeDurationSeconds !== null &&
@@ -269,20 +455,65 @@ export default function Step5JourneyActive({
           1,
           Math.ceil(
             (routeDurationSeconds *
-              (remainingDistance ?? routeDistanceKm)) /
+              (remainingDistance ??
+                routeDistanceKm)) /
               routeDistanceKm /
               60
           )
         )
       : null;
 
-  /*
-   * Calculate the live route.
-   */
+  /* =======================================================
+     SAFETY INTELLIGENCE
+     ======================================================= */
+
+  const safetyAssessments =
+    useMemo(() => {
+      if (!currentLocation) {
+        return [];
+      }
+
+      const userPosition: JourneyPosition =
+        {
+          latitude:
+            currentLocation.latitude,
+          longitude:
+            currentLocation.longitude,
+        };
+
+      const route: JourneyPosition[] =
+        routePoints.map(
+          ([latitude, longitude]) => ({
+            latitude,
+            longitude,
+          })
+        );
+
+      return assessSafetyEvents(
+        safetyEvents,
+        userPosition,
+        route
+      );
+    }, [currentLocation, routePoints]);
+
+  const highestPrioritySafetyEvent =
+    useMemo(
+      () =>
+        getHighestPrioritySafetyEvent(
+          safetyAssessments
+        ),
+      [safetyAssessments]
+    );
+
+  /* =======================================================
+     ROUTING
+     ======================================================= */
+
   useEffect(() => {
     if (!currentLocation) return;
 
-    const profile = getRouteProfile(travelMode);
+    const profile =
+      getRouteProfile(travelMode);
 
     if (!profile) {
       setLoadingRoute(false);
@@ -292,123 +523,144 @@ export default function Step5JourneyActive({
 
     let cancelled = false;
 
-    const calculateRoute = async () => {
-      setLoadingRoute(true);
-      setRouteError(false);
+    const calculateRoute =
+      async () => {
+        setLoadingRoute(true);
+        setRouteError(false);
 
-      try {
-        const url =
-          `https://routing.openstreetmap.de/${profile}/route/v1/driving/` +
-          `${currentLocation.longitude},${currentLocation.latitude};` +
-          `${destinationLongitude},${destinationLatitude}` +
-          `?overview=full&geometries=geojson&steps=true`;
+        try {
+          const url =
+            `https://routing.openstreetmap.de/${profile}/route/v1/driving/` +
+            `${currentLocation.longitude},${currentLocation.latitude};` +
+            `${destinationLongitude},${destinationLatitude}` +
+            `?overview=full&geometries=geojson&steps=true`;
 
-        const response = await fetch(url);
+          const response =
+            await fetch(url);
 
-        if (!response.ok) {
-          throw new Error(
-            `Route request failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-
-        const route = data?.routes?.[0];
-
-        if (!route) {
-          throw new Error("No route returned");
-        }
-
-        /*
-         * Navigation instruction
-         */
-        const firstStep =
-          route?.legs?.[0]?.steps?.[0];
-
-        if (firstStep) {
-          const maneuver = firstStep.maneuver;
-
-          let instruction = "Continue";
-
-          switch (maneuver?.type) {
-            case "turn":
-              instruction =
-                maneuver.modifier === "left"
-                  ? "Turn left"
-                  : maneuver.modifier === "right"
-                  ? "Turn right"
-                  : maneuver.modifier === "slight left"
-                  ? "Keep left"
-                  : maneuver.modifier === "slight right"
-                  ? "Keep right"
-                  : "Turn";
-              break;
-
-            case "depart":
-              instruction = "Start your journey";
-              break;
-
-            case "arrive":
-              instruction = "You are arriving";
-              break;
-
-            case "roundabout":
-              instruction = "Enter the roundabout";
-              break;
-
-            default:
-              instruction = "Continue on the route";
+          if (!response.ok) {
+            throw new Error(
+              `Route request failed: ${response.status}`
+            );
           }
 
-          const roadName = firstStep.name
-            ? ` onto ${firstStep.name}`
-            : "";
+          const data =
+            await response.json();
 
-          setNextInstruction(
-            `${instruction}${roadName}`
+          const route =
+            data?.routes?.[0];
+
+          if (!route) {
+            throw new Error(
+              "No route returned"
+            );
+          }
+
+          const firstStep =
+            route?.legs?.[0]?.steps?.[0];
+
+          if (firstStep) {
+            const maneuver =
+              firstStep.maneuver;
+
+            let instruction =
+              "Continue";
+
+            switch (
+              maneuver?.type
+            ) {
+              case "turn":
+                instruction =
+                  maneuver.modifier ===
+                  "left"
+                    ? "Turn left"
+                    : maneuver.modifier ===
+                      "right"
+                    ? "Turn right"
+                    : maneuver.modifier ===
+                      "slight left"
+                    ? "Keep left"
+                    : maneuver.modifier ===
+                      "slight right"
+                    ? "Keep right"
+                    : "Turn";
+                break;
+
+              case "depart":
+                instruction =
+                  "Start your journey";
+                break;
+
+              case "arrive":
+                instruction =
+                  "You are arriving";
+                break;
+
+              case "roundabout":
+                instruction =
+                  "Enter the roundabout";
+                break;
+
+              default:
+                instruction =
+                  "Continue on the route";
+            }
+
+            const roadName =
+              firstStep.name
+                ? ` onto ${firstStep.name}`
+                : "";
+
+            setNextInstruction(
+              `${instruction}${roadName}`
+            );
+
+            setNextInstructionDistance(
+              firstStep.distance ??
+                null
+            );
+          }
+
+          const points: RoutePoint[] =
+            route.geometry.coordinates.map(
+              (
+                [
+                  longitude,
+                  latitude,
+                ]: [number, number]
+              ) => [
+                latitude,
+                longitude,
+              ]
+            );
+
+          if (cancelled) return;
+
+          setRoutePoints(points);
+
+          setRouteDistanceKm(
+            route.distance / 1000
           );
 
-          setNextInstructionDistance(
-            firstStep.distance ?? null
+          setRouteDurationSeconds(
+            route.duration
           );
-        }
-
-        const points: RoutePoint[] =
-          route.geometry.coordinates.map(
-            ([longitude, latitude]: [
-              number,
-              number
-            ]) => [
-              latitude,
-              longitude,
-            ]
+        } catch (error) {
+          console.error(
+            "Protected Journey routing error:",
+            error
           );
 
-        if (cancelled) return;
-
-        setRoutePoints(points);
-        setRouteDistanceKm(
-          route.distance / 1000
-        );
-        setRouteDurationSeconds(
-          route.duration
-        );
-      } catch (error) {
-        console.error(
-          "Protected Journey routing error:",
-          error
-        );
-
-        if (!cancelled) {
-          setRouteError(true);
-          setRoutePoints([]);
+          if (!cancelled) {
+            setRouteError(true);
+            setRoutePoints([]);
+          }
+        } finally {
+          if (!cancelled) {
+            setLoadingRoute(false);
+          }
         }
-      } finally {
-        if (!cancelled) {
-          setLoadingRoute(false);
-        }
-      }
-    };
+      };
 
     void calculateRoute();
 
@@ -422,9 +674,10 @@ export default function Step5JourneyActive({
     travelMode,
   ]);
 
-  /*
-   * Waiting for GPS
-   */
+  /* =======================================================
+     WAITING FOR GPS
+     ======================================================= */
+
   if (!currentLocation) {
     return (
       <div className="min-h-screen bg-[#0F1E1E] text-white flex items-center justify-center px-6">
@@ -438,7 +691,8 @@ export default function Step5JourneyActive({
           </h2>
 
           <p className="mt-2 text-sm text-[#7BA3A1]">
-            CitySense is waiting for your GPS position.
+            CitySense is waiting for
+            your GPS position.
           </p>
         </div>
       </div>
@@ -456,9 +710,10 @@ export default function Step5JourneyActive({
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#0F1E1E] text-white">
 
-      {/* =====================================================
-          FULL-SCREEN NAVIGATION MAP
-          ===================================================== */}
+      {/* =================================================
+          MAP
+          ================================================= */}
+
       <MapContainer
         center={[
           currentLocation.latitude,
@@ -473,13 +728,19 @@ export default function Step5JourneyActive({
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        <RecenterMap location={currentLocation} />
+        <RecenterMap
+          location={currentLocation}
+        />
 
         {routePoints.length > 1 && (
           <FitRouteOnce
             points={routePoints}
-            currentLocation={currentLocation}
-            destination={destinationPosition}
+            currentLocation={
+              currentLocation
+            }
+            destination={
+              destinationPosition
+            }
           />
         )}
 
@@ -494,11 +755,13 @@ export default function Step5JourneyActive({
 
         {/* Destination */}
         <Marker
-          position={destinationPosition}
+          position={
+            destinationPosition
+          }
           icon={destinationIcon}
         />
 
-        {/* Route shadow / casing */}
+        {/* Route shadow */}
         {routePoints.length > 1 && (
           <Polyline
             positions={routePoints}
@@ -525,11 +788,130 @@ export default function Step5JourneyActive({
             }}
           />
         )}
+
+        {/* =================================================
+            SAFETY EVENTS
+            ================================================= */}
+
+        {safetyAssessments.map(
+          (assessment) => {
+            const event =
+              assessment.event;
+
+            return (
+              <Marker
+                key={event.id}
+                position={[
+                  event.latitude,
+                  event.longitude,
+                ]}
+                icon={createSafetyEventIcon(
+                  event.type,
+                  event.severity
+                )}
+              >
+                <Popup
+                  closeButton={true}
+                  className="citysense-safety-popup"
+                >
+                  <div className="w-[240px]">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                        style={{
+                          backgroundColor:
+                            getSafetyColor(
+                              event.severity
+                            ),
+                        }}
+                      >
+                        {getSafetyEmoji(
+                          event.type
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p
+                          className="text-[9px] font-black tracking-[0.15em]"
+                          style={{
+                            color:
+                              getSafetyColor(
+                                event.severity
+                              ),
+                          }}
+                        >
+                          {getSeverityLabel(
+                            event.severity
+                          )}
+                        </p>
+
+                        <h3 className="mt-1 text-sm font-black">
+                          {event.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {event.description && (
+                      <p className="mt-3 text-xs leading-relaxed text-gray-600">
+                        {event.description}
+                      </p>
+                    )}
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-gray-100 p-2">
+                        <p className="text-[8px] uppercase text-gray-500">
+                          Distance
+                        </p>
+
+                        <p className="mt-1 text-xs font-bold">
+                          {formatDistance(
+                            assessment.distanceFromUserMeters
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-gray-100 p-2">
+                        <p className="text-[8px] uppercase text-gray-500">
+                          Confidence
+                        </p>
+
+                        <p className="mt-1 text-xs font-bold">
+                          {Math.round(
+                            event.confidence *
+                              100
+                          )}
+                          %
+                        </p>
+                      </div>
+                    </div>
+
+                    {assessment.isAhead && (
+                      <div className="mt-3 rounded-lg bg-orange-50 px-3 py-2">
+                        <p className="text-[10px] font-bold text-orange-700">
+                          ⚠️ Ahead on your journey
+                        </p>
+                      </div>
+                    )}
+
+                    {assessment.isOnRoute && (
+                      <div className="mt-2 rounded-lg bg-green-50 px-3 py-2">
+                        <p className="text-[10px] font-bold text-green-700">
+                          ✓ Relevant to your route
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          }
+        )}
       </MapContainer>
 
-      {/* =====================================================
-          TOP NAVIGATION HEADER
-          ===================================================== */}
+      {/* =================================================
+          TOP HEADER
+          ================================================= */}
+
       <div className="absolute top-0 left-0 right-0 z-[1000] p-3">
         <div className="rounded-3xl bg-[#0F1E1E]/92 backdrop-blur-xl border border-[#4ADE8040] px-4 py-3 shadow-xl">
 
@@ -565,10 +947,73 @@ export default function Step5JourneyActive({
         </div>
       </div>
 
-      {/* =====================================================
-          SMALL ROUTE STATUS
-          ===================================================== */}
-      <div className="absolute top-[108px] left-3 right-3 z-[1000]">
+      {/* =================================================
+          SAFETY ALERT SUMMARY
+          ================================================= */}
+
+      {highestPrioritySafetyEvent && (
+        <div className="absolute top-[170px] left-3 right-3 z-[1000]">
+          <div className="rounded-2xl border border-orange-400/50 bg-[#171F1E]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
+
+            <div className="flex items-center gap-3">
+
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                style={{
+                  backgroundColor:
+                    getSafetyColor(
+                      highestPrioritySafetyEvent
+                        .event.severity
+                    ),
+                }}
+              >
+                {getSafetyEmoji(
+                  highestPrioritySafetyEvent
+                    .event.type
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] uppercase tracking-[0.15em] font-black text-orange-300">
+                  CitySense Safety Alert
+                </p>
+
+                <p className="mt-0.5 text-sm font-black truncate">
+                  {
+                    highestPrioritySafetyEvent
+                      .event.title
+                  }
+                </p>
+
+                <p className="mt-0.5 text-[10px] text-[#9DB8B6]">
+                  {formatDistance(
+                    highestPrioritySafetyEvent.distanceFromUserMeters
+                  )}{" "}
+                  ahead
+                  {highestPrioritySafetyEvent.isOnRoute
+                    ? " • On your route"
+                    : ""}
+                </p>
+              </div>
+
+              <AlertTriangle className="h-5 w-5 shrink-0 text-orange-400" />
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* =================================================
+          ROUTE STATUS
+          ================================================= */}
+
+      <div
+        className={`absolute ${
+          highestPrioritySafetyEvent
+            ? "top-[260px]"
+            : "top-[108px]"
+        } left-3 right-3 z-[1000]`}
+      >
         <div className="rounded-2xl bg-[#0F1E1E]/88 backdrop-blur-xl border border-[#2D5A5860] px-4 py-2.5">
 
           {loadingRoute ? (
@@ -586,7 +1031,8 @@ export default function Step5JourneyActive({
               </p>
 
               <p className="text-[10px] text-[#7BA3A1] mt-0.5">
-                GPS monitoring remains active.
+                GPS monitoring remains
+                active.
               </p>
             </div>
           ) : (
@@ -620,14 +1066,17 @@ export default function Step5JourneyActive({
         </div>
       </div>
 
-      {/* =====================================================
-          RECENTER BUTTON
-          ===================================================== */}
+      {/* =================================================
+          RECENTER
+          ================================================= */}
+
       <button
         type="button"
         onClick={() => {
           window.dispatchEvent(
-            new Event("citysense-recenter")
+            new Event(
+              "citysense-recenter"
+            )
           );
         }}
         className="absolute right-4 bottom-[275px] z-[1000] w-12 h-12 rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-xl border border-[#2D5A5860] flex items-center justify-center shadow-xl"
@@ -636,17 +1085,18 @@ export default function Step5JourneyActive({
         <LocateFixed className="w-5 h-5 text-[#4ADE80]" />
       </button>
 
-      {/* =====================================================
-          COMPACT BOTTOM NAVIGATION PANEL
-          ===================================================== */}
+      {/* =================================================
+          BOTTOM NAVIGATION PANEL
+          ================================================= */}
+
       <div className="absolute bottom-0 left-0 right-0 z-[1000]">
 
         <div className="rounded-t-[28px] bg-[#0F1E1E]/96 backdrop-blur-xl border-t border-[#4ADE8030] px-4 pt-3 pb-4 shadow-2xl">
 
-          {/* Pull indicator */}
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#4A6664]" />
 
           {/* Destination + ETA */}
+
           <div className="flex items-center gap-3 mb-3">
 
             <div className="w-9 h-9 rounded-xl bg-[#4ADE8020] flex items-center justify-center shrink-0">
@@ -677,7 +1127,46 @@ export default function Step5JourneyActive({
 
           </div>
 
+          {/* Safety status */}
+
+          <div className="mb-3 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2">
+
+            <div className="flex items-center gap-2">
+
+              <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
+
+              <div className="flex-1">
+                <p className="text-[8px] uppercase tracking-wider text-[#7BA3A1]">
+                  Safety Intelligence
+                </p>
+
+                <p className="text-xs font-bold">
+                  {safetyAssessments.length ===
+                  0
+                    ? "No active hazards detected"
+                    : `${safetyAssessments.length} relevant alert${
+                        safetyAssessments.length ===
+                        1
+                          ? ""
+                          : "s"
+                      } nearby`}
+                </p>
+              </div>
+
+              {safetyAssessments.length >
+                0 && (
+                <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-500 px-2 text-[10px] font-black text-white">
+                  {
+                    safetyAssessments.length
+                  }
+                </div>
+              )}
+
+            </div>
+          </div>
+
           {/* Metrics */}
+
           <div className="grid grid-cols-3 gap-2 mb-3">
 
             <div className="rounded-xl bg-[#1A2E2D] px-3 py-2">
@@ -686,8 +1175,11 @@ export default function Step5JourneyActive({
               </p>
 
               <p className="text-sm font-black text-[#4ADE80] mt-0.5">
-                {remainingDistance !== null
-                  ? `${remainingDistance.toFixed(1)} km`
+                {remainingDistance !==
+                null
+                  ? `${remainingDistance.toFixed(
+                      1
+                    )} km`
                   : "—"}
               </p>
             </div>
@@ -716,9 +1208,8 @@ export default function Step5JourneyActive({
 
           </div>
 
-          {/* =================================================
-              NEXT TURN
-              ================================================= */}
+          {/* Next turn */}
+
           <div className="rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2.5 mb-3">
 
             <div className="flex items-center gap-3">
@@ -735,7 +1226,8 @@ export default function Step5JourneyActive({
                 <p className="text-[10px] text-[#7BA3A1] mt-0.5">
                   {formatDistance(
                     nextInstructionDistance
-                  )} ahead
+                  )}{" "}
+                  ahead
                 </p>
               </div>
 
@@ -751,12 +1243,13 @@ export default function Step5JourneyActive({
 
           </div>
 
-          {/* =================================================
-              I'M OK
-              ================================================= */}
+          {/* I'm OK */}
+
           <button
             type="button"
-            onClick={() => setCheckedIn(true)}
+            onClick={() =>
+              setCheckedIn(true)
+            }
             className="w-full rounded-2xl bg-[#4ADE80] text-[#0F1E1E] py-3.5 font-black flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
@@ -766,9 +1259,8 @@ export default function Step5JourneyActive({
               : "I'm OK"}
           </button>
 
-          {/* =================================================
-              HELP / END
-              ================================================= */}
+          {/* Help / End */}
+
           <div className="grid grid-cols-2 gap-2.5 mt-2.5">
 
             <button
@@ -796,6 +1288,41 @@ export default function Step5JourneyActive({
 
         </div>
       </div>
+
+      {/* =================================================
+          SAFETY MARKER ANIMATION
+          ================================================= */}
+
+      <style>
+        {`
+          @keyframes citysenseSafetyPulse {
+            0% {
+              transform: scale(0.85);
+              opacity: 0.7;
+            }
+
+            70% {
+              transform: scale(1.35);
+              opacity: 0;
+            }
+
+            100% {
+              transform: scale(1.35);
+              opacity: 0;
+            }
+          }
+
+          .citysense-safety-popup
+            .leaflet-popup-content-wrapper {
+            border-radius: 18px;
+          }
+
+          .citysense-safety-popup
+            .leaflet-popup-content {
+            margin: 14px;
+          }
+        `}
+      </style>
 
     </div>
   );
