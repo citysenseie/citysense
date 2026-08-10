@@ -13,7 +13,10 @@ export default function ProtectedJourneyScreen() {
   const [step, setStep] = useState(1);
    const [selectedDestination, setSelectedDestination] =
   useState<string | null>(null);
-
+const [currentLocation, setCurrentLocation] = useState<{
+  latitude: number;
+  longitude: number;
+} | null>(null);
 const [selectedTravelMode, setSelectedTravelMode] =
   useState<string | null>(null);
 
@@ -68,7 +71,14 @@ useEffect(() => {
     console.log("Speed:", speed);
     console.log("Journey Session:", journeyEngine.getSession());
   });
+locationService.startTracking((location, _speed) => {
+  setCurrentLocation({
+    latitude: location.latitude,
+    longitude: location.longitude,
+  });
 
+  // keep the existing ProtectedJourneyEngine code below this
+});
   return () => {
     locationService.stopTracking();
   };
@@ -125,17 +135,36 @@ useEffect(() => {
 }}
   />
 )}
-{step === 5 && (
-  <Step5JourneyActive
-    destination={selectedDestination}
-    travelMode={selectedTravelMode}
-    trustedContacts={selectedTrustedContacts}
-    onEndJourney={() => {
-      console.log("Protected Journey Ended");
-      setStep(1);
-    }}
-  />
-)}
+{step === 5 && (() => {
+  const destinationZone = safeZones.find(
+    (zone) => zone.id === selectedDestination
+  );
+
+  if (!destinationZone) {
+    return null;
+  }
+
+  return (
+    <Step5JourneyActive
+      destination={destinationZone.name}
+      destinationLatitude={destinationZone.latitude}
+      destinationLongitude={destinationZone.longitude}
+      travelMode={
+        (selectedTravelMode ?? "walking") as
+          | "walking"
+          | "cycling"
+          | "driving"
+          | "public_transport"
+      }
+      currentLocation={currentLocation}
+      onEndJourney={() => {
+        console.log("Protected Journey Ended");
+        setCurrentLocation(null);
+        setStep(1);
+      }}
+    />
+  );
+})()}
       </div>
 
     </div>
