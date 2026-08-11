@@ -20,12 +20,6 @@ import {
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
-import { safetyEvents } from "../../data/SafetyEvents";
-import {
-  assessSafetyEvents,
-  getHighestPrioritySafetyEvent,
-  type JourneyPosition,
-} from "@/services/safety/SafetyIntelligence";
 
 type TravelMode =
   | "walking"
@@ -80,8 +74,8 @@ function FitRouteOnce({
     ]);
 
     map.fitBounds(bounds, {
-      paddingTopLeft: [35, 100],
-      paddingBottomRight: [35, 285],
+      paddingTopLeft: [24, 78],
+      paddingBottomRight: [24, 220],
       maxZoom: 16,
       animate: true,
     });
@@ -393,6 +387,126 @@ function formatDistance(
 }
 
 /* =========================================================
+   MAP THEME
+   ========================================================= */
+
+function getSunTimes(
+  date: Date,
+  latitude: number,
+  longitude: number
+) {
+  const dayOfYear = Math.floor(
+    (Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate()
+    ) -
+      Date.UTC(date.getUTCFullYear(), 0, 0)) /
+      86400000
+  );
+
+  const gamma =
+    (2 * Math.PI / 365) * (dayOfYear - 1);
+
+  const equationOfTime =
+    229.18 *
+    (0.000075 +
+      0.001868 * Math.cos(gamma) -
+      0.032077 * Math.sin(gamma) -
+      0.014615 * Math.cos(2 * gamma) -
+      0.040849 * Math.sin(2 * gamma));
+
+  const declination =
+    0.006918 -
+    0.399912 * Math.cos(gamma) +
+    0.070257 * Math.sin(gamma) -
+    0.006758 * Math.cos(2 * gamma) +
+    0.000907 * Math.sin(2 * gamma) -
+    0.002697 * Math.cos(3 * gamma) +
+    0.00148 * Math.sin(3 * gamma);
+
+  const latitudeRad =
+    (latitude * Math.PI) / 180;
+
+  const zenith =
+    (90.833 * Math.PI) / 180;
+
+  const cosHourAngle =
+    (Math.cos(zenith) -
+      Math.sin(latitudeRad) *
+        Math.sin(declination)) /
+    (Math.cos(latitudeRad) *
+      Math.cos(declination));
+
+  if (cosHourAngle <= -1) {
+    return {
+      sunrise: null,
+      sunset: null,
+    };
+  }
+
+  if (cosHourAngle >= 1) {
+    return {
+      sunrise: null,
+      sunset: null,
+    };
+  }
+
+  const hourAngle =
+    (Math.acos(cosHourAngle) * 180) /
+    Math.PI;
+
+  const sunriseMinutes =
+    720 -
+    4 * (longitude + hourAngle) -
+    equationOfTime;
+
+  const sunsetMinutes =
+    720 -
+    4 * (longitude - hourAngle) -
+    equationOfTime;
+
+  const base = new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate()
+    )
+  );
+
+  return {
+    sunrise: new Date(
+      base.getTime() +
+        sunriseMinutes * 60 * 1000
+    ),
+    sunset: new Date(
+      base.getTime() +
+        sunsetMinutes * 60 * 1000
+    ),
+  };
+}
+
+function isNighttime(
+  location: LocationPoint
+) {
+  const now = new Date();
+  const sun = getSunTimes(
+    now,
+    location.latitude,
+    location.longitude
+  );
+
+  if (!sun.sunrise || !sun.sunset) {
+    return false;
+  }
+
+  return (
+    now < sun.sunrise ||
+    now > sun.sunset
+  );
+}
+
+/* =========================================================
    COMPONENT
    ========================================================= */
 
@@ -424,6 +538,13 @@ export default function Step5JourneyActive({
   const [checkedIn, setCheckedIn] =
     useState(false);
 
+  const [isNightMap, setIsNightMap] =
+    useState(() =>
+      currentLocation
+        ? isNighttime(currentLocation)
+        : false
+    );
+
   const [nextInstruction, setNextInstruction] =
     useState("Follow the route");
 
@@ -436,6 +557,27 @@ export default function Step5JourneyActive({
     () => getTravelLabel(travelMode),
     [travelMode]
   );
+
+  useEffect(() => {
+    if (!currentLocation) return;
+
+    const updateMapTheme = () => {
+      setIsNightMap(
+        isNighttime(currentLocation)
+      );
+    };
+
+    updateMapTheme();
+
+    const interval = window.setInterval(
+      updateMapTheme,
+      60 * 1000
+    );
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [currentLocation]);
 
   const remainingDistance =
     currentLocation
@@ -467,43 +609,32 @@ export default function Step5JourneyActive({
      SAFETY INTELLIGENCE
      ======================================================= */
 
-  const safetyAssessments =
-    useMemo(() => {
-      if (!currentLocation) {
-        return [];
-      }
+  // Real safety events will be supplied by the Safety Intelligence
+  // service. Keep this empty until a verified data source is connected.
+  // CitySense must never display invented incidents as real.
+  type SafetyAssessment = {
+    event: {
+      id: string;
+      latitude: number;
+      longitude: number;
+      type: string;
+      severity: string;
+      title: string;
+      description?: string;
+      confidence: number;
+    };
+    distanceFromUserMeters: number | null;
+    isAhead: boolean;
+    isOnRoute: boolean;
+  };
 
-      const userPosition: JourneyPosition =
-        {
-          latitude:
-            currentLocation.latitude,
-          longitude:
-            currentLocation.longitude,
-        };
-
-      const route: JourneyPosition[] =
-        routePoints.map(
-          ([latitude, longitude]) => ({
-            latitude,
-            longitude,
-          })
-        );
-
-      return assessSafetyEvents(
-        safetyEvents,
-        userPosition,
-        route
-      );
-    }, [currentLocation, routePoints]);
+  const safetyAssessments = useMemo<SafetyAssessment[]>(
+    () => [],
+    []
+  );
 
   const highestPrioritySafetyEvent =
-    useMemo(
-      () =>
-        getHighestPrioritySafetyEvent(
-          safetyAssessments
-        ),
-      [safetyAssessments]
-    );
+    safetyAssessments[0] ?? null;
 
   /* =======================================================
      ROUTING
@@ -724,8 +855,13 @@ export default function Step5JourneyActive({
         className="absolute inset-0 z-0"
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OpenStreetMap contributors"
+          key={isNightMap ? "night" : "day"}
+          url={
+            isNightMap
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          }
+          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
         />
 
         <RecenterMap
@@ -912,8 +1048,8 @@ export default function Step5JourneyActive({
           TOP HEADER
           ================================================= */}
 
-      <div className="absolute top-0 left-0 right-0 z-[1000] p-3">
-        <div className="rounded-3xl bg-[#0F1E1E]/92 backdrop-blur-xl border border-[#4ADE8040] px-4 py-3 shadow-xl">
+      <div className="absolute top-0 left-0 right-0 z-[1000] p-2.5">
+        <div className="rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-md border border-[#4ADE8035] px-3.5 py-2.5 shadow-xl">
 
           <div className="flex items-center gap-3">
 
@@ -1007,14 +1143,8 @@ export default function Step5JourneyActive({
           ROUTE STATUS
           ================================================= */}
 
-      <div
-        className={`absolute ${
-          highestPrioritySafetyEvent
-            ? "top-[260px]"
-            : "top-[108px]"
-        } left-3 right-3 z-[1000]`}
-      >
-        <div className="rounded-2xl bg-[#0F1E1E]/88 backdrop-blur-xl border border-[#2D5A5860] px-4 py-2.5">
+      <div className="absolute top-[92px] left-3 right-3 z-[1000]">
+        <div className="rounded-2xl bg-[#0F1E1E]/82 backdrop-blur-md border border-white/10 px-3.5 py-2 shadow-lg">
 
           {loadingRoute ? (
             <div className="flex items-center gap-3">
@@ -1079,7 +1209,7 @@ export default function Step5JourneyActive({
             )
           );
         }}
-        className="absolute right-4 bottom-[275px] z-[1000] w-12 h-12 rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-xl border border-[#2D5A5860] flex items-center justify-center shadow-xl"
+        className="absolute right-4 bottom-[214px] z-[1000] w-12 h-12 rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-xl border border-[#2D5A5860] flex items-center justify-center shadow-xl"
         aria-label="Recenter map"
       >
         <LocateFixed className="w-5 h-5 text-[#4ADE80]" />
@@ -1091,13 +1221,13 @@ export default function Step5JourneyActive({
 
       <div className="absolute bottom-0 left-0 right-0 z-[1000]">
 
-        <div className="rounded-t-[28px] bg-[#0F1E1E]/96 backdrop-blur-xl border-t border-[#4ADE8030] px-4 pt-3 pb-4 shadow-2xl">
+        <div className="rounded-t-[24px] bg-[#0F1E1E]/97 backdrop-blur-md border-t border-[#4ADE8030] px-3.5 pt-2.5 pb-3 shadow-2xl">
 
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#4A6664]" />
+          <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-[#4A6664]" />
 
           {/* Destination + ETA */}
 
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2.5 mb-2">
 
             <div className="w-9 h-9 rounded-xl bg-[#4ADE8020] flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5 text-[#4ADE80]" />
@@ -1129,7 +1259,7 @@ export default function Step5JourneyActive({
 
           {/* Safety status */}
 
-          <div className="mb-3 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2">
+          <div className="mb-2 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2">
 
             <div className="flex items-center gap-2">
 
@@ -1167,7 +1297,7 @@ export default function Step5JourneyActive({
 
           {/* Metrics */}
 
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
 
             <div className="rounded-xl bg-[#1A2E2D] px-3 py-2">
               <p className="text-[8px] text-[#7BA3A1]">
@@ -1210,7 +1340,7 @@ export default function Step5JourneyActive({
 
           {/* Next turn */}
 
-          <div className="rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2.5 mb-3">
+          <div className="rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2 mb-2">
 
             <div className="flex items-center gap-3">
 
@@ -1250,7 +1380,7 @@ export default function Step5JourneyActive({
             onClick={() =>
               setCheckedIn(true)
             }
-            className="w-full rounded-2xl bg-[#4ADE80] text-[#0F1E1E] py-3.5 font-black flex items-center justify-center gap-2"
+            className="w-full rounded-2xl bg-[#4ADE80] text-[#0F1E1E] py-3 font-black flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
 
@@ -1261,7 +1391,7 @@ export default function Step5JourneyActive({
 
           {/* Help / End */}
 
-          <div className="grid grid-cols-2 gap-2.5 mt-2.5">
+          <div className="grid grid-cols-2 gap-2 mt-2">
 
             <button
               type="button"
@@ -1270,7 +1400,7 @@ export default function Step5JourneyActive({
                   "Emergency assistance will be connected to the CitySense SOS system."
                 )
               }
-              className="rounded-2xl bg-[#7F1D1D] border border-[#EF444460] text-white py-3 font-bold flex items-center justify-center gap-2"
+              className="rounded-2xl bg-[#7F1D1D] border border-[#EF444460] text-white py-2.5 font-bold flex items-center justify-center gap-2"
             >
               <Siren className="w-5 h-5" />
               Need Help
@@ -1279,7 +1409,7 @@ export default function Step5JourneyActive({
             <button
               type="button"
               onClick={onEndJourney}
-              className="rounded-2xl bg-[#1A2E2D] border border-[#2D5A58] text-[#F5F3EF] py-3 font-bold"
+              className="rounded-2xl bg-[#1A2E2D] border border-[#2D5A58] text-[#F5F3EF] py-2.5 font-bold"
             >
               End Journey
             </button>
