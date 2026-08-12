@@ -43,6 +43,177 @@ type Props = {
 
 type RoutePoint = [number, number];
 
+type NavigationStep = {
+  routeIndex: number;
+  location: RoutePoint;
+  name: string;
+  type: string;
+  modifier?: string;
+  distance: number;
+  duration: number;
+};
+
+function getDistanceMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+) {
+  return (
+    getDistanceKm(lat1, lng1, lat2, lng2) * 1000
+  );
+}
+
+function getNearestRoutePoint(
+  location: LocationPoint,
+  points: RoutePoint[]
+) {
+  if (points.length === 0) {
+    return {
+      index: 0,
+      distanceMeters: null as number | null,
+    };
+  }
+
+  let nearestIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  points.forEach(([latitude, longitude], index) => {
+    const distance = getDistanceMeters(
+      location.latitude,
+      location.longitude,
+      latitude,
+      longitude
+    );
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+
+  return {
+    index: nearestIndex,
+    distanceMeters: nearestDistance,
+  };
+}
+
+function getRouteDistanceFromIndex(
+  points: RoutePoint[],
+  startIndex: number
+) {
+  if (points.length < 2 || startIndex >= points.length - 1) {
+    return 0;
+  }
+
+  let totalMeters = 0;
+
+  for (let index = startIndex; index < points.length - 1; index += 1) {
+    const [lat1, lng1] = points[index];
+    const [lat2, lng2] = points[index + 1];
+
+    totalMeters += getDistanceMeters(
+      lat1,
+      lng1,
+      lat2,
+      lng2
+    );
+  }
+
+  return totalMeters;
+}
+
+function getManeuverInstruction(
+  step: NavigationStep
+) {
+  let instruction = "Continue";
+
+  switch (step.type) {
+    case "depart":
+      instruction = "Start your journey";
+      break;
+
+    case "arrive":
+      instruction = "You have arrived";
+      break;
+
+    case "turn":
+      instruction =
+        step.modifier === "left"
+          ? "Turn left"
+          : step.modifier === "right"
+            ? "Turn right"
+            : step.modifier === "slight left"
+              ? "Keep left"
+              : step.modifier === "slight right"
+                ? "Keep right"
+                : "Turn";
+      break;
+
+    case "roundabout":
+    case "rotary":
+      instruction = "Enter the roundabout";
+      break;
+
+    case "merge":
+      instruction = "Merge";
+      break;
+
+    case "fork":
+      instruction =
+        step.modifier === "left"
+          ? "Keep left at the fork"
+          : step.modifier === "right"
+            ? "Keep right at the fork"
+            : "Continue at the fork";
+      break;
+
+    case "on ramp":
+      instruction = "Take the ramp";
+      break;
+
+    case "off ramp":
+      instruction = "Take the exit";
+      break;
+
+    default:
+      instruction = "Continue on the route";
+  }
+
+  return step.name
+    ? `${instruction} onto ${step.name}`
+    : instruction;
+}
+
+function FollowUserMap({
+  location,
+  enabled,
+}: {
+  location: LocationPoint;
+  enabled: boolean;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    map.setView(
+      [location.latitude, location.longitude],
+      Math.max(map.getZoom(), 17),
+      {
+        animate: false,
+      }
+    );
+  }, [
+    enabled,
+    location.latitude,
+    location.longitude,
+    map,
+  ]);
+
+  return null;
+}
+
 /* =========================================================
    MAP HELPERS
    ========================================================= */
@@ -521,8 +692,19 @@ export default function Step5JourneyActive({
   const [routePoints, setRoutePoints] =
     useState<RoutePoint[]>([]);
 
+  const [navigationSteps, setNavigationSteps] =
+    useState<NavigationStep[]>([]);
+
   const [routeDistanceKm, setRouteDistanceKm] =
     useState<number | null>(null);
+
+  const [remainingRouteDistanceKm, setRemainingRouteDistanceKm] =
+    useState<number | null>(null);
+
+  const [distanceFromRouteMeters, setDistanceFromRouteMeters] =
+    useState<number | null>(null);
+
+  const routeRequestStartedRef = useRef(false);
 
   const [
     routeDurationSeconds,
@@ -580,14 +762,15 @@ export default function Step5JourneyActive({
   }, [currentLocation]);
 
   const remainingDistance =
-    currentLocation
+    remainingRouteDistanceKm ??
+    (currentLocation
       ? getDistanceKm(
           currentLocation.latitude,
           currentLocation.longitude,
           destinationLatitude,
           destinationLongitude
         )
-      : null;
+      : null);
 
   const etaMinutes =
     routeDurationSeconds !== null &&
@@ -637,11 +820,24 @@ export default function Step5JourneyActive({
     safetyAssessments[0] ?? null;
 
   /* =======================================================
-     ROUTING
+     ROUTING + TURN-BY-TURN NAVIGATION
      ======================================================= */
 
   useEffect(() => {
+    routeRequestStartedRef.current = false;
+    setRoutePoints([]);
+    setNavigationSteps([]);
+    setRemainingRouteDistanceKm(null);
+    setDistanceFromRouteMeters(null);
+  }, [
+    destinationLatitude,
+    destinationLongitude,
+    travelMode,
+  ]);
+
+  useEffect(() => {
     if (!currentLocation) return;
+    if (routeRequestStartedRef.current) return;
 
     const profile =
       getRouteProfile(travelMode);
@@ -651,6 +847,8 @@ export default function Step5JourneyActive({
       setRoutePoints([]);
       return;
     }
+
+    routeRequestStartedRef.current = true;
 
     let cancelled = false;
 
@@ -687,71 +885,6 @@ export default function Step5JourneyActive({
             );
           }
 
-          const firstStep =
-            route?.legs?.[0]?.steps?.[0];
-
-          if (firstStep) {
-            const maneuver =
-              firstStep.maneuver;
-
-            let instruction =
-              "Continue";
-
-            switch (
-              maneuver?.type
-            ) {
-              case "turn":
-                instruction =
-                  maneuver.modifier ===
-                  "left"
-                    ? "Turn left"
-                    : maneuver.modifier ===
-                      "right"
-                    ? "Turn right"
-                    : maneuver.modifier ===
-                      "slight left"
-                    ? "Keep left"
-                    : maneuver.modifier ===
-                      "slight right"
-                    ? "Keep right"
-                    : "Turn";
-                break;
-
-              case "depart":
-                instruction =
-                  "Start your journey";
-                break;
-
-              case "arrive":
-                instruction =
-                  "You are arriving";
-                break;
-
-              case "roundabout":
-                instruction =
-                  "Enter the roundabout";
-                break;
-
-              default:
-                instruction =
-                  "Continue on the route";
-            }
-
-            const roadName =
-              firstStep.name
-                ? ` onto ${firstStep.name}`
-                : "";
-
-            setNextInstruction(
-              `${instruction}${roadName}`
-            );
-
-            setNextInstructionDistance(
-              firstStep.distance ??
-                null
-            );
-          }
-
           const points: RoutePoint[] =
             route.geometry.coordinates.map(
               (
@@ -765,9 +898,55 @@ export default function Step5JourneyActive({
               ]
             );
 
+          const rawSteps =
+            route?.legs?.[0]?.steps ?? [];
+
+          const steps: NavigationStep[] =
+            rawSteps.map(
+              (step: any) => {
+                const [
+                  longitude,
+                  latitude,
+                ] = step?.maneuver?.location ?? [
+                  0,
+                  0,
+                ];
+
+                const stepLocation: RoutePoint = [
+                  latitude,
+                  longitude,
+                ];
+
+                const nearest =
+                  getNearestRoutePoint(
+                    {
+                      latitude,
+                      longitude,
+                    },
+                    points
+                  );
+
+                return {
+                  routeIndex: nearest.index,
+                  location: stepLocation,
+                  name: step.name ?? "",
+                  type:
+                    step.maneuver?.type ??
+                    "continue",
+                  modifier:
+                    step.maneuver?.modifier,
+                  distance:
+                    step.distance ?? 0,
+                  duration:
+                    step.duration ?? 0,
+                };
+              }
+            );
+
           if (cancelled) return;
 
           setRoutePoints(points);
+          setNavigationSteps(steps);
 
           setRouteDistanceKm(
             route.distance / 1000
@@ -776,6 +955,61 @@ export default function Step5JourneyActive({
           setRouteDurationSeconds(
             route.duration
           );
+
+          const initialNearest =
+            getNearestRoutePoint(
+              currentLocation,
+              points
+            );
+
+          setDistanceFromRouteMeters(
+            initialNearest.distanceMeters
+          );
+
+          setRemainingRouteDistanceKm(
+            getRouteDistanceFromIndex(
+              points,
+              initialNearest.index
+            ) / 1000
+          );
+
+          const firstUpcomingStep =
+            steps.find(
+              (step) =>
+                step.type !== "depart" &&
+                step.routeIndex >
+                  initialNearest.index + 2
+            ) ??
+            steps.find(
+              (step) =>
+                step.type !== "depart" &&
+                step.routeIndex >=
+                  initialNearest.index
+            );
+
+          if (firstUpcomingStep) {
+            setNextInstruction(
+              getManeuverInstruction(
+                firstUpcomingStep
+              )
+            );
+
+            setNextInstructionDistance(
+              getRouteDistanceFromIndex(
+                points,
+                initialNearest.index
+              ) -
+                getRouteDistanceFromIndex(
+                  points,
+                  firstUpcomingStep.routeIndex
+                )
+            );
+          } else {
+            setNextInstruction(
+              "Follow the route"
+            );
+            setNextInstructionDistance(null);
+          }
         } catch (error) {
           console.error(
             "Protected Journey routing error:",
@@ -785,6 +1019,7 @@ export default function Step5JourneyActive({
           if (!cancelled) {
             setRouteError(true);
             setRoutePoints([]);
+            setNavigationSteps([]);
           }
         } finally {
           if (!cancelled) {
@@ -803,6 +1038,91 @@ export default function Step5JourneyActive({
     destinationLatitude,
     destinationLongitude,
     travelMode,
+  ]);
+
+  /*
+   * Update navigation from the live GPS position without
+   * requesting a new route on every GPS tick.
+   */
+  useEffect(() => {
+    if (
+      !currentLocation ||
+      routePoints.length < 2
+    ) {
+      return;
+    }
+
+    const nearest =
+      getNearestRoutePoint(
+        currentLocation,
+        routePoints
+      );
+
+    const remainingMeters =
+      getRouteDistanceFromIndex(
+        routePoints,
+        nearest.index
+      );
+
+    setDistanceFromRouteMeters(
+      nearest.distanceMeters
+    );
+
+    setRemainingRouteDistanceKm(
+      remainingMeters / 1000
+    );
+
+    const upcomingStep =
+      navigationSteps.find(
+        (step) =>
+          step.type !== "depart" &&
+          step.routeIndex >
+            nearest.index + 2
+      ) ??
+      navigationSteps.find(
+        (step) =>
+          step.type !== "depart" &&
+          step.routeIndex >=
+            nearest.index
+      );
+
+    if (!upcomingStep) {
+      setNextInstruction(
+        remainingMeters < 40
+          ? "You have arrived"
+          : "Follow the route"
+      );
+      setNextInstructionDistance(
+        remainingMeters < 40
+          ? 0
+          : null
+      );
+      return;
+    }
+
+    const maneuverDistance =
+      Math.max(
+        0,
+        remainingMeters -
+          getRouteDistanceFromIndex(
+            routePoints,
+            upcomingStep.routeIndex
+          )
+      );
+
+    setNextInstruction(
+      getManeuverInstruction(
+        upcomingStep
+      )
+    );
+
+    setNextInstructionDistance(
+      maneuverDistance
+    );
+  }, [
+    currentLocation,
+    routePoints,
+    navigationSteps,
   ]);
 
   /* =======================================================
@@ -862,6 +1182,11 @@ export default function Step5JourneyActive({
               : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           }
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        />
+
+        <FollowUserMap
+          location={currentLocation}
+          enabled={routePoints.length > 1}
         />
 
         <RecenterMap
@@ -1334,6 +1659,14 @@ export default function Step5JourneyActive({
               <p className="text-sm font-black text-[#4ADE80] mt-0.5">
                 Protected
               </p>
+
+              {distanceFromRouteMeters !== null && (
+                <p className="text-[10px] text-[#7BA3A1] mt-1">
+                  {distanceFromRouteMeters > 20
+                    ? `Off route ${distanceFromRouteMeters.toFixed(0)} m`
+                    : "On route"}
+                </p>
+              )}
             </div>
 
           </div>
