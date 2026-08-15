@@ -10,13 +10,9 @@ import {
 import L from "leaflet";
 import {
   AlertTriangle,
-  CheckCircle2,
   LocateFixed,
-  MapPin,
   Navigation,
   ShieldCheck,
-  Siren,
-  Volume2,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -567,23 +563,6 @@ function getRouteProfile(
   }
 }
 
-function getTravelLabel(
-  travelMode: TravelMode
-) {
-  switch (travelMode) {
-    case "walking":
-      return "🚶 Walking";
-
-    case "cycling":
-      return "🚲 Cycling";
-
-    case "driving":
-      return "🚗 Driving";
-
-    case "public_transport":
-      return "🚌 Public Transport";
-  }
-}
 
 /* =========================================================
    DISTANCE
@@ -824,11 +803,6 @@ export default function Step5JourneyActive({
     nextInstructionDistance,
     setNextInstructionDistance,
   ] = useState<number | null>(null);
-
-  const travelLabel = useMemo(
-    () => getTravelLabel(travelMode),
-    [travelMode]
-  );
 
   useEffect(() => {
     if (!currentLocation) return;
