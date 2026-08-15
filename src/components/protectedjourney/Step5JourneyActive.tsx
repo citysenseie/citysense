@@ -185,6 +185,86 @@ function getManeuverInstruction(
     : instruction;
 }
 
+function getManeuverHeadline(step: NavigationStep) {
+  switch (step.type) {
+    case "depart":
+      return "Start your journey";
+    case "arrive":
+      return "You have arrived";
+    case "turn":
+      return step.modifier === "left"
+        ? "Turn left"
+        : step.modifier === "right"
+          ? "Turn right"
+          : step.modifier === "slight left"
+            ? "Keep left"
+            : step.modifier === "slight right"
+              ? "Keep right"
+              : "Turn";
+    case "roundabout":
+    case "rotary":
+      return "Enter the roundabout";
+    case "merge":
+      return "Merge";
+    case "fork":
+      return step.modifier === "left"
+        ? "Keep left"
+        : step.modifier === "right"
+          ? "Keep right"
+          : "Continue at the fork";
+    case "on ramp":
+      return "Take the ramp";
+    case "off ramp":
+      return "Take the exit";
+    case "new name":
+    case "continue":
+      return step.name
+        ? `Stay on ${step.name}`
+        : "Continue straight";
+    default:
+      return step.name
+        ? `Continue on ${step.name}`
+        : "Continue straight";
+  }
+}
+
+function getManeuverSymbol(step: NavigationStep | null) {
+  if (!step) return "↑";
+
+  if (step.type === "roundabout" || step.type === "rotary") {
+    return "↻";
+  }
+
+  if (step.type === "off ramp") return "↗";
+  if (step.type === "on ramp") return "↖";
+
+  if (step.modifier === "left" || step.modifier === "slight left") {
+    return step.modifier === "slight left" ? "↖" : "←";
+  }
+
+  if (step.modifier === "right" || step.modifier === "slight right") {
+    return step.modifier === "slight right" ? "↗" : "→";
+  }
+
+  return "↑";
+}
+
+function getRoadShieldClass(name: string) {
+  if (/^E\d+/i.test(name)) {
+    return "bg-[#4ADE80] text-[#0F1E1E] border-[#D9FFE6]";
+  }
+
+  if (/^N\d+/i.test(name)) {
+    return "bg-[#2563EB] text-white border-[#D7E5FF]";
+  }
+
+  if (/^R\d+/i.test(name)) {
+    return "bg-white text-[#0F1E1E] border-[#D1D5DB]";
+  }
+
+  return "bg-white text-[#0F1E1E] border-[#D1D5DB]";
+}
+
 function FollowUserMap({
   location,
   enabled,
@@ -695,6 +775,12 @@ export default function Step5JourneyActive({
   const [navigationSteps, setNavigationSteps] =
     useState<NavigationStep[]>([]);
 
+  const [activeNavigationStep, setActiveNavigationStep] =
+    useState<NavigationStep | null>(null);
+
+  const [followingNavigationStep, setFollowingNavigationStep] =
+    useState<NavigationStep | null>(null);
+
   const [routeDistanceKm, setRouteDistanceKm] =
     useState<number | null>(null);
 
@@ -704,6 +790,10 @@ export default function Step5JourneyActive({
   const [distanceFromRouteMeters, setDistanceFromRouteMeters] =
     useState<number | null>(null);
 
+  const [routeProgressIndex, setRouteProgressIndex] =
+    useState(0);
+
+  const routeProgressIndexRef = useRef(0);
   const routeRequestStartedRef = useRef(false);
 
   const [
@@ -827,8 +917,12 @@ export default function Step5JourneyActive({
     routeRequestStartedRef.current = false;
     setRoutePoints([]);
     setNavigationSteps([]);
+    setActiveNavigationStep(null);
+    setFollowingNavigationStep(null);
     setRemainingRouteDistanceKm(null);
     setDistanceFromRouteMeters(null);
+    routeProgressIndexRef.current = 0;
+    setRouteProgressIndex(0);
   }, [
     destinationLatitude,
     destinationLongitude,
@@ -988,6 +1082,16 @@ export default function Step5JourneyActive({
             );
 
           if (firstUpcomingStep) {
+            const firstStepIndex =
+              steps.indexOf(firstUpcomingStep);
+
+            setActiveNavigationStep(firstUpcomingStep);
+            setFollowingNavigationStep(
+              firstStepIndex >= 0
+                ? steps[firstStepIndex + 1] ?? null
+                : null
+            );
+
             setNextInstruction(
               getManeuverInstruction(
                 firstUpcomingStep
@@ -1005,6 +1109,8 @@ export default function Step5JourneyActive({
                 )
             );
           } else {
+            setActiveNavigationStep(null);
+            setFollowingNavigationStep(null);
             setNextInstruction(
               "Follow the route"
             );
@@ -1058,10 +1164,20 @@ export default function Step5JourneyActive({
         routePoints
       );
 
+    const effectiveIndex = Math.max(
+      routeProgressIndexRef.current,
+      nearest.index
+    );
+
+    if (effectiveIndex !== routeProgressIndexRef.current) {
+      routeProgressIndexRef.current = effectiveIndex;
+      setRouteProgressIndex(effectiveIndex);
+    }
+
     const remainingMeters =
       getRouteDistanceFromIndex(
         routePoints,
-        nearest.index
+        effectiveIndex
       );
 
     setDistanceFromRouteMeters(
@@ -1087,6 +1203,8 @@ export default function Step5JourneyActive({
       );
 
     if (!upcomingStep) {
+      setActiveNavigationStep(null);
+      setFollowingNavigationStep(null);
       setNextInstruction(
         remainingMeters < 40
           ? "You have arrived"
@@ -1109,6 +1227,16 @@ export default function Step5JourneyActive({
             upcomingStep.routeIndex
           )
       );
+
+    const upcomingStepIndex =
+      navigationSteps.indexOf(upcomingStep);
+
+    setActiveNavigationStep(upcomingStep);
+    setFollowingNavigationStep(
+      upcomingStepIndex >= 0
+        ? navigationSteps[upcomingStepIndex + 1] ?? null
+        : null
+    );
 
     setNextInstruction(
       getManeuverInstruction(
@@ -1222,32 +1350,47 @@ export default function Step5JourneyActive({
           icon={destinationIcon}
         />
 
-        {/* Route shadow */}
+        {/* Navigation route: completed section + remaining section */}
         {routePoints.length > 1 && (
-          <Polyline
-            positions={routePoints}
-            pathOptions={{
-              color: "#0F1E1E",
-              weight: 12,
-              opacity: 0.55,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
-          />
-        )}
+          <>
+            <Polyline
+              positions={routePoints}
+              pathOptions={{
+                color: "#0F1E1E",
+                weight: 12,
+                opacity: 0.45,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
 
-        {/* Main route */}
-        {routePoints.length > 1 && (
-          <Polyline
-            positions={routePoints}
-            pathOptions={{
-              color: "#4ADE80",
-              weight: 7,
-              opacity: 1,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
-          />
+            {routeProgressIndex > 0 && (
+              <Polyline
+                positions={routePoints.slice(0, routeProgressIndex + 1)}
+                pathOptions={{
+                  color: "#64748B",
+                  weight: 7,
+                  opacity: 0.65,
+                  lineCap: "round",
+                  lineJoin: "round",
+                }}
+              />
+            )}
+
+            <Polyline
+              positions={routePoints.slice(
+                Math.max(0, routeProgressIndex),
+                routePoints.length
+              )}
+              pathOptions={{
+                color: "#2563EB",
+                weight: 7,
+                opacity: 1,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+          </>
         )}
 
         {/* =================================================
@@ -1370,42 +1513,98 @@ export default function Step5JourneyActive({
       </MapContainer>
 
       {/* =================================================
-          TOP HEADER
+          WAZE / GOOGLE-STYLE NAVIGATION BANNER
           ================================================= */}
 
-      <div className="absolute top-0 left-0 right-0 z-[1000] p-2.5">
-        <div className="rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-md border border-[#4ADE8035] px-3.5 py-2.5 shadow-xl">
-
-          <div className="flex items-center gap-3">
-
-            <div className="w-10 h-10 rounded-2xl bg-[#4ADE8020] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-[#4ADE80]" />
+      <div className="absolute top-3 left-3 right-3 z-[1000] pointer-events-none">
+        {loadingRoute ? (
+          <div className="rounded-[24px] bg-[#0F6666]/96 backdrop-blur-xl border border-white/10 px-4 py-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                <Navigation className="h-7 w-7 text-white animate-pulse" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-white">Calculating route…</p>
+                <p className="mt-0.5 text-xs text-white/70">CitySense Protected Journey</p>
+              </div>
             </div>
-
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-[#4ADE80]">
-                Protected Journey
-              </p>
-
-              <p className="text-base font-bold truncate">
-                {destination}
-              </p>
-
-              <p className="text-[11px] text-[#9DB8B6] mt-0.5">
-                {travelLabel}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] animate-pulse" />
-
-              <span className="text-[10px] font-bold text-[#4ADE80]">
-                LIVE
-              </span>
-            </div>
-
           </div>
-        </div>
+        ) : routeError ? (
+          <div className="rounded-[24px] bg-[#5F1F1F]/96 backdrop-blur-xl border border-red-300/20 px-4 py-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+                <AlertTriangle className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-white">Route unavailable</p>
+                <p className="mt-0.5 text-xs text-white/70">GPS monitoring remains active</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[24px] bg-[#0F6666]/97 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-2xl bg-white/10">
+                <span className="text-[38px] leading-none font-black text-white">
+                  {getManeuverSymbol(activeNavigationStep)}
+                </span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-[25px] leading-7 font-black tracking-tight text-white truncate">
+                    {activeNavigationStep
+                      ? getManeuverHeadline(activeNavigationStep)
+                      : nextInstruction}
+                  </p>
+                </div>
+
+                {activeNavigationStep?.name && (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-md border-2 px-2 py-0.5 text-[15px] font-black leading-none shadow-sm ${getRoadShieldClass(activeNavigationStep.name)}`}
+                    >
+                      {activeNavigationStep.name}
+                    </span>
+                  </div>
+                )}
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-white">
+                  <span className="text-[19px] font-black">
+                    {formatDistance(nextInstructionDistance)}
+                  </span>
+                  {followingNavigationStep?.name && (
+                    <>
+                      <span className="text-sm text-white/70">to</span>
+                      <span
+                        className={`inline-flex items-center rounded-md border-2 px-1.5 py-0.5 text-[12px] font-black leading-none ${getRoadShieldClass(followingNavigationStep.name)}`}
+                      >
+                        {followingNavigationStep.name}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white">
+                <span className="text-2xl text-[#2563EB]">✦</span>
+              </div>
+            </div>
+
+            <div className="h-1 bg-black/15">
+              <div
+                className="h-full bg-white/55 transition-all duration-500"
+                style={{
+                  width: `${
+                    routeDistanceKm && remainingDistance !== null
+                      ? Math.min(100, Math.max(0, (remainingDistance / routeDistanceKm) * 100))
+                      : 100
+                  }%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* =================================================
@@ -1541,214 +1740,98 @@ export default function Step5JourneyActive({
       </button>
 
       {/* =================================================
-          BOTTOM NAVIGATION PANEL
+          WAZE / GOOGLE-STYLE BOTTOM NAVIGATION PANEL
           ================================================= */}
 
       <div className="absolute bottom-0 left-0 right-0 z-[1000]">
+        <div className="rounded-t-[28px] bg-white/96 text-[#0F1E1E] backdrop-blur-xl border-t border-black/10 px-4 pt-3 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,.22)]">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
 
-        <div className="rounded-t-[24px] bg-[#0F1E1E]/97 backdrop-blur-md border-t border-[#4ADE8030] px-3.5 pt-2.5 pb-3 shadow-2xl">
-
-          <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-[#4A6664]" />
-
-          {/* Destination + ETA */}
-
-          <div className="flex items-center gap-2.5 mb-2">
-
-            <div className="w-9 h-9 rounded-xl bg-[#4ADE8020] flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5 text-[#4ADE80]" />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] uppercase tracking-wider text-[#7BA3A1]">
-                Going to
-              </p>
-
-              <p className="text-sm font-bold truncate">
-                {destination}
-              </p>
-            </div>
-
-            <div className="text-right shrink-0">
-              <p className="text-[9px] uppercase text-[#7BA3A1]">
-                ETA
-              </p>
-
-              <p className="text-lg font-black text-[#4ADE80]">
-                {etaMinutes
-                  ? `${etaMinutes} min`
-                  : "—"}
-              </p>
-            </div>
-
-          </div>
-
-          {/* Safety status */}
-
-          <div className="mb-2 rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2">
-
-            <div className="flex items-center gap-2">
-
-              <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
-
-              <div className="flex-1">
-                <p className="text-[8px] uppercase tracking-wider text-[#7BA3A1]">
-                  Safety Intelligence
-                </p>
-
-                <p className="text-xs font-bold">
-                  {safetyAssessments.length ===
-                  0
-                    ? "No active hazards detected"
-                    : `${safetyAssessments.length} relevant alert${
-                        safetyAssessments.length ===
-                        1
-                          ? ""
-                          : "s"
-                      } nearby`}
-                </p>
+          <div className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className={`text-[46px] leading-none font-black tracking-tight ${distanceFromRouteMeters !== null && distanceFromRouteMeters > 40 ? "text-red-600" : "text-[#16A34A]"}`}>
+                  {etaMinutes ? `${etaMinutes} min` : "—"}
+                </span>
               </div>
 
-              {safetyAssessments.length >
-                0 && (
-                <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-500 px-2 text-[10px] font-black text-white">
-                  {
-                    safetyAssessments.length
-                  }
-                </div>
-              )}
-
-            </div>
-          </div>
-
-          {/* Metrics */}
-
-          <div className="grid grid-cols-3 gap-1.5 mb-2">
-
-            <div className="rounded-xl bg-[#1A2E2D] px-3 py-2">
-              <p className="text-[8px] text-[#7BA3A1]">
-                REMAINING
-              </p>
-
-              <p className="text-sm font-black text-[#4ADE80] mt-0.5">
-                {remainingDistance !==
-                null
-                  ? `${remainingDistance.toFixed(
-                      1
-                    )} km`
-                  : "—"}
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-[#1A2E2D] px-3 py-2">
-              <p className="text-[8px] text-[#7BA3A1]">
-                ETA
-              </p>
-
-              <p className="text-sm font-black mt-0.5">
-                {etaMinutes
-                  ? `${etaMinutes} min`
-                  : "—"}
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-[#1A2E2D] px-3 py-2">
-              <p className="text-[8px] text-[#7BA3A1]">
-                STATUS
-              </p>
-
-              <p className="text-sm font-black text-[#4ADE80] mt-0.5">
-                Protected
-              </p>
-
-              {distanceFromRouteMeters !== null && (
-                <p className="text-[10px] text-[#7BA3A1] mt-1">
-                  {distanceFromRouteMeters > 20
-                    ? `Off route ${distanceFromRouteMeters.toFixed(0)} m`
-                    : "On route"}
-                </p>
-              )}
-            </div>
-
-          </div>
-
-          {/* Next turn */}
-
-          <div className="rounded-xl bg-[#1A2E2D] border border-[#2D5A5840] px-3 py-2 mb-2">
-
-            <div className="flex items-center gap-3">
-
-              <div className="w-9 h-9 rounded-xl bg-[#4ADE8020] flex items-center justify-center shrink-0">
-                <Navigation className="w-5 h-5 text-[#4ADE80]" />
+              <div className="mt-1 flex items-center gap-2 text-slate-500">
+                <span className="text-[18px] font-semibold">
+                  {remainingDistance !== null
+                    ? `${remainingDistance.toFixed(1)} km`
+                    : "—"}
+                </span>
+                <span>•</span>
+                <span className="text-[18px] font-semibold">
+                  {etaMinutes
+                    ? new Date(Date.now() + etaMinutes * 60 * 1000).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—"}
+                </span>
               </div>
+            </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold truncate">
-                  {nextInstruction}
-                </p>
-
-                <p className="text-[10px] text-[#7BA3A1] mt-0.5">
-                  {formatDistance(
-                    nextInstructionDistance
-                  )}{" "}
-                  ahead
-                </p>
-              </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event("citysense-recenter"));
+                }}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
+                aria-label="Recenter navigation"
+              >
+                <LocateFixed className="h-5 w-5 text-[#0F6666]" />
+              </button>
 
               <button
                 type="button"
-                className="w-9 h-9 rounded-xl bg-[#4ADE8015] flex items-center justify-center shrink-0"
-                aria-label="Voice navigation"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
+                aria-label="Navigation options"
               >
-                <Volume2 className="w-4 h-4 text-[#4ADE80]" />
+                <Navigation className="h-5 w-5 text-[#0F6666]" />
               </button>
-
             </div>
-
           </div>
 
-          {/* I'm OK */}
+          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2.5">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-[#16A34A]" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">
+                CitySense Protected Journey
+              </p>
+              <p className="truncate text-xs font-bold text-slate-800">
+                {distanceFromRouteMeters !== null && distanceFromRouteMeters > 40
+                  ? `Off route • ${distanceFromRouteMeters.toFixed(0)} m away`
+                  : `Navigating to ${destination}`}
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setCheckedIn(true)
-            }
-            className="w-full rounded-2xl bg-[#4ADE80] text-[#0F1E1E] py-3 font-black flex items-center justify-center gap-2"
-          >
-            <CheckCircle2 className="w-5 h-5" />
+            {safetyAssessments.length > 0 && (
+              <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-orange-500 px-2 text-[10px] font-black text-white">
+                {safetyAssessments.length}
+              </div>
+            )}
+          </div>
 
-            {checkedIn
-              ? "You're Checked In ✓"
-              : "I'm OK"}
-          </button>
-
-          {/* Help / End */}
-
-          <div className="grid grid-cols-2 gap-2 mt-2">
-
+          <div className="mt-2 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  "Emergency assistance will be connected to the CitySense SOS system."
-                )
-              }
-              className="rounded-2xl bg-[#7F1D1D] border border-[#EF444460] text-white py-2.5 font-bold flex items-center justify-center gap-2"
+              onClick={() => setCheckedIn(true)}
+              className="rounded-2xl bg-[#4ADE80] py-2.5 text-sm font-black text-[#0F1E1E]"
             >
-              <Siren className="w-5 h-5" />
-              Need Help
+              {checkedIn ? "You're Checked In ✓" : "I'm OK"}
             </button>
 
             <button
               type="button"
               onClick={onEndJourney}
-              className="rounded-2xl bg-[#1A2E2D] border border-[#2D5A58] text-[#F5F3EF] py-2.5 font-bold"
+              className="rounded-2xl bg-slate-100 border border-slate-200 py-2.5 text-sm font-black text-slate-800"
             >
               End Journey
             </button>
-
           </div>
-
         </div>
       </div>
 
