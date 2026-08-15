@@ -1,16 +1,18 @@
 import { useState } from "react";
 import DestinationCard from "../DestinationCard";
 import { useTrustedContacts } from "@/hooks/useTrustedContacts";
-
+import JourneyHeader from "./JourneyHeader";
 interface Step3TrustedContactsProps {
   selectedContacts: string[];
   setSelectedContacts: (contacts: string[]) => void;
+  onBack: () => void;
   onContinue: () => void;
 }
 
 export default function Step3TrustedContacts({
   selectedContacts,
   setSelectedContacts,
+  onBack,
   onContinue,
 }: Step3TrustedContactsProps) {
   const { contacts, loading } = useTrustedContacts();
@@ -41,7 +43,13 @@ export default function Step3TrustedContacts({
           }
           onClick={() => setShowContacts(!showContacts)}
         />
-
+<JourneyHeader
+  currentStep={3}
+  totalSteps={5}
+  title="Trusted contacts"
+  subtitle="Choose who can be notified if necessary."
+  onBack={onBack}
+/>
         {showContacts && (
           <div className="rounded-2xl border border-[#2D5A5840] bg-[#142827] p-3">
             {loading ? (

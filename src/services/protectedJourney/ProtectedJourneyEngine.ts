@@ -67,7 +67,9 @@ export class ProtectedJourneyEngine {
     this.session.lastMovementAt = Date.now();
   }
 }
-
+public resetJourney() {
+  this.session = null;
+}
   private generateJourneyId() {
     return `PJ-${Date.now()}`;
   }

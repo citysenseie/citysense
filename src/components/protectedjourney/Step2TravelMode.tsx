@@ -4,12 +4,14 @@ import JourneyHeader from "./JourneyHeader";
 interface Step2TravelModeProps {
   selectedTravelMode: string | null;
   setSelectedTravelMode: (value: string) => void;
+  onBack: () => void;
   onContinue: () => void;
 }
 
 export default function Step2TravelMode({
   selectedTravelMode,
   setSelectedTravelMode,
+  onBack,
   onContinue,
 }: Step2TravelModeProps) {
   return (
@@ -26,6 +28,7 @@ export default function Step2TravelMode({
   totalSteps={5}
   title="How are you travelling?"
   subtitle="Choose your primary travel method."
+  onBack={onBack}
 />
       <div className="space-y-3">
 

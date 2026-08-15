@@ -156,16 +156,31 @@ export default function ProtectedJourneyScreen() {
   };
 
   const resetJourney = () => {
-    locationService.stopTracking();
+  locationService.stopTracking();
 
-    setCurrentLocation(null);
-    setDestinationLocation(null);
-    setSelectedDestination(null);
-    setSelectedTravelMode(null);
-    setSelectedTrustedContacts([]);
-    setStep(1);
-  };
+  journeyEngine.endJourney();
+  journeyEngine.resetJourney();
 
+  setCurrentLocation(null);
+  setDestinationLocation(null);
+  setSelectedDestination(null);
+  setSelectedTravelMode(null);
+  setSelectedTrustedContacts([]);
+  setStep(1);
+};
+const exitProtectedJourney = () => {
+  locationService.stopTracking();
+
+  journeyEngine.resetJourney();
+
+  setCurrentLocation(null);
+  setDestinationLocation(null);
+  setSelectedDestination(null);
+  setSelectedTravelMode(null);
+  setSelectedTrustedContacts([]);
+
+  window.history.back();
+};
   return (
     <div className="min-h-screen bg-[#0F1E1E] text-[#F5F3EF]">
       <div className="px-5 pt-8 pb-5">
@@ -201,26 +216,29 @@ export default function ProtectedJourneyScreen() {
         )}
 
         {step === 2 && (
-          <Step2TravelMode
-            selectedTravelMode={selectedTravelMode}
-            setSelectedTravelMode={setSelectedTravelMode}
-            onContinue={() => setStep(3)}
-          />
-        )}
+  <Step2TravelMode
+    selectedTravelMode={selectedTravelMode}
+    setSelectedTravelMode={setSelectedTravelMode}
+    onBack={() => setStep(1)}
+    onContinue={() => setStep(3)}
+  />
+)}
 
-        {step === 3 && (
-          <Step3TrustedContacts
-            selectedContacts={selectedTrustedContacts}
-            setSelectedContacts={setSelectedTrustedContacts}
-            onContinue={() => setStep(4)}
-          />
-        )}
+       {step === 3 && (
+  <Step3TrustedContacts
+    selectedContacts={selectedTrustedContacts}
+    setSelectedContacts={setSelectedTrustedContacts}
+    onBack={() => setStep(2)}
+    onContinue={() => setStep(4)}
+  />
+)}
 
-        {step === 4 && (
-          <Step4Review
-            destination={selectedDestination}
-            travelMode={selectedTravelMode}
-            onStart={() => {
+       {step === 4 && (
+  <Step4Review
+    destination={selectedDestination}
+    travelMode={selectedTravelMode}
+    onBack={() => setStep(3)}
+    onStart={() => {
               if (!destinationLocation) {
                 console.warn(
                   "Cannot start Protected Journey without a destination."
@@ -239,7 +257,9 @@ export default function ProtectedJourneyScreen() {
             destination={
               destinationLocation.address ??
               selectedDestination ??
+            
               "Destination"
+            
             }
             destinationLatitude={destinationLocation.latitude}
             destinationLongitude={destinationLocation.longitude}
@@ -252,6 +272,9 @@ export default function ProtectedJourneyScreen() {
             }
             currentLocation={currentLocation}
             onEndJourney={resetJourney}
+            {...({
+              onExitJourney: exitProtectedJourney,
+            } as any)}
           />
         )}
       </div>

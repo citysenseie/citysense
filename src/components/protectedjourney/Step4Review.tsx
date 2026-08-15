@@ -3,9 +3,9 @@ import JourneyHeader from "./JourneyHeader";
 interface Step4ReviewProps {
   destination: string | null;
   travelMode: string | null;
+  onBack: () => void;
   onStart: () => void;
 }
-
 const destinationNames: Record<string, string> = {
   home: "🏠 Home",
   work: "💼 Work",
@@ -24,17 +24,18 @@ const travelModeNames: Record<string, string> = {
 export default function Step4Review({
   destination,
   travelMode,
+  onBack,
   onStart,
 }: Step4ReviewProps) {
   return (
     <>
       <JourneyHeader
-        currentStep={4}
-        totalSteps={5}
-        title="Review Your Journey"
-        subtitle="Everything looks ready before protection begins."
-      />
-
+  currentStep={4}
+  totalSteps={5}
+  title="Review Your Journey"
+  subtitle="Everything looks ready before protection begins."
+  onBack={onBack}
+/>
       <div className="space-y-4">
 
         <div className="rounded-2xl border border-[#2D5A5830] bg-[#1A2E2D] p-5">
