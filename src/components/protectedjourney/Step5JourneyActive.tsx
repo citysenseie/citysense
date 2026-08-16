@@ -1324,9 +1324,13 @@ setFollowingNavigationStep(
   followingStep
 );
 
-setNextInstruction(
-  getManeuverInstruction(currentStep)
-);
+if (maneuverDistance <= 5000) {
+  setNextInstruction(
+    getManeuverInstruction(currentStep)
+  );
+} else {
+  setNextInstruction("Next maneuver");
+}
 
 setNextInstructionDistance(
   maneuverDistance
@@ -1634,8 +1638,10 @@ setNextInstructionDistance(
             <div className="flex items-center gap-3 px-4 py-3.5">
               <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-2xl bg-white/10">
                 <span className="text-[38px] leading-none font-black text-white">
-                  {getManeuverSymbol(activeNavigationStep)}
-                </span>
+                  {nextInstructionDistance !== null &&
+nextInstructionDistance <= 5000
+  ? getManeuverSymbol(activeNavigationStep)
+  : "→"}                </span>
               </div>
 
               <div className="min-w-0 flex-1">
