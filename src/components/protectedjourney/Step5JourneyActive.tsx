@@ -827,7 +827,8 @@ export default function Step5JourneyActive({
     useState(0);
 
   const routeProgressIndexRef = useRef(0);
-  const routeRequestStartedRef = useRef(false);
+const activeNavigationStepIndexRef = useRef(-1);
+const routeRequestStartedRef = useRef(false);
 const [routeStartLocation, setRouteStartLocation] =
   useState<LocationPoint | null>(null);
   useEffect(() => {
@@ -961,6 +962,7 @@ const [showNavigationOptions, setShowNavigationOptions] =
     setRemainingRouteDistanceKm(null);
     setDistanceFromRouteMeters(null);
     routeProgressIndexRef.current = 0;
+    activeNavigationStepIndexRef.current = -1;
     setRouteProgressIndex(0);
   }, [
     destinationLatitude,
@@ -1226,65 +1228,109 @@ if (routeRequestStartedRef.current) return;
       remainingMeters / 1000
     );
 
-    const upcomingStep =
-      navigationSteps.find(
-        (step) =>
-          step.type !== "depart" &&
-          step.routeIndex >
-            nearest.index + 2
-      ) ??
-      navigationSteps.find(
-        (step) =>
-          step.type !== "depart" &&
-          step.routeIndex >=
-            nearest.index
-      );
+    let activeStepIndex =
+  activeNavigationStepIndexRef.current;
 
-    if (!upcomingStep) {
-      setActiveNavigationStep(null);
-      setFollowingNavigationStep(null);
-      setNextInstruction(
-        remainingMeters < 40
-          ? "You have arrived"
-          : "Follow the route"
-      );
-      setNextInstructionDistance(
-        remainingMeters < 40
-          ? 0
-          : null
-      );
-      return;
-    }
+if (
+  activeStepIndex < 0 ||
+  activeStepIndex >= navigationSteps.length
+) {
+  activeStepIndex = navigationSteps.findIndex(
+    (step) =>
+      step.type !== "depart" &&
+      step.routeIndex >= effectiveIndex
+  );
 
-    const maneuverDistance =
-      Math.max(
-        0,
-        remainingMeters -
-          getRouteDistanceFromIndex(
-            routePoints,
-            upcomingStep.routeIndex
-          )
-      );
+  activeNavigationStepIndexRef.current =
+    activeStepIndex;
+}
 
-    const upcomingStepIndex =
-      navigationSteps.indexOf(upcomingStep);
+const activeStep =
+  activeStepIndex >= 0
+    ? navigationSteps[activeStepIndex]
+    : null;
+    if (
+  activeStep &&
+  effectiveIndex >= activeStep.routeIndex
+) {
+  const nextStepIndex =
+    navigationSteps.findIndex(
+      (step, index) =>
+        index > activeStepIndex &&
+        step.type !== "depart"
+    );
 
-    setActiveNavigationStep(upcomingStep);
-    setFollowingNavigationStep(
-      upcomingStepIndex >= 0
-        ? navigationSteps[upcomingStepIndex + 1] ?? null
+  if (nextStepIndex >= 0) {
+    activeNavigationStepIndexRef.current =
+      nextStepIndex;
+
+    activeStepIndex = nextStepIndex;
+  } else {
+    activeNavigationStepIndexRef.current =
+      navigationSteps.length;
+
+    setActiveNavigationStep(null);
+    setFollowingNavigationStep(null);
+    setNextInstruction(
+      remainingMeters < 40
+        ? "You have arrived"
+        : "Continue to destination"
+    );
+    setNextInstructionDistance(
+      remainingMeters < 40
+        ? 0
         : null
     );
 
-    setNextInstruction(
-      getManeuverInstruction(
-        upcomingStep
-      )
-    );
+    return;
+  }
+}
+const currentStep =
+  navigationSteps[activeStepIndex] ?? null;
 
-    setNextInstructionDistance(
-      maneuverDistance
-    );
+const followingStep =
+  navigationSteps[activeStepIndex + 1] ?? null;
+    if (!currentStep) {
+  setActiveNavigationStep(null);
+  setFollowingNavigationStep(null);
+
+  setNextInstruction(
+    remainingMeters < 40
+      ? "You have arrived"
+      : "Continue to destination"
+  );
+
+  setNextInstructionDistance(
+    remainingMeters < 40
+      ? 0
+      : null
+  );
+
+  return;
+}
+
+const maneuverDistance = Math.max(
+  0,
+  remainingMeters -
+    getRouteDistanceFromIndex(
+      routePoints,
+      currentStep.routeIndex
+    )
+);
+
+setActiveNavigationStep(currentStep);
+
+setFollowingNavigationStep(
+  followingStep
+);
+
+setNextInstruction(
+  getManeuverInstruction(currentStep)
+);
+
+setNextInstructionDistance(
+  maneuverDistance
+);
   }, [
     currentLocation,
     routePoints,
