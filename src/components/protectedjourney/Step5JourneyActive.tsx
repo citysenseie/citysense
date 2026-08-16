@@ -290,6 +290,30 @@ function FollowUserMap({
   return null;
 }
 
+function MapInteractionController({
+  onUserInteraction,
+}: {
+  onUserInteraction: () => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const handleInteraction = () => {
+      onUserInteraction();
+    };
+
+    map.on("dragstart", handleInteraction);
+    map.on("zoomstart", handleInteraction);
+
+    return () => {
+      map.off("dragstart", handleInteraction);
+      map.off("zoomstart", handleInteraction);
+    };
+  }, [map, onUserInteraction]);
+
+  return null;
+}
+  
 /* =========================================================
    MAP HELPERS
    ========================================================= */
@@ -774,7 +798,14 @@ export default function Step5JourneyActive({
 
   const routeProgressIndexRef = useRef(0);
   const routeRequestStartedRef = useRef(false);
+const [routeStartLocation, setRouteStartLocation] =
+  useState<LocationPoint | null>(null);
+  useEffect(() => {
+  if (!currentLocation) return;
+  if (routeStartLocation) return;
 
+  setRouteStartLocation(currentLocation);
+}, [currentLocation, routeStartLocation]);
   const [
     routeDurationSeconds,
     setRouteDurationSeconds,
@@ -788,7 +819,11 @@ export default function Step5JourneyActive({
 
   const [checkedIn, setCheckedIn] =
     useState(false);
+const [isFollowing, setIsFollowing] =
+  useState(true);
 
+const [showNavigationOptions, setShowNavigationOptions] =
+  useState(false);
   const [isNightMap, setIsNightMap] =
     useState(() =>
       currentLocation
@@ -904,9 +939,8 @@ export default function Step5JourneyActive({
   ]);
 
   useEffect(() => {
-    if (!currentLocation) return;
-    if (routeRequestStartedRef.current) return;
-
+    if (!routeStartLocation) return;
+if (routeRequestStartedRef.current) return;
     const profile =
       getRouteProfile(travelMode);
 
@@ -928,7 +962,7 @@ export default function Step5JourneyActive({
         try {
           const url =
             `https://routing.openstreetmap.de/${profile}/route/v1/driving/` +
-            `${currentLocation.longitude},${currentLocation.latitude};` +
+            `${routeStartLocation.longitude},${routeStartLocation.latitude};` +
             `${destinationLongitude},${destinationLatitude}` +
             `?overview=full&geometries=geojson&steps=true`;
 
@@ -1026,7 +1060,7 @@ export default function Step5JourneyActive({
 
           const initialNearest =
             getNearestRoutePoint(
-              currentLocation,
+             routeStartLocation,
               points
             );
 
@@ -1114,11 +1148,11 @@ export default function Step5JourneyActive({
       cancelled = true;
     };
   }, [
-    currentLocation,
-    destinationLatitude,
-    destinationLongitude,
-    travelMode,
-  ]);
+  routeStartLocation,
+  destinationLatitude,
+  destinationLongitude,
+  travelMode,
+]);
 
   /*
    * Update navigation from the live GPS position without
@@ -1287,9 +1321,13 @@ export default function Step5JourneyActive({
         />
 
         <FollowUserMap
-          location={currentLocation}
-          enabled={routePoints.length > 1}
-        />
+  location={currentLocation}
+  enabled={isFollowing && routePoints.length > 1}
+/>
+
+<MapInteractionController
+  onUserInteraction={() => setIsFollowing(false)}
+/>
 
         <RecenterMap
           location={currentLocation}
@@ -1700,13 +1738,13 @@ export default function Step5JourneyActive({
 
       <button
         type="button"
-        onClick={() => {
-          window.dispatchEvent(
-            new Event(
-              "citysense-recenter"
-            )
-          );
-        }}
+       onClick={() => {
+  setIsFollowing(true);
+
+  window.dispatchEvent(
+    new Event("citysense-recenter")
+  );
+}}
         className="absolute right-4 bottom-[214px] z-[1000] w-12 h-12 rounded-2xl bg-[#0F1E1E]/94 backdrop-blur-xl border border-[#2D5A5860] flex items-center justify-center shadow-xl"
         aria-label="Recenter map"
       >
@@ -1717,6 +1755,54 @@ export default function Step5JourneyActive({
           WAZE / GOOGLE-STYLE BOTTOM NAVIGATION PANEL
           ================================================= */}
 
+{showNavigationOptions && (
+  <div className="absolute bottom-[205px] right-4 z-[1100] w-[250px] rounded-2xl border border-slate-200 bg-white p-3 text-[#0F1E1E] shadow-2xl">
+    <p className="px-2 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
+      Navigation
+    </p>
+
+    <button
+      type="button"
+      onClick={() => {
+        setIsFollowing(true);
+        setShowNavigationOptions(false);
+
+        window.dispatchEvent(
+          new Event("citysense-recenter")
+        );
+      }}
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+    >
+      📍 Recenter on me
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setShowNavigationOptions(false);
+
+        if (routePoints.length > 1) {
+          window.dispatchEvent(
+            new Event("citysense-route-overview")
+          );
+        }
+      }}
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+    >
+      🗺️ Route overview
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setShowNavigationOptions(false)
+      }
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+    >
+      Close
+    </button>
+  </div>
+)}
       <div className="absolute bottom-0 left-0 right-0 z-[1000]">
         <div className="rounded-t-[28px] bg-white/96 text-[#0F1E1E] backdrop-blur-xl border-t border-black/10 px-4 pt-3 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,.22)]">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
@@ -1760,12 +1846,15 @@ export default function Step5JourneyActive({
               </button>
 
               <button
-                type="button"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
-                aria-label="Navigation options"
-              >
-                <Navigation className="h-5 w-5 text-[#0F6666]" />
-              </button>
+  type="button"
+  onClick={() =>
+    setShowNavigationOptions((value) => !value)
+  }
+  className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
+  aria-label="Navigation options"
+>
+  <Navigation className="h-5 w-5 text-[#0F6666]" />
+</button>
             </div>
           </div>
 
