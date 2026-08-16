@@ -255,10 +255,10 @@ function getRoadShieldClass(name: string) {
   }
 
   if (/^R\d+/i.test(name)) {
-    return "bg-white text-[#0F1E1E] border-[#D1D5DB]";
+    return "bg-[#F8FAFC] text-[#0F1E1E] border-[#64748B] shadow-md";
   }
 
-  return "bg-white text-[#0F1E1E] border-[#D1D5DB]";
+  return "bg-[#F8FAFC] text-[#0F1E1E] border-[#64748B] shadow-md";
 }
 
 function FollowUserMap({
@@ -354,9 +354,40 @@ function FitRouteOnce({
     hasFitted.current = true;
   }, [points, currentLocation, destination, map]);
 
+  // ADD THE NEW EFFECT HERE
+  useEffect(() => {
+    const handleRouteOverview = () => {
+      if (points.length < 2) return;
+
+      const bounds = L.latLngBounds([
+        [currentLocation.latitude, currentLocation.longitude],
+        ...points,
+        destination,
+      ]);
+
+      map.fitBounds(bounds, {
+        paddingTopLeft: [24, 78],
+        paddingBottomRight: [24, 220],
+        maxZoom: 16,
+        animate: true,
+      });
+    };
+
+    window.addEventListener(
+      "citysense-route-overview",
+      handleRouteOverview
+    );
+
+    return () => {
+      window.removeEventListener(
+        "citysense-route-overview",
+        handleRouteOverview
+      );
+    };
+  }, [points, currentLocation, destination, map]);
+
   return null;
 }
-
 function RecenterMap({
   location,
 }: {
@@ -391,7 +422,6 @@ function RecenterMap({
 
   return null;
 }
-
 /* =========================================================
    MAP ICONS
    ========================================================= */
@@ -1779,14 +1809,15 @@ if (routeRequestStartedRef.current) return;
     <button
       type="button"
       onClick={() => {
-        setShowNavigationOptions(false);
+  setShowNavigationOptions(false);
+  setIsFollowing(false);
 
-        if (routePoints.length > 1) {
-          window.dispatchEvent(
-            new Event("citysense-route-overview")
-          );
-        }
-      }}
+  if (routePoints.length > 1) {
+    window.dispatchEvent(
+      new Event("citysense-route-overview")
+    );
+  }
+}}
       className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
     >
       🗺️ Route overview
