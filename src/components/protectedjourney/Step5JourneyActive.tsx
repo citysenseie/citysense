@@ -1700,7 +1700,7 @@ setNextInstructionDistance(
           ================================================= */}
 
       {highestPrioritySafetyEvent && (
-        <div className="absolute top-[170px] left-3 right-3 z-[1000]">
+       <div className="absolute top-[184px] left-3 right-3 z-[1000]">
           <div className="rounded-2xl border border-orange-400/50 bg-[#171F1E]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
 
             <div className="flex items-center gap-3">
@@ -1755,7 +1755,7 @@ setNextInstructionDistance(
           ROUTE STATUS
           ================================================= */}
 
-      <div className="absolute top-[92px] left-3 right-3 z-[1000]">
+      <div className="absolute top-[114px] left-3 right-3 z-[1000]">
         <div className="rounded-2xl bg-[#0F1E1E]/82 backdrop-blur-md border border-white/10 px-3.5 py-2 shadow-lg">
 
           {loadingRoute ? (
