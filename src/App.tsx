@@ -91,9 +91,12 @@ useEffect(() => {
       case "main":
         return renderMain();
 
-  case "protectedjourney":
-  return <ProtectedJourneyScreen />;
-
+ case "protectedjourney":
+  return (
+    <ProtectedJourneyScreen
+      onBack={() => setScreen("main")}
+    />
+  );
       case "safehaven":
         return <SafeHavenScreen onBack={() => setScreen("main")} />;
 

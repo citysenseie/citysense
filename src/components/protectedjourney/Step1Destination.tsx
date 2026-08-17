@@ -22,7 +22,7 @@ interface Step1DestinationProps {
   selectedDestination: string | null;
   setSelectedDestination: (value: string) => void;
   onContinue: () => void;
-
+  onBack: () => void;
   onDestinationLocationSelect?: (
     location: DestinationLocation
   ) => void;
@@ -32,6 +32,7 @@ export default function Step1Destination({
   selectedDestination,
   setSelectedDestination,
   onContinue,
+  onBack,
   onDestinationLocationSelect,
 }: Step1DestinationProps) {
   const [showSearch, setShowSearch] = useState(false);
@@ -86,6 +87,13 @@ export default function Step1Destination({
 
   return (
     <div className="space-y-4">
+      <button
+  type="button"
+  onClick={onBack}
+  className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#7BA3A1] hover:text-[#F5F3EF]"
+>
+  ← Back
+</button>
       {/* Destination options */}
       <div className="space-y-3">
         <DestinationCard

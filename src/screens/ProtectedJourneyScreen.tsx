@@ -15,7 +15,14 @@ type DestinationLocation = {
   address?: string;
 };
 
-export default function ProtectedJourneyScreen() {
+interface ProtectedJourneyScreenProps {
+  onBack: () => void;
+}
+
+export default function ProtectedJourneyScreen({
+  onBack,
+}: ProtectedJourneyScreenProps) {
+  
   const [step, setStep] = useState(1);
 
   const [selectedDestination, setSelectedDestination] =
@@ -202,6 +209,7 @@ const exitProtectedJourney = () => {
             onDestinationLocationSelect={
               handleDestinationLocationSelect
             }
+            onBack={onBack}
             onContinue={() => {
               if (!destinationLocation) {
                 console.warn(
