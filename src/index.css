@@ -83,6 +83,8 @@ body,
 }
 
 .leaflet-container {
-  width: 100%;
+  w.daylight-map-dim {
+  filter: brightness(0.82) contrast(1.08);
+}idth: 100%;
   height: 100%;
 }

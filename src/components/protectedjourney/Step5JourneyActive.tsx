@@ -1397,7 +1397,8 @@ setNextInstructionDistance(
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
   }
-  attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+ className={isNightMap ? "" : "daylight-map-dim"}
+attribution="&copy; OpenStreetMap contributors &copy; CARTO"
 />
         <FollowUserMap
   location={currentLocation}
