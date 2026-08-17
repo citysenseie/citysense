@@ -29,8 +29,17 @@ export default function Step3TrustedContacts({
   };
 
   return (
-    <div className="pb-8">
-      <div className="space-y-3">
+  <div className="pb-8">
+
+    <button
+      type="button"
+      onClick={onBack}
+      className="mb-5 flex items-center gap-2 text-sm font-semibold text-[#7BA3A1] hover:text-[#F5F3EF]"
+    >
+      ← Back
+    </button>
+
+    <div className="space-y-3">
         <DestinationCard
           icon={<span className="text-2xl">👤</span>}
           title="Add Trusted Contact"

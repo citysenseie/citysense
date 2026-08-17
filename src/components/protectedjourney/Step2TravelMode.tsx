@@ -16,6 +16,13 @@ export default function Step2TravelMode({
 }: Step2TravelModeProps) {
   return (
     <>
+    <button
+  type="button"
+  onClick={onBack}
+  className="mb-5 flex items-center gap-2 text-sm font-semibold text-[#7BA3A1] hover:text-[#F5F3EF]"
+>
+  ← Back
+</button>
       <h2 className="text-xl font-bold mb-5">
         How are you travelling?
       </h2>

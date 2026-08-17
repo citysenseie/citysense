@@ -27,9 +27,17 @@ export default function Step4Review({
   onBack,
   onStart,
 }: Step4ReviewProps) {
-  return (
-    <>
-      <JourneyHeader
+ return (
+  <>
+    <button
+      type="button"
+      onClick={onBack}
+      className="mb-5 flex items-center gap-2 text-sm font-semibold text-[#7BA3A1] hover:text-[#F5F3EF]"
+    >
+      ← Back
+    </button>
+
+    <JourneyHeader
   currentStep={4}
   totalSteps={5}
   title="Review Your Journey"
