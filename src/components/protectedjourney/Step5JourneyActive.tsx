@@ -1680,9 +1680,10 @@ nextInstructionDistance <= 5000
                 </div>
               </div>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white">
-                <span className="text-2xl text-[#2563EB]">✦</span>
-              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E8A838] shadow-lg">
+  <LocateFixed className="h-6 w-6 text-[#0F6666]" />
+</div>
+<LocateFixed className="h-5 w-5 text-[#0F6666]" />
             </div>
 
             <div className="h-1 bg-black/15">
@@ -1762,7 +1763,7 @@ nextInstructionDistance <= 5000
           ================================================= */}
 
       <div className="absolute top-[114px] left-3 right-3 z-[1000]">
-        <div className="rounded-2xl bg-[#0F1E1E]/82 backdrop-blur-md border border-white/10 px-3.5 py-2 shadow-lg">
+        <div className="rounded-2xl bg-[#0F1E1E]/95 backdrop-blur-md border border-white/10 px-3.5 py-2 shadow-lg">
 
           {loadingRoute ? (
             <div className="flex items-center gap-3">
@@ -1791,9 +1792,9 @@ nextInstructionDistance <= 5000
                   Destination
                 </p>
 
-                <p className="text-sm font-bold truncate max-w-[190px]">
-                  {destination}
-                </p>
+                <p className="text-sm font-bold truncate max-w-[190px] text-[#E8A838]">
+  {destination}
+</p>
               </div>
 
               <div className="text-right">
