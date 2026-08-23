@@ -261,11 +261,28 @@ function getRoadShieldClass(name: string) {
   return "bg-[#F8FAFC] text-[#0F1E1E] border-[#64748B] shadow-md";
 }
 
-function FollowUserMap({
+function getNavigationZoom(travelMode: TravelMode) {
+  switch (travelMode) {
+    case "walking":
+      return 18;
+    case "cycling":
+      return 17;
+    case "driving":
+      return 16.5;
+    case "public_transport":
+      return 15.5;
+    default:
+      return 16;
+  }
+}
+
+function SmoothNavigationCamera({
   location,
+  travelMode,
   enabled,
 }: {
   location: LocationPoint;
+  travelMode: TravelMode;
   enabled: boolean;
 }) {
   const map = useMap();
@@ -273,23 +290,60 @@ function FollowUserMap({
   useEffect(() => {
     if (!enabled) return;
 
-    map.setView(
-      [location.latitude, location.longitude],
-      Math.max(map.getZoom(), 17),
+    map.flyTo(
+      [
+        location.latitude,
+        location.longitude,
+      ],
+      getNavigationZoom(travelMode),
       {
-        animate: false,
+        animate: true,
+        duration: 0.8,
       }
     );
   }, [
     enabled,
     location.latitude,
     location.longitude,
+    travelMode,
+    map,
+  ]);
+
+  useEffect(() => {
+    const handleRecenter = () => {
+      map.flyTo(
+        [
+          location.latitude,
+          location.longitude,
+        ],
+        getNavigationZoom(travelMode),
+        {
+          animate: true,
+          duration: 0.8,
+        }
+      );
+    };
+
+    window.addEventListener(
+      "citysense-recenter",
+      handleRecenter
+    );
+
+    return () => {
+      window.removeEventListener(
+        "citysense-recenter",
+        handleRecenter
+      );
+    };
+  }, [
+    location.latitude,
+    location.longitude,
+    travelMode,
     map,
   ]);
 
   return null;
 }
-
 function MapInteractionController({
   onUserInteraction,
 }: {
@@ -388,62 +442,89 @@ function FitRouteOnce({
 
   return null;
 }
-function RecenterMap({
-  location,
-}: {
-  location: LocationPoint;
-}) {
-  const map = useMap();
 
-  useEffect(() => {
-    const handleRecenter = () => {
-      map.flyTo(
-        [location.latitude, location.longitude],
-        17,
-        {
-          animate: true,
-          duration: 0.8,
-        }
-      );
-    };
-
-    window.addEventListener(
-      "citysense-recenter",
-      handleRecenter
-    );
-
-    return () => {
-      window.removeEventListener(
-        "citysense-recenter",
-        handleRecenter
-      );
-    };
-  }, [location, map]);
-
-  return null;
-}
 /* =========================================================
    MAP ICONS
    ========================================================= */
 
-const userIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width:24px;
-      height:24px;
-      border-radius:50%;
-      background:#2563EB;
-      border:4px solid white;
-      box-shadow:
-        0 0 0 8px rgba(37,99,235,.20),
-        0 3px 10px rgba(0,0,0,.35);
-    "></div>
-  `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+function getTravelSymbol(
+  travelMode: TravelMode
+) {
+  switch (travelMode) {
+    case "walking":
+      return "🚶";
 
+    case "cycling":
+      return "🚲";
+
+    case "driving":
+      return "🚗";
+
+    case "public_transport":
+      return "🚌";
+
+    default:
+      return "📍";
+  }
+}
+
+function SmoothTravelerMarker({
+  location,
+  travelMode,
+}: {
+  location: LocationPoint;
+  travelMode: TravelMode;
+}) {
+  const icon = useMemo(() => {
+    return L.divIcon({
+      className:
+        "citysense-traveler-marker",
+      html: `
+        <div
+          style="
+            width:48px;
+            height:48px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          "
+        >
+          <div
+            style="
+              width:38px;
+              height:38px;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              border-radius:50%;
+              background:#2563EB;
+              border:4px solid white;
+              box-shadow:
+                0 0 0 9px rgba(37,99,235,.18),
+                0 5px 16px rgba(0,0,0,.30);
+              font-size:19px;
+            "
+          >
+            ${getTravelSymbol(travelMode)}
+          </div>
+        </div>
+      `,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+    });
+  }, [travelMode]);
+
+  return (
+    <Marker
+      position={[
+        location.latitude,
+        location.longitude,
+      ]}
+      icon={icon}
+      zIndexOffset={1000}
+    />
+  );
+}
 const destinationIcon = L.divIcon({
   className: "",
   html: `
@@ -1400,18 +1481,26 @@ setNextInstructionDistance(
  className={isNightMap ? "" : "daylight-map-dim"}
 attribution="&copy; OpenStreetMap contributors &copy; CARTO"
 />
-        <FollowUserMap
+       <SmoothNavigationCamera
   location={currentLocation}
-  enabled={isFollowing && routePoints.length > 1}
+  travelMode={travelMode}
+  enabled={
+    isFollowing &&
+    routePoints.length > 1
+  }
 />
-
 <MapInteractionController
   onUserInteraction={() => setIsFollowing(false)}
 />
 
-        <RecenterMap
-          location={currentLocation}
-        />
+        <SmoothNavigationCamera
+  location={currentLocation}
+  travelMode={travelMode}
+  enabled={
+    isFollowing &&
+    routePoints.length > 1
+  }
+/>
 
         {routePoints.length > 1 && (
           <FitRouteOnce
@@ -1426,13 +1515,11 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
         )}
 
         {/* Current location */}
-        <Marker
-          position={[
-            currentLocation.latitude,
-            currentLocation.longitude,
-          ]}
-          icon={userIcon}
+        <SmoothTravelerMarker
+          location={currentLocation}
+          travelMode={travelMode}
         />
+        
 
         {/* Destination */}
         <Marker
