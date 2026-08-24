@@ -8,6 +8,7 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import "@tomickigrzegorz/leaflet-rotate";
 import {
   AlertTriangle,
   LocateFixed,
@@ -261,46 +262,202 @@ function getRoadShieldClass(name: string) {
   return "bg-[#F8FAFC] text-[#0F1E1E] border-[#64748B] shadow-md";
 }
 
-function getNavigationZoom(travelMode: TravelMode) {
+
+function getNavigationZoom(
+  travelMode: TravelMode
+) {
   switch (travelMode) {
     case "walking":
       return 18;
+
     case "cycling":
-      return 17;
+      return 17.5;
+
     case "driving":
-      return 16.5;
+      return 17;
+
     case "public_transport":
-      return 15.5;
+      return 16.5;
+
     default:
-      return 16;
+      return 17;
   }
+}
+
+function getTravelBearing(
+  from: LocationPoint,
+  to: LocationPoint
+) {
+  const lat1 =
+    (from.latitude * Math.PI) / 180;
+
+  const lat2 =
+    (to.latitude * Math.PI) / 180;
+
+  const deltaLongitude =
+    ((to.longitude - from.longitude) *
+      Math.PI) /
+    180;
+
+  const y =
+    Math.sin(deltaLongitude) *
+    Math.cos(lat2);
+
+  const x =
+    Math.cos(lat1) *
+      Math.sin(lat2) -
+    Math.sin(lat1) *
+      Math.cos(lat2) *
+      Math.cos(deltaLongitude);
+
+  const bearing =
+    (Math.atan2(y, x) * 180) /
+    Math.PI;
+
+  return (bearing + 360) % 360;
 }
 
 function SmoothNavigationCamera({
   location,
   travelMode,
   enabled,
+  onHeadingChange,
 }: {
   location: LocationPoint;
   travelMode: TravelMode;
   enabled: boolean;
+  onHeadingChange: (heading: number) => void;
 }) {
   const map = useMap();
+
+  const previousLocationRef =
+    useRef<LocationPoint | null>(null);
+
+  const animationFrameRef =
+    useRef<number | null>(null);
+
+  const cameraCenterRef =
+    useRef<L.LatLng | null>(null);
+
+  useEffect(() => {
+    const previous =
+      previousLocationRef.current;
+
+    if (previous) {
+      const distance = getDistanceMeters(
+        previous.latitude,
+        previous.longitude,
+        location.latitude,
+        location.longitude
+      );
+
+      // Ignore tiny GPS drift.
+      if (distance >= 2) {
+        onHeadingChange(
+          getTravelBearing(
+            previous,
+            location
+          )
+        );
+      }
+    }
+
+    previousLocationRef.current = location;
+  }, [
+    location.latitude,
+    location.longitude,
+    onHeadingChange,
+  ]);
 
   useEffect(() => {
     if (!enabled) return;
 
-    map.flyTo(
-      [
-        location.latitude,
-        location.longitude,
-      ],
-      getNavigationZoom(travelMode),
-      {
-        animate: true,
-        duration: 0.8,
-      }
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(
+        animationFrameRef.current
+      );
+    }
+
+    const zoom = Math.max(
+      map.getZoom(),
+      getNavigationZoom(travelMode)
     );
+
+    const target = L.latLng(
+      location.latitude,
+      location.longitude
+    );
+
+    const start =
+      cameraCenterRef.current ??
+      map.getCenter();
+
+    const startTime =
+      performance.now();
+
+    const duration = 700;
+
+    const animate = (now: number) => {
+      const elapsed =
+        now - startTime;
+
+      const progress = Math.min(
+        elapsed / duration,
+        1
+      );
+
+      // Smooth ease-in/out movement.
+      const eased =
+        progress < 0.5
+          ? 2 * progress * progress
+          : 1 -
+            Math.pow(
+              -2 * progress + 2,
+              2
+            ) / 2;
+
+      const latitude =
+        start.lat +
+        (target.lat - start.lat) * eased;
+
+      const longitude =
+        start.lng +
+        (target.lng - start.lng) * eased;
+
+      const nextCenter = L.latLng(
+        latitude,
+        longitude
+      );
+
+      map.setView(
+  nextCenter,
+  zoom,
+  {
+    animate: false,
+  }
+);
+
+      cameraCenterRef.current =
+        nextCenter;
+
+      if (progress < 1 && enabled) {
+        animationFrameRef.current =
+          requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameRef.current =
+      requestAnimationFrame(animate);
+
+    return () => {
+      if (
+        animationFrameRef.current !== null
+      ) {
+        cancelAnimationFrame(
+          animationFrameRef.current
+        );
+      }
+    };
   }, [
     enabled,
     location.latitude,
@@ -311,15 +468,18 @@ function SmoothNavigationCamera({
 
   useEffect(() => {
     const handleRecenter = () => {
-      map.flyTo(
-        [
+      cameraCenterRef.current =
+        L.latLng(
           location.latitude,
-          location.longitude,
-        ],
+          location.longitude
+        );
+
+      map.flyTo(
+        cameraCenterRef.current,
         getNavigationZoom(travelMode),
         {
           animate: true,
-          duration: 0.8,
+          duration: 0.6,
         }
       );
     };
@@ -341,6 +501,35 @@ function SmoothNavigationCamera({
     travelMode,
     map,
   ]);
+
+  return null;
+}
+function NavigationHeadingController({
+  heading,
+  enabled,
+}: {
+  heading: number;
+  enabled: boolean;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!enabled) {
+      map.stopHeadingUp?.();
+      return;
+    }
+
+    map.setHeading?.(heading, {
+      ease: 0.18,
+      deadzone: 1,
+    });
+  }, [heading, enabled, map]);
+
+  useEffect(() => {
+    return () => {
+      map.stopHeadingUp?.();
+    };
+  }, [map]);
 
   return null;
 }
@@ -933,7 +1122,8 @@ const [routeStartLocation, setRouteStartLocation] =
     useState(false);
 const [isFollowing, setIsFollowing] =
   useState(true);
-
+const [travelHeading, setTravelHeading] =
+  useState(0);
 const [showNavigationOptions, setShowNavigationOptions] =
   useState(false);
   const [isNightMap, setIsNightMap] =
@@ -1423,10 +1613,72 @@ setNextInstructionDistance(
   ]);
 
   /* =======================================================
-     WAITING FOR GPS
-     ======================================================= */
+   SCREEN WAKE LOCK
+   ======================================================= */
 
-  if (!currentLocation) {
+useEffect(() => {
+  let wakeLock: WakeLockSentinel | null = null;
+  let disposed = false;
+
+  const requestWakeLock = async () => {
+    try {
+      if (
+        !("wakeLock" in navigator) ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      wakeLock = await navigator.wakeLock.request("screen");
+
+      if (disposed && wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+      }
+    } catch (error) {
+      console.warn(
+        "Screen wake lock unavailable:",
+        error
+      );
+    }
+  };
+
+  void requestWakeLock();
+
+  const handleVisibilityChange = () => {
+    if (
+      document.visibilityState === "visible" &&
+      !wakeLock
+    ) {
+      void requestWakeLock();
+    }
+  };
+
+  document.addEventListener(
+    "visibilitychange",
+    handleVisibilityChange
+  );
+
+  return () => {
+    disposed = true;
+
+    document.removeEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    if (wakeLock) {
+      void wakeLock.release();
+      wakeLock = null;
+    }
+  };
+}, []);
+
+/* =======================================================
+   WAITING FOR GPS
+   ======================================================= */
+
+if (!currentLocation) {
     return (
       <div className="min-h-screen bg-[#0F1E1E] text-white flex items-center justify-center px-6">
         <div className="text-center">
@@ -1470,6 +1722,10 @@ setNextInstructionDistance(
         zoom={16}
         zoomControl={false}
         className="absolute inset-0 z-0"
+        rotate={true}
+touchRotate={true}
+dragRotate={false}
+shiftKeyRotate={false}
       >
        <TileLayer
   key={isNightMap ? "night" : "day"}
@@ -1481,9 +1737,17 @@ setNextInstructionDistance(
  className={isNightMap ? "" : "daylight-map-dim"}
 attribution="&copy; OpenStreetMap contributors &copy; CARTO"
 />
-       <SmoothNavigationCamera
+      <SmoothNavigationCamera
   location={currentLocation}
   travelMode={travelMode}
+  enabled={
+    isFollowing &&
+    routePoints.length > 1
+  }
+  onHeadingChange={setTravelHeading}
+/>
+<NavigationHeadingController
+  heading={travelHeading}
   enabled={
     isFollowing &&
     routePoints.length > 1
@@ -1493,14 +1757,8 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
   onUserInteraction={() => setIsFollowing(false)}
 />
 
-        <SmoothNavigationCamera
-  location={currentLocation}
-  travelMode={travelMode}
-  enabled={
-    isFollowing &&
-    routePoints.length > 1
-  }
-/>
+      
+
 
         {routePoints.length > 1 && (
           <FitRouteOnce
