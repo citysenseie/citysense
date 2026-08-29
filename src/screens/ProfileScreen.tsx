@@ -283,7 +283,7 @@ const leaderboard = Object.values(
     <button
       type="button"
       onClick={() => setShowIdentity((current) => !current)}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.04] text-[#8AA39F] transition active:scale-95"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8F1E1]/95/[0.04] text-[#8AA39F] transition active:scale-95"
       aria-label="CitySense identity"
     >
       <Fingerprint className="h-[18px] w-[18px]" />
@@ -330,7 +330,7 @@ const leaderboard = Object.values(
       </p>
     </div>
 
-    <div className="h-8 w-px bg-white/[0.06]" />
+    <div className="h-8 w-px bg-[#F8F1E1]/95/[0.06]" />
 
     <div className="flex-1 pl-5">
       <p className="text-[19px] font-bold text-[#F5F3EF]">
@@ -342,7 +342,7 @@ const leaderboard = Object.values(
       </p>
     </div>
 
-    <div className="h-8 w-px bg-white/[0.06]" />
+    <div className="h-8 w-px bg-[#F8F1E1]/95/[0.06]" />
 
     <div className="flex-1 pl-5">
       <p className="text-[19px] font-bold text-[#5EEAD4]">
@@ -381,7 +381,7 @@ const leaderboard = Object.values(
       type="button"
       onClick={handleCopyConnectionCode}
       disabled={!connectionCode}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[#E8A838] transition active:scale-95 disabled:opacity-40"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F8F1E1]/95/[0.05] text-[#E8A838] transition active:scale-95 disabled:opacity-40"
       aria-label="Copy CitySense connection code"
     >
       <Copy className="h-4 w-4" />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CircleMarker,
   MapContainer,
   Marker,
   Polyline,
@@ -383,10 +384,41 @@ function SmoothNavigationCamera({
       getNavigationZoom(travelMode)
     );
 
-    const target = L.latLng(
-      location.latitude,
-      location.longitude
-    );
+
+const lookAheadMeters =
+  travelMode === "walking"
+    ? 35
+    : travelMode === "cycling"
+      ? 55
+      : travelMode === "driving"
+        ? 90
+        : 60;
+
+const headingRad =
+  (getTravelBearing(
+    previousLocationRef.current ?? location,
+    location
+  ) *
+    Math.PI) /
+  180;
+
+const lookAheadLatitude =
+  location.latitude +
+  (Math.cos(headingRad) * lookAheadMeters) /
+    111320;
+
+const lookAheadLongitude =
+  location.longitude +
+  (Math.sin(headingRad) * lookAheadMeters) /
+    (111320 *
+      Math.cos(
+        (location.latitude * Math.PI) / 180
+      ));
+
+const navigationTarget = L.latLng(
+  lookAheadLatitude,
+  lookAheadLongitude
+);
 
     const start =
       cameraCenterRef.current ??
@@ -417,12 +449,12 @@ function SmoothNavigationCamera({
             ) / 2;
 
       const latitude =
-        start.lat +
-        (target.lat - start.lat) * eased;
+  start.lat +
+  (navigationTarget.lat - start.lat) * eased;
 
-      const longitude =
-        start.lng +
-        (target.lng - start.lng) * eased;
+const longitude =
+  start.lng +
+  (navigationTarget.lng - start.lng) * eased;
 
       const nextCenter = L.latLng(
         latitude,
@@ -505,8 +537,8 @@ function SmoothNavigationCamera({
   return null;
 }
 function NavigationHeadingController({
-  heading,
   enabled,
+  heading,
 }: {
   heading: number;
   enabled: boolean;
@@ -660,48 +692,53 @@ function getTravelSymbol(
 function SmoothTravelerMarker({
   location,
   travelMode,
+  heading,
 }: {
   location: LocationPoint;
   travelMode: TravelMode;
+  heading: number;
 }) {
   const icon = useMemo(() => {
     return L.divIcon({
       className:
         "citysense-traveler-marker",
+     
       html: `
-        <div
-          style="
-            width:48px;
-            height:48px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          "
-        >
-          <div
-            style="
-              width:38px;
-              height:38px;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              border-radius:50%;
-              background:#2563EB;
-              border:4px solid white;
-              box-shadow:
-                0 0 0 9px rgba(37,99,235,.18),
-                0 5px 16px rgba(0,0,0,.30);
-              font-size:19px;
-            "
-          >
-            ${getTravelSymbol(travelMode)}
-          </div>
-        </div>
-      `,
+  <div
+    style="
+      width:48px;
+      height:48px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transform:rotate(${heading}deg);
+      transition:transform 0.18s ease-out;
+    "
+  >
+    <div
+      style="
+        width:38px;
+        height:38px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:50%;
+        background:#E8A838;
+        border:4px solid #071A18;
+        box-shadow:
+          0 0 0 9px rgba(232,168,56,.22),
+          0 5px 16px rgba(0,0,0,.30);
+        font-size:19px;
+      "
+    >
+      ${getTravelSymbol(travelMode)}
+    </div>
+  </div>
+`,
       iconSize: [48, 48],
       iconAnchor: [24, 24],
     });
-  }, [travelMode]);
+  }, [travelMode, heading]);
 
   return (
     <Marker
@@ -1740,6 +1777,7 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
       <SmoothNavigationCamera
   location={currentLocation}
   travelMode={travelMode}
+  
   enabled={
     isFollowing &&
     routePoints.length > 1
@@ -1774,10 +1812,10 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
 
         {/* Current location */}
         <SmoothTravelerMarker
-          location={currentLocation}
-          travelMode={travelMode}
-        />
-        
+  location={currentLocation}
+  travelMode={travelMode}
+  heading={travelHeading}
+/>
 
         {/* Destination */}
         <Marker
@@ -1787,49 +1825,61 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
           icon={destinationIcon}
         />
 
-        {/* Navigation route: completed section + remaining section */}
-        {routePoints.length > 1 && (
-          <>
-            <Polyline
-              positions={routePoints}
-              pathOptions={{
-                color: "#0F1E1E",
-                weight: 12,
-                opacity: 0.45,
-                lineCap: "round",
-                lineJoin: "round",
-              }}
-            />
+        {/* Navigation route: gold completed + green remaining */}
+{routePoints.length > 1 && (
+  <>
+    <Polyline
+      positions={routePoints}
+      pathOptions={{
+        color: "#071A18",
+        weight: 13,
+        opacity: 0.72,
+        lineCap: "round",
+        lineJoin: "round",
+      }}
+    />
 
-            {routeProgressIndex > 0 && (
-              <Polyline
-                positions={routePoints.slice(0, routeProgressIndex + 1)}
-                pathOptions={{
-                  color: "#64748B",
-                  weight: 7,
-                  opacity: 0.65,
-                  lineCap: "round",
-                  lineJoin: "round",
-                }}
-              />
-            )}
+    {routeProgressIndex > 0 && (
+      <Polyline
+        positions={routePoints.slice(0, routeProgressIndex + 1)}
+        pathOptions={{
+          color: "#E8A838",
+          weight: 7,
+          opacity: 1,
+          lineCap: "round",
+          lineJoin: "round",
+        }}
+      />
+    )}
 
-            <Polyline
-              positions={routePoints.slice(
-                Math.max(0, routeProgressIndex),
-                routePoints.length
-              )}
-              pathOptions={{
-                color: "#2563EB",
-                weight: 7,
-                opacity: 1,
-                lineCap: "round",
-                lineJoin: "round",
-              }}
-            />
-          </>
-        )}
+    <Polyline
+      positions={routePoints.slice(
+        Math.max(0, routeProgressIndex),
+        routePoints.length
+      )}
+      pathOptions={{
+        color: "#22C55E",
+        weight: 7,
+        opacity: 1,
+        lineCap: "round",
+        lineJoin: "round",
+      }}
+    />
 
+    {routePoints[routeProgressIndex] && (
+      <CircleMarker
+        center={routePoints[routeProgressIndex]}
+        radius={7}
+        pathOptions={{
+          color: "#0F1E1E",
+          weight: 3,
+          fillColor: "#E8A838",
+          fillOpacity: 1,
+        }}
+      />
+    )}
+  </>
+)}
         {/* =================================================
             SAFETY EVENTS
             ================================================= */}
@@ -1955,21 +2005,21 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
 
       <div className="absolute top-3 left-3 right-3 z-[1000] pointer-events-none">
         {loadingRoute ? (
-          <div className="rounded-[24px] bg-[#0F6666]/96 backdrop-blur-xl border border-white/10 px-4 py-4 shadow-2xl">
+          <div className="rounded-[24px] bg-[#071A18]/98 backdrop-blur-xl border border-[#E8A838]/35 px-4 py-4 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#163330] border border-[#E8A838]/40">
                 <Navigation className="h-7 w-7 text-white animate-pulse" />
               </div>
               <div>
                 <p className="text-lg font-black text-white">Calculating route…</p>
-                <p className="mt-0.5 text-xs text-white/70">CitySense Protected Journey</p>
+                <p className="mt-0.5 text-xs text-white/70">text-[#E8A838]</p>
               </div>
             </div>
           </div>
         ) : routeError ? (
           <div className="rounded-[24px] bg-[#5F1F1F]/96 backdrop-blur-xl border border-red-300/20 px-4 py-4 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#163330] border border-[#E8A838]/40">
                 <AlertTriangle className="h-7 w-7 text-white" />
               </div>
               <div>
@@ -1979,10 +2029,10 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
             </div>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[24px] bg-[#0F6666]/97 backdrop-blur-xl border border-white/10 shadow-2xl">
+          <div className="overflow-hidden rounded-[24px] bg-[#071A18]/98 backdrop-blur-xl border border-[#E8A838]/35 shadow-2xl">
             <div className="flex items-center gap-3 px-4 py-3.5">
-              <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                <span className="text-[38px] leading-none font-black text-white">
+              <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-2xl bg-[#163330] border border-[#E8A838]/40">
+                <span className="text-[38px] leading-none font-black text-[#E8A838]">
                   {nextInstructionDistance !== null &&
 nextInstructionDistance <= 5000
   ? getManeuverSymbol(activeNavigationStep)
@@ -2025,15 +2075,14 @@ nextInstructionDistance <= 5000
                 </div>
               </div>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E8A838] shadow-lg">
-  <LocateFixed className="h-6 w-6 text-[#0F6666]" />
+             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E8A838] shadow-lg">
+  <LocateFixed className="h-6 w-6 text-[#0F1E1E]" />
 </div>
-<LocateFixed className="h-5 w-5 text-[#0F6666]" />
             </div>
 
             <div className="h-1 bg-black/15">
               <div
-                className="h-full bg-white/55 transition-all duration-500"
+                className="h-full bg-[#E8A838] transition-all duration-500"
                 style={{
                   width: `${
                     routeDistanceKm && remainingDistance !== null
@@ -2103,63 +2152,7 @@ nextInstructionDistance <= 5000
         </div>
       )}
 
-      {/* =================================================
-          ROUTE STATUS
-          ================================================= */}
-
-      <div className="absolute top-[114px] left-3 right-3 z-[1000]">
-        <div className="rounded-2xl bg-[#0F1E1E]/95 backdrop-blur-md border border-white/10 px-3.5 py-2 shadow-lg">
-
-          {loadingRoute ? (
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#E8A838] animate-pulse" />
-
-              <span className="text-xs text-[#9DB8B6]">
-                Calculating best route…
-              </span>
-            </div>
-          ) : routeError ? (
-            <div>
-              <p className="text-xs font-semibold text-[#FBBF24]">
-                Route unavailable
-              </p>
-
-              <p className="text-[10px] text-[#7BA3A1] mt-0.5">
-                GPS monitoring remains
-                active.
-              </p>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-
-              <div>
-                <p className="text-[9px] uppercase tracking-wider text-[#7BA3A1]">
-                  Destination
-                </p>
-
-                <p className="text-sm font-bold truncate max-w-[190px] text-[#E8A838]">
-  {destination}
-</p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-[9px] uppercase tracking-wider text-[#7BA3A1]">
-                  ETA
-                </p>
-
-                <p className="text-base font-black text-[#4ADE80]">
-                  {etaMinutes
-                    ? `${etaMinutes} min`
-                    : "—"}
-                </p>
-              </div>
-
-            </div>
-          )}
-
-        </div>
-      </div>
-
+     
       {/* =================================================
           RECENTER
           ================================================= */}
@@ -2184,8 +2177,8 @@ nextInstructionDistance <= 5000
           ================================================= */}
 
 {showNavigationOptions && (
-  <div className="absolute bottom-[205px] right-4 z-[1100] w-[250px] rounded-2xl border border-slate-200 bg-white p-3 text-[#0F1E1E] shadow-2xl">
-    <p className="px-2 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
+  <div className="absolute bottom-[205px] right-4 z-[1100] w-[250px] rounded-2xl border border-[#E8A838]/40 bg-[#071A18]/98 p-3 text-white shadow-2xl backdrop-blur-xl">
+    <p className="px-2 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#E8A838]">
       Navigation
     </p>
 
@@ -2199,7 +2192,7 @@ nextInstructionDistance <= 5000
           new Event("citysense-recenter")
         );
       }}
-      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-[#163330]"
     >
       📍 Recenter on me
     </button>
@@ -2216,7 +2209,7 @@ nextInstructionDistance <= 5000
     );
   }
 }}
-      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-[#163330]"
     >
       🗺️ Route overview
     </button>
@@ -2226,15 +2219,15 @@ nextInstructionDistance <= 5000
       onClick={() =>
         setShowNavigationOptions(false)
       }
-      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-slate-100"
+      className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-[#163330]"
     >
       Close
     </button>
   </div>
 )}
       <div className="absolute bottom-0 left-0 right-0 z-[1000]">
-        <div className="rounded-t-[28px] bg-white/96 text-[#0F1E1E] backdrop-blur-xl border-t border-black/10 px-4 pt-3 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,.22)]">
-          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
+        <div className="rounded-t-[28px] bg-[#071A18]/97 text-white backdrop-blur-xl border-t border-[#E8A838]/30 px-4 pt-3 pb-3 shadow-[0_-8px_30px_rgba(0,0,0,.35)]">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[#E8A838]/70" />
 
           <div className="flex items-end justify-between gap-4">
             <div className="min-w-0">
@@ -2244,7 +2237,7 @@ nextInstructionDistance <= 5000
                 </span>
               </div>
 
-              <div className="mt-1 flex items-center gap-2 text-slate-500">
+              <div className="mt-1 flex items-center gap-2 text-[#E8A838]">
                 <span className="text-[18px] font-semibold">
                   {remainingDistance !== null
                     ? `${remainingDistance.toFixed(1)} km`
@@ -2268,10 +2261,10 @@ nextInstructionDistance <= 5000
                 onClick={() => {
                   window.dispatchEvent(new Event("citysense-recenter"));
                 }}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#071A18]/98 border border-[#E8A838]/50 shadow-lg"
                 aria-label="Recenter navigation"
               >
-                <LocateFixed className="h-5 w-5 text-[#0F6666]" />
+                <LocateFixed className="h-5 w-5 text-[#E8A838]" />
               </button>
 
               <button
@@ -2279,21 +2272,21 @@ nextInstructionDistance <= 5000
   onClick={() =>
     setShowNavigationOptions((value) => !value)
   }
-  className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 border border-slate-200 shadow-sm"
+  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#071A18]/98 border border-[#E8A838]/50 shadow-lg"
   aria-label="Navigation options"
 >
-  <Navigation className="h-5 w-5 text-[#0F6666]" />
+  <Navigation className="h-5 w-5 text-[#E8A838]" />
 </button>
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2.5">
+          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-[#071A18]/98 border border-[#E8A838]/50 px-3 py-2.5">
             <ShieldCheck className="h-4 w-4 shrink-0 text-[#16A34A]" />
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">
-                CitySense Protected Journey
+              <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#E8A838]">
+                text-[#E8A838]
               </p>
-              <p className="truncate text-xs font-bold text-slate-800">
+              <p className="truncate text-xs font-bold text-white">
                 {distanceFromRouteMeters !== null && distanceFromRouteMeters > 40
                   ? `Off route • ${distanceFromRouteMeters.toFixed(0)} m away`
                   : `Navigating to ${destination}`}
@@ -2319,7 +2312,7 @@ nextInstructionDistance <= 5000
             <button
               type="button"
               onClick={onEndJourney}
-              className="rounded-2xl bg-slate-100 border border-slate-200 py-2.5 text-sm font-black text-slate-800"
+              className="rounded-2xl bg-[#071A18]/98 border border-[#E8A838]/50 py-2.5 text-sm font-black text-white"
             >
               End Journey
             </button>

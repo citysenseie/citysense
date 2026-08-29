@@ -173,7 +173,7 @@ longitude: location.longitude,
         <div className="text-6xl font-bold text-white mt-4">{countdown}</div>
         <button
           onClick={cancelSOS}
-          className="mt-8 px-6 py-3 bg-white/20 backdrop-blur-md rounded-full text-white font-semibold text-sm flex items-center gap-2 active:scale-95 transition-transform"
+          className="mt-8 px-6 py-3 bg-[#F8F1E1]/95/20 backdrop-blur-md rounded-full text-white font-semibold text-sm flex items-center gap-2 active:scale-95 transition-transform"
         >
           <X className="w-4 h-4" />
           Cancel
@@ -191,13 +191,13 @@ longitude: location.longitude,
         <p className="text-white/80 text-sm mt-2 text-center">
           Your location has been shared with emergency contacts.
         </p>
-        <div className="mt-4 bg-white/20 backdrop-blur-md rounded-xl px-4 py-3 flex items-center gap-2">
+        <div className="mt-4 bg-[#F8F1E1]/95/20 backdrop-blur-md rounded-xl px-4 py-3 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-white" />
           <p className="text-xs text-white">{location?.address ?? "Location sharing active"}</p>
         </div>
         <button
           onClick={() => { setActivated(false); setCountdown(5); }}
-          className="mt-8 px-8 py-3 bg-white rounded-full text-[#EF4444] font-bold text-sm active:scale-95 transition-transform"
+          className="mt-8 px-8 py-3 bg-[#F8F1E1]/95 rounded-full text-[#EF4444] font-bold text-sm active:scale-95 transition-transform"
         >
           Deactivate
         </button>

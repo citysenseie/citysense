@@ -1102,7 +1102,7 @@ const aiSummary =
             Nearby activity
           </p>
 
-          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-[#A8B8B5]">
+          <span className="rounded-full bg-[#F8F1E1]/95/[0.06] px-2 py-0.5 text-[10px] font-semibold text-[#A8B8B5]">
             {filteredReports.length}
           </span>
         </div>

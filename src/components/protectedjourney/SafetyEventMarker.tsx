@@ -169,7 +169,7 @@ export default function SafetyEventMarker({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-full p-1 text-[#7BA3A1] hover:bg-white/10"
+                  className="rounded-full p-1 text-[#7BA3A1] hover:bg-[#F8F1E1]/95/10"
                   aria-label="Close warning"
                 >
                   <X className="h-4 w-4" />
@@ -189,7 +189,7 @@ export default function SafetyEventMarker({
           ) : null}
 
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-white/5 p-2">
+            <div className="rounded-xl bg-[#F8F1E1]/95/5 p-2">
               <p className="text-[8px] uppercase tracking-wider text-[#7BA3A1]">
                 Reported
               </p>
@@ -201,7 +201,7 @@ export default function SafetyEventMarker({
               </p>
             </div>
 
-            <div className="rounded-xl bg-white/5 p-2">
+            <div className="rounded-xl bg-[#F8F1E1]/95/5 p-2">
               <p className="text-[8px] uppercase tracking-wider text-[#7BA3A1]">
                 Confidence
               </p>

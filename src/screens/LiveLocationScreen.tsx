@@ -403,7 +403,7 @@ const handleStopSharing = async () => {
         <div className="flex items-center gap-3 px-4 py-4">
           <button
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05]"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8F1E1]/95/[0.05]"
             aria-label="Go back"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -760,7 +760,7 @@ const handleStopSharing = async () => {
     <div className="max-h-[88vh] w-full overflow-hidden rounded-t-[32px] border-t border-white/[0.08] bg-[#0D1D1B] shadow-2xl">
       {/* Handle */}
       <div className="flex justify-center pt-3">
-        <div className="h-1 w-10 rounded-full bg-white/15" />
+        <div className="h-1 w-10 rounded-full bg-[#F8F1E1]/95/15" />
       </div>
 
       {/* Header */}
@@ -785,7 +785,7 @@ const handleStopSharing = async () => {
 
         <button
           onClick={() => setShowShareSheet(false)}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F8F1E1]/95/[0.05]"
           aria-label="Close sharing options"
         >
           <X className="h-4 w-4 text-white" />
@@ -946,7 +946,7 @@ const handleStopSharing = async () => {
 
               <button
                 onClick={() => setShowAvatarPicker(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F8F1E1]/95/[0.05]"
                 aria-label="Close avatar picker"
               >
                 <X className="h-4 w-4 text-white" />
@@ -992,7 +992,7 @@ const handleStopSharing = async () => {
               {selectedAvatar && (
                 <button
                   onClick={removeAvatar}
-                  className="mt-7 w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] py-3 text-sm font-semibold text-[#91A6A3]"
+                  className="mt-7 w-full rounded-2xl border border-white/[0.07] bg-[#F8F1E1]/95/[0.03] py-3 text-sm font-semibold text-[#91A6A3]"
                 >
                   Remove avatar
                 </button>
