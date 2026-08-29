@@ -2012,7 +2012,7 @@ attribution="&copy; OpenStreetMap contributors &copy; CARTO"
               </div>
               <div>
                 <p className="text-lg font-black text-white">Calculating route…</p>
-                <p className="mt-0.5 text-xs text-white/70">text-[#E8A838]</p>
+              
               </div>
             </div>
           </div>
