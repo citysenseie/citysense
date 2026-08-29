@@ -1764,15 +1764,11 @@ touchRotate={true}
 dragRotate={false}
 shiftKeyRotate={false}
       >
-       <TileLayer
-  key={isNightMap ? "night" : "day"}
-  url={
-    isNightMap
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-  }
- className={isNightMap ? "" : "daylight-map-dim"}
-attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+     <TileLayer
+  key={isNightMap ? "citysense-night" : "citysense-day"}
+  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+  className={isNightMap ? "citysense-map-night" : "citysense-map-day"}
+  attribution="&copy; OpenStreetMap contributors"
 />
       <SmoothNavigationCamera
   location={currentLocation}
