@@ -1764,12 +1764,16 @@ touchRotate={true}
 dragRotate={false}
 shiftKeyRotate={false}
       >
-     <TileLayer
-  key={isNightMap ? "citysense-night" : "citysense-day"}
-  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-  className={isNightMap ? "citysense-map-night" : "citysense-map-day"}
-  attribution="&copy; OpenStreetMap contributors"
-/>
+        <TileLayer
+          key={isNightMap ? "citysense-night" : "citysense-day"}
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className={
+            isNightMap
+              ? "citysense-map-night"
+              : "citysense-map-day"
+          }
+          attribution="&copy; OpenStreetMap contributors"
+        />
       <SmoothNavigationCamera
   location={currentLocation}
   travelMode={travelMode}
@@ -2008,7 +2012,6 @@ shiftKeyRotate={false}
               </div>
               <div>
                 <p className="text-lg font-black text-white">Calculating route…</p>
-              
               </div>
             </div>
           </div>
@@ -2280,7 +2283,7 @@ nextInstructionDistance <= 5000
             <ShieldCheck className="h-4 w-4 shrink-0 text-[#16A34A]" />
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#E8A838]">
-                text-[#E8A838]
+                Journey status
               </p>
               <p className="truncate text-xs font-bold text-white">
                 {distanceFromRouteMeters !== null && distanceFromRouteMeters > 40
@@ -2322,6 +2325,14 @@ nextInstructionDistance <= 5000
 
       <style>
         {`
+          .citysense-map-day {
+            filter: none;
+          }
+
+          .citysense-map-night {
+            filter: brightness(0.48) contrast(1.12) saturate(0.72) hue-rotate(8deg);
+          }
+
           @keyframes citysenseSafetyPulse {
             0% {
               transform: scale(0.85);
